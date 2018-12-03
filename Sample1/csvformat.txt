@@ -1,0 +1,68 @@
+ќбычный вид:
+"тип строки,..." --- дл€ выделени€/разбиени€.
+name() --- название блока.
+"Usage" выдаЄт только при вызове без аргументов.
+
+ѕрограмма (Ttr=time to run):
+	cout << "Parameters," << Ttr << "," << Mu << "," << Sigma << "," << Wnum << "," << Snum << "," << Anum << "," << logging_level << endl;
+
+Wnode:
+destructor (выводит итоговую статистику):
+	cout << "Destructor,Wnode," << name() << "," << kblk_gen << "," << kblk_rec << "," << mblk_rec << endl;
+main start:
+	cout << "NodeStart," << sc_time_stamp() << "," << name() << endl;
+k-block:
+	cout << "Generated," << sc_time_stamp() << "," << name() << "," << k << endl;
+k-block broadcast:
+	cout << "Broadcast," << sc_time_stamp() << "," << name() << "," << k << endl;
+k-block receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << k << endl;
+m-block receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << m << endl;
+
+Top:
+W/S-A connection:
+	cout << "Connection,W_" << nodeToConnectTo << "," << "A_" << i << endl;
+	cout << "Connection,S_" << nodeToConnectTo - Wnum << "," << "A_" << i << endl;
+destructor (обрамл€ет деструкторы узлов):
+ 	cout << "Destructor,top,start" << endl;
+	cout << "Destructor,top,end" << endl;
+main start:
+	cout << "NodeStart," << sc_time_stamp() << "," << name() << endl;
+
+Anode:
+destructor (выводит итоговую статистику):
+	cout << "Destructor,Anode," << name() << "," << kblk_rec << "," << rblk_rec << "," << sblk_snt << "," << mblk_snt << endl;
+k-block receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << k << endl;
+recv receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << rr << endl;
+
+Snode:
+destructor (выводит итоговую статистику):
+	cout << "Destructor,Snode," << name() << "," << kblk_rec << "," << sblk_rec << "," << mblk_rec << "," << kblk_snt << "," << rblk_snt << "," << connAs.size() << endl;
+k-block receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << k << endl;
+send receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << srq << endl;
+m-block receive:
+	cout << "Receive," << sc_time_stamp() << "," << name() << "," << m << endl;
+
+Log_fifo:
+destructor (мог бы выводить итоговую статистику):
+	cout << "Destructor,log_fifo," << name() << endl;
+подробные сообщени€:
+	cout << "LogFifo," << sc_time_stamp() << "," << name() << "nb_readsuccess" << endl;
+	cout << "LogFifo," << sc_time_stamp() << "," << name() << "nb_readfailure" << endl;
+	cout << "LogFifo," << sc_time_stamp() << "," << name() << "nb_writefailure" << endl;
+	cout << "LogFifo," << sc_time_stamp() << "," << name() << "nb_writesuccess" << endl;
+
+¬ывод передаваемых/принимаемых блоков, зап€тых предположительно не содержит:
+	<< "k_block(" << NTTS(k.sender) << ";" << k.info1 << ";" << k.info2 << ";" << k.p_kblock << ")";
+	<< "m_block(" << NTTS(k.sender) << ";" << k.info1 << ";" << k.info2 << ")";
+	<< "send_shadow_rq(" << NTTS(k.sender) << ";" << k.info1 << ";" << k.info2 << ";" << k.info3 << ";" << k.leader << ")";
+	<< "recv_shadow_rq(" << NTTS(k.sender) << ";" << k.info1 << ";" << k.info2 << ")";
+
+
+
+

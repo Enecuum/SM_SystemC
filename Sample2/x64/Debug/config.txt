@@ -1,0 +1,16 @@
+;время на отправление mblock_sign
+tmblock_sign=1
+;время на отправление k-блока
+tkblock=650
+;количество W и S узлов
+n=500
+;время на отправление shadow_response
+tshresp=1
+;количество A узлов на один S узел
+k=100
+;время на отправление leader_beacon
+tleadbeac=1
+;время на отправление shadow_request
+tshreq=1
+;время на отправление mblock
+tmblock=1
