@@ -29,11 +29,13 @@ struct LatNode
     int n;
 
     LatNode();
-    double distToMS(LatNode& f);
-    uint64_t distTo(LatNode& f);
+    double distTo(LatNode& f);
     
-    friend double distMS(LatNode& a, LatNode& b);
-    friend uint64_t dist(LatNode& a, LatNode& b);
+    friend double dist(LatNode& a, LatNode& b);
+
+    friend double randomALatency();
+
+    friend void redefineRandomLatency(int from, int to);
 
 private:
     friend class LatNodeStatCons;
@@ -41,33 +43,20 @@ private:
     {
         LatNodeStatCons()
         {
-            int seed = std::chrono::system_clock::now().time_since_epoch().count();
-            LatNode::generator = new std::default_random_engine(seed);
-            LatNode::distr = new std::uniform_int_distribution<int>(0, 10);
-            LatNode::distr2 = new std::uniform_int_distribution<int>(0, 40);
+            uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+            LatNode::generator = new std::default_random_engine((unsigned int)seed);
+            LatNode::distr = new std::uniform_int_distribution<int>(0, 10); // hardcoded as we have world latencies hardcoded
+            LatNode::distr2 = new std::uniform_int_distribution<int>(0, 40); // using config in this "static constructor" is earlier than parsing config file, so we'll overwrite this variable after parsing config file
+            //LatNode::distr2 = new std::normal_distribution<int>(20, 5);
         }
     };
     static LatNodeStatCons stat_cons;
     static std::default_random_engine* generator;
     static std::uniform_int_distribution<int>* distr;
     static std::uniform_int_distribution<int>* distr2;
+    //static std::normal_distribution<int>* distr2;
 
-    const double latsMS[11][11] = 
-    {
-        { 0,          297.55,    18.138,   117.09,     9.221,     135.735,   44.079,    78.237,    20.559,    21.099,    242.012 },
-        { 297.598,    0,         284.805,  195.108,    266.656,   179.024,   349.805,   251.246,   290.88,    286.576,   186.217 },
-        { 18.194,     284.76,    0,        131.298,    20.813,    151.801,   43.295,    93.801,    22.369,    9.664,     264.723 },
-        { 114.208,    191.232,   127.108,  0,          105.519,   37.966,    168.777,   38.207,    109.244,   137.878,   135.681 },
-        { 9.34,       266.602,   20.999,   110.453,    0,         130.906,   54.245,    70.909,    4.024,     26.017,    226.971 },
-        { 135.649,    178.908,   151.868,  38.537,     130.894,   0,         182.548,   68.834,    132.812,   151.923,   107.806 },
-        { 44.043,     349.92,    43.802,   174.814,    54.157,    182.44,    0,         126.169,   53.805,    21.123,    206.7 },
-        { 78.456,     251.235,   93.857,   37.19,      70.905,    68.833,    126.053,   0,         80.151,    91.753,    209.745 },
-        { 22.614,     291.133,   22.898,   117.024,    3.899,     134.253,   52.562,    72.459,    0,         24.261,    226.361 },
-        { 21.11,      286.469,   9.732,    142.554,    26.116,    151.97,    21.001,    101.839,   26.284,    0,         277.991 },
-        { 242.055,    185.781,   264.59,   137.335,    226.981,   107.602,   206.576,   209.836,   222.891,   278.545,   0 }
-    };
-
-    const uint64_t lats[11][11] =
+    const double lats[11][11] =
     {
         { 0,            297550000,   18138000,   117090000,    9221000,     135735000,   44079000,    78237000,    20559000,    21099000,    242012000 },
         { 297598000,    0,           284805000,  195108000,    266656000,   179024000,   349805000,   251246000,   290880000,   286576000,   186217000 },
@@ -82,5 +71,7 @@ private:
         { 242055000,    185781000,   264590000,  137335000,    226981000,   107602000,   206576000,   209836000,   222891000,   278545000,   0 }
     };
 };
-double distMS(LatNode& a, LatNode& b);
-uint64_t dist(LatNode& a, LatNode& b);
+double dist(LatNode& a, LatNode& b);
+double randomALatency();
+void redefineRandomLatency(int from, int to);
+

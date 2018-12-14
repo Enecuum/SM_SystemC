@@ -13,3 +13,6 @@ name() --- название блока.
 Отладочные (в нормальной ситуации --- очевидные информационные) сообщения:
 "Trace,..."
 
+Блоки:
+"Received,<Timestamp>,<Node>,<Block>"
+"Sending,<Timestamp>,<Node>,<ToNode>,<Block>"

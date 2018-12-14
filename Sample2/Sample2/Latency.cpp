@@ -11,26 +11,30 @@ LatNode::LatNode()
 }
 
 
-double distMS(LatNode& a, LatNode& b)
-{
-    return a.distToMS(b);
-}
-
-uint64_t dist(LatNode& a, LatNode& b)
+double dist(LatNode& a, LatNode& b)
 {
     return a.distTo(b);
 }
 
-double LatNode::distToMS(LatNode& f)
+double LatNode::distTo(LatNode& f)
 {
-    double res = latsMS[n][f.n] + (*distr2)(*generator);
-    cout << "LatNodes: " << n << " to " << f.n << " is " << res << endl;
+    double res = lats[n][f.n] + (*distr2)(*generator);
+    //cout << "LatNodes," << n << "," << f.n << "," << res << " ns" << endl;
     return res;
 }
 
-uint64_t LatNode::distTo(LatNode& f)
+double randomALatency()
 {
-    uint64_t res = lats[n][f.n] + 1000000*((*distr2)(*generator));
-    cout << "LatNodes: " << n << " to " << f.n << " is " << res << " ns." << endl;
+    double res = (*LatNode::distr2)(*LatNode::generator);
+    //cout << "randomALatency," << res << " ns" << endl;
     return res;
+}
+
+void redefineRandomLatency(int from, int to)
+{
+    if (LatNode::distr2)
+    {
+        delete LatNode::distr2;
+    }
+    LatNode::distr2 = new std::uniform_int_distribution<int>(from, to);
 }

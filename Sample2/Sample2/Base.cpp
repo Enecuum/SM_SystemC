@@ -1,86 +1,61 @@
 #include "stdafx.h"
 
-double baseMu = 10000;
-double baseSigma = 10000;
-int baseWnum = 2;
-int baseSnum = 2;
-int baseAnum = 10;
-int t_proc = 100;
-int t_send = 100;
-int t_broadcast = 100;
+double taprocessk;
+double taprocesslb;
 
-// positive only
-// probably it was supposed to be exponential distribution? easy to change anyway...
-int randomTime()
+double bwKdelay;
+double bwShRqdelay;
+double bwShPndelay;
+double bwLBdelay;
+double bwMSGNdelay;
+double bwMdelay;
+
+double dbK;
+double dbShRq;
+double dbShPn;
+double dbLB;
+double dbMS;
+double dbM;
+
+double diskspeed;
+
+void InitBWDB()
 {
-    return randomTime(baseMu, baseSigma);
+
+
+    double bw = confDbl(cnf_bandwidth);
+    double ksize = confInt(cnf_ksize);
+    double rqsize = confInt(cnf_ShRqsize);
+    double pnsize = confInt(cnf_ShPnsize);
+    double lbsize = confInt(cnf_lbsize);
+    double msgnsize = confInt(cnf_msgnsize);
+    double msize = confInt(cnf_msize);
+
+    diskspeed = confDbl(cnf_diskbw);
+
+    bwKdelay = ksize / bw;
+    bwShRqdelay = rqsize / bw;
+    bwShPndelay = pnsize / bw;
+    bwLBdelay = lbsize / bw;
+    bwMSGNdelay = msgnsize / bw;
+    bwMdelay = msize / bw;
+
+    dbK = ksize;
+    dbShRq = rqsize;
+    dbShPn = pnsize;
+    dbLB = lbsize;
+    dbMS = msgnsize;
+    dbM = msize;
 }
 
-int randomTime(double mu, double sigma)
+double bwDelay(BlockType::BlockType bt)
 {
-    static std::default_random_engine generator;
-    std::normal_distribution<double> distribution(mu, sigma);
-    int number = (int)abs(distribution(generator));
-    //std::cout << "randomTime() = " << number << " (mu,sigma) = (" << baseMu << "," << baseSigma << ") " << endl;
-    return number;
-}
-
-int randomTime(WnodeP w)
-{
-    return randomTime(baseMu, baseSigma);
-}
-
-int randomTime(WnodeP w, m_block& m)
-{
-    return t_proc;
-}
-
-int randomTime(WnodeP w, k_block& k)
-{
-    return t_proc;
-}
-
-int randomTime(WSAP p, k_block& k)
-{
-    return t_broadcast;
-}
-
-int randomTime(SnodeP s, k_block& k)
-{
-    return t_proc;
-}
-
-int randomTime(SnodeP s, send_shadow_rq& k)
-{
-    return t_proc;
-}
-
-int randomTime(SnodeP s, m_block& m)
-{
-    return t_proc;
-}
-
-int randomTime(SnodeP s, recv_shadow_rq& rr)
-{
-    return t_proc;
-}
-
-int randomTime(AnodeP a, k_block& k)
-{
-    return t_proc;
-}
-
-int randomTime(AnodeP a, m_block& k)
-{
-    return t_proc;
-}
-
-int randomTime(AnodeP a, recv_shadow_rq& k)
-{
-    return t_proc;
-}
-
-int randomTime(AnodeP a, send_shadow_rq& k)
-{
-    return t_proc;
+    if (BlockType::K == bt) return bwKdelay;
+    if (BlockType::ShRq == bt) return bwShRqdelay;
+    if (BlockType::ShPn == bt) return bwShPndelay;
+    if (BlockType::LB == bt) return bwLBdelay;
+    if (BlockType::MSgn == bt) return bwMSGNdelay;
+    if (BlockType::M == bt) return bwMdelay;
+    assert(0);
+    return 0;
 }

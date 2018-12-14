@@ -10,64 +10,43 @@
 
 void Anode::CheckIncoming()
 {
-    k_block k;
-    if (k_rec.nb_read(k))
+    if (send_msgn)
     {
-        cout << "Receive," << sc_time_stamp() << "," << name() << "," << k << endl;
-        //cout << sc_time_stamp() << ": A " << name() << " received " << k << "." << endl;
-        ++kblk_rec;
-        // TODO: it kind of sends everything instantly and then waits
-        int leader = rand() % 2;
-        send_shadow_rq srq = create_send_shadow_rq(leader, k.info1, k.info2, number, NodeType::A);
-        int delay = randomTime(this, k);
-        delay += SendToConnectedNode(srq);
-        next_trigger(delay, SC_NS);
-        return; // !!!
+        send_msgn = false;
+        ++msgnblk_snt;
+        SendToConnectedNode(msgn_tosend);
     }
     else
     {
-        recv_shadow_rq rr;
-        if (recv_rec.nb_read(rr))
+        k_block k;
+        if (k_rec.nb_read(k))
         {
-            cout << "Receive," << sc_time_stamp() << "," << name() << "," << rr << endl;
-            //cout << sc_time_stamp() << ": A " << name() << " received " << rr << "." << endl;
-            ++rblk_rec;
-            m_block m = create_m_block(rr.info1, rr.info2, NodeType::A);
-            int delay = randomTime(this, rr);
-            delay += SendToConnectedNode(m);
-            next_trigger(delay, SC_NS);
+            cout << "Receive," << sc_time_stamp() << "," << name() << "," << k << endl;
+            ++kblk_rec;
+            next_trigger(taprocessk, SC_NS); // just wait, no need to send anything
             return; // !!!
+        }
+        else
+        {
+            lb_block lb;
+            if (lb_rec.nb_read(lb))
+            {
+                cout << "Receive," << sc_time_stamp() << "," << name() << "," << lb << endl;
+                ++lbblk_rec;
+                //
+                send_msgn = true;                 // wait and
+                msgn_tosend = create_msgn_block(number, 0, NodeType::A);
+                next_trigger(taprocesslb + bwMSGNdelay + randomALatency(), SC_NS); //  send msgn_block
+                return; // !!!
+            }
         }
     }
     next_trigger();
 }
 
-int Anode::SendToConnectedNode(send_shadow_rq& srq)
+int Anode::SendToConnectedNode(msgn_block& m)
 {
-    int delay = 0;
-    if (NULL != Sconn)
-    {
-        Sconn->send_rec.nb_write(srq);
-        ++sblk_snt;
-        delay += randomTime(this, srq);
-    }
-    return delay;
-}
-
-int Anode::SendToConnectedNode(m_block& m)
-{
-    int delay = 0;
-    if (NULL != Wconn)
-    {
-        Wconn->m_rec.nb_write(m);
-        ++mblk_snt;
-        delay += randomTime(this, m);
-    }
-    if (NULL != Sconn)
-    {
-        Sconn->m_rec.nb_write(m);
-        ++mblk_snt;
-        delay += randomTime(this, m);
-    }
-    return delay;
+    cout << "Sending," << sc_time_stamp() << "," << name() << "," << msgn_snd->name() << "," << m << endl;
+    msgn_snd->nb_write(m);
+    return 0;
 }

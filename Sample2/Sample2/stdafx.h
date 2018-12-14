@@ -15,32 +15,31 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <chrono>
 
 #include <systemc.h>
 
 // forward struct declarations
 struct WSA;
-struct Wnode;
 struct Snode;
 struct Anode;
 typedef WSA* WSAP;
-typedef Wnode* WnodeP;
 typedef Snode* SnodeP;
 typedef Anode* AnodeP;
 struct k_block;
 struct m_block;
 struct send_shadow_rq;
 struct recv_shadow_rq;
+namespace BlockType { enum BlockType; }
 
 #include "Config.h"
 #include "Latency.h"
-
-#include "Base.h"
 #include "Node.h"
-#include "Wnode.h"
+#include "Base.h"
+
 #include "Anode.h"
-#include "Snode.h"
 #include "Top.h"
+#include "Snode.h"
 
 // TODO: Установите здесь ссылки на дополнительные заголовки, требующиеся для программы

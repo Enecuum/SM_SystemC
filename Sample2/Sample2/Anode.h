@@ -1,45 +1,57 @@
 #pragma once
 
-//! Simulates all A nodes
+//! Simulates A node
 SC_MODULE(Anode) {
     int number;
     // currently N/A
     std::unordered_map<int, int> a_memory;
 
     WSAP cc;
-    WnodeP Wconn;
-    SnodeP Sconn;
+    inMSGNP msgn_snd;
 
     int kblk_rec;
-    int rblk_rec;
-    int sblk_snt;
-    int mblk_snt;
-    
+    int lbblk_rec;
+    int msgnblk_snt;
+
     // S forwards k_blocks to A
-    log_fifo<k_block> k_rec;
-    // S replies to A on send_shadow_rq with recv_shadow_rq
-    log_fifo<recv_shadow_rq> recv_rec;
+    // we do not care about single A node network bandwidth
+    inK k_rec;
+    inLB lb_rec;
+
+    //double taprocessk;
+    //double taprocesslb;
+
+    int send_msgn;
+    msgn_block msgn_tosend;
 
     SC_HAS_PROCESS(Anode);
-    Anode(sc_module_name name, int num_, WSAP cc_, WnodeP Wconn_, SnodeP Sconn_) : sc_module(name),
-        k_rec("A_k_rec_fifo", 10), recv_rec("A_recv_rec_fifo", 10),
-        kblk_rec(0), rblk_rec(0), sblk_snt(0), mblk_snt(0),
-        cc(cc_), Wconn(Wconn_), Sconn(Sconn_), number(num_)
+    Anode(sc_module_name name, int num_, WSAP cc_, //WnodeP Wconn_, SnodeP Sconn_
+          log_fifo<msgn_block>* outport) : sc_module(name),
+        k_rec("A_k_rec_fifo", 10), kblk_rec(0),
+        lb_rec("A_lb_rec_fifo", 10), lbblk_rec(0),
+        msgn_snd(outport), msgnblk_snt(0),
+        send_msgn(false),
+        cc(cc_),
+        number(num_)
     {
+        //taprocessk = confDbl(cnf_taprocessk);
+        //taprocesslb = confDbl(cnf_taprocesslb);
         SC_METHOD(CheckIncoming);
-        sensitive << k_rec.data_written_event() << recv_rec.data_written_event();
+        sensitive << k_rec.data_written_event() << lb_rec.data_written_event();
+        dont_initialize();
     }
 
     ~Anode()
     {
-        cout << "Destructor,Anode," << name() << "," << kblk_rec << "," << rblk_rec << "," << sblk_snt << "," << mblk_snt << endl;
-        //cout << "Destructing " << name() << ": krec=" << kblk_rec << "   rrec=" << rblk_rec << "   ssnt=" << sblk_snt << "   msnt=" << mblk_snt << "." << endl;
+        if ((1 != kblk_rec) || (1 != lbblk_rec) || (1 != msgnblk_snt))
+        {
+            cout << "Destructor,Anode," << name() << "," << kblk_rec << "," << lbblk_rec << "," << msgnblk_snt << endl;
+        }
         //cout << "Destructed " << name() << "." << endl;
     }
 
     //void main();
     void CheckIncoming();
-    int SendToConnectedNode(send_shadow_rq& srq);
-    int SendToConnectedNode(m_block& k);
+    int SendToConnectedNode(msgn_block& k);
 };
 typedef Anode* AnodeP;

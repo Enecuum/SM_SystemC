@@ -1,16 +1,8 @@
 #include "stdafx.h"
 
-WSA::WSA(sc_module_name name, int Wnum_, int Snum_, int Anum_) : sc_module(name), Wnum(Wnum_), Snum(Snum_), Anum(Anum_)
+WSA::WSA(sc_module_name name, int Snum_, int Anum_, int Wno_, int S1no_, int Sleaderno_) : sc_module(name), Snum(Snum_), Anum(Anum_), Wno(Wno_), S1no(S1no_), Sleaderno(Sleaderno_)
 {
     std::stringstream namegen;
-    Wnodes.resize(Wnum);
-    for (int i = 0; i < Wnum; ++i)
-    {
-        namegen.str(std::string());
-        namegen.clear();
-        namegen << "W_" << i;
-        Wnodes[i] = new Wnode(namegen.str().c_str(), i, this);
-    }
     Snodes.resize(Snum);
     for (int i = 0; i < Snum; ++i)
     {
@@ -25,26 +17,16 @@ WSA::WSA(sc_module_name name, int Wnum_, int Snum_, int Anum_) : sc_module(name)
         namegen.str(std::string());
         namegen.clear();
         namegen << "A_" << i;
-        WnodeP wconn = NULL;
-        SnodeP sconn = NULL;
-        int nodeToConnectTo = rand() % (Wnum + Snum);
-        if (nodeToConnectTo < Wnum)
-        {
-            cout << "Connection,W_" << nodeToConnectTo << "," << "A_" << i << endl;
-            //cout << "W_" << nodeToConnectTo << " <- " << "A_" << i << endl;
-            wconn = Wnodes[nodeToConnectTo];
-        }
-        else
-        {
-            cout << "Connection,S_" << nodeToConnectTo - Wnum << "," << "A_" << i << endl;
-            //cout << "S_" << nodeToConnectTo - Wnum << " <- " << "A_" << i << endl;
-            sconn = Snodes[nodeToConnectTo - Wnum];
-        }
-        Anodes[i] = new Anode(namegen.str().c_str(), i, this, wconn, sconn);
-        if (NULL != sconn)
-        {
-            sconn->connAs.push_back(Anodes[i]);
-        }
+        inMSGNP outport = NULL;
+        std::vector<AnodeP>* pconnA = NULL;
+        int nodeToConnectTo = rand() % Snum;
+        //cout << "Connection,S_" << nodeToConnectTo << "," << "A_" << i << endl;
+        pconnA = &(Snodes[nodeToConnectTo]->connAs);
+        outport = &(Snodes[nodeToConnectTo]->msgn_rec);
+        namegen << "_" << nodeToConnectTo;
+        AnodeP newA = new Anode(namegen.str().c_str(), i, this, outport);
+        Anodes[i] = newA;
+        pconnA->push_back(newA);
     }
 
     SC_THREAD(main);
@@ -54,10 +36,6 @@ WSA::~WSA()
 {
     cout << "Destructor,top,start" << endl;
     //cout << "Destructing top." << endl;
-    for (int i = 0; i < Wnum; ++i)
-    {
-        delete Wnodes[i];
-    }
     for (int i = 0; i < Snum; ++i)
     {
         delete Snodes[i];
@@ -76,17 +54,12 @@ void WSA::main()
     //cout << sc_time_stamp() << ": WSA " << name() << " main is running." << endl;
 }
 
-void WSA::BroadcastK(WnodeP w, k_block k)
+void WSA::BroadcastK(SnodeP w, k_block k)
 {
-    for (int i = 0; i < Wnum; ++i)
-    {
-        Wnodes[i]->k_rec.nb_write(k);
-        //wait(randomTime(this, k), SC_NS);
-    }
     for (int i = 0; i < Snum; ++i)
     {
         Snodes[i]->k_rec.nb_write(k);
         //wait(randomTime(this, k), SC_NS);
     }
-    wait(randomTime(this, k), SC_NS);
+    wait(1000 /*randomTime(this, k)*/, SC_NS);
 }
