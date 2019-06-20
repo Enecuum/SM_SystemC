@@ -89,7 +89,8 @@ void Mnode::main()
         // nothing will work automatically, so waiting for event
         if (!didAnything)
         {
-            wait(msgn_rec.data_written_event() | r_rec.data_written_event());
+            //wait(msgn_rec.data_written_event() | r_rec.data_written_event());
+            wait(r_rec.data_written_event());
         }
     }
 }
@@ -97,28 +98,28 @@ void Mnode::main()
 void Mnode::delayed_send()
 {
     uint64 t = sc_time_stamp().value();
-    {
-        auto itk = delayed_k.find(t);
-        if (itk != delayed_k.end())
-        {
-            cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",delayed k block <" << itk->second.first << "> at time " << t << endl;
-            itk->second.second->nb_write(itk->second.first);
-            delayed_k.erase(itk);
-            next_trigger();
-            return; // !!!
-        }
-    }
-    {
-        auto itlb = delayed_lb.find(t);
-        if (itlb != delayed_lb.end())
-        {
-            cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",delayed lb block <" << itlb->second.first << "> at time " << t << endl;
-            itlb->second.second->nb_write(itlb->second.first);
-            delayed_lb.erase(itlb);
-            next_trigger();
-            return; // !!!
-        }
-    }
+    //{
+    //    auto itk = delayed_k.find(t);
+    //    if (itk != delayed_k.end())
+    //    {
+    //        cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",delayed k block <" << itk->second.first << "> at time " << t << endl;
+    //        itk->second.second->nb_write(itk->second.first);
+    //        delayed_k.erase(itk);
+    //        next_trigger();
+    //        return; // !!!
+    //    }
+    //}
+    //{
+    //    auto itlb = delayed_lb.find(t);
+    //    if (itlb != delayed_lb.end())
+    //    {
+    //        cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",delayed lb block <" << itlb->second.first << "> at time " << t << endl;
+    //        itlb->second.second->nb_write(itlb->second.first);
+    //        delayed_lb.erase(itlb);
+    //        next_trigger();
+    //        return; // !!!
+    //    }
+    //}
     {
         auto itr = delayed_r.find(t);
         if (itr != delayed_r.end())
@@ -133,49 +134,49 @@ void Mnode::delayed_send()
     cout << "InternalError," << sc_time_stamp() << ",Mnode," << name() << ",no delayed block at time " << t << endl;
 }
 
-void Mnode::SendToConnectedA(k_block& k)
-{
-    for (int i = 0; i < connAs.size(); ++i)
-    {
-        // queuing write based on network latency
-        sc_time lat(randomALatency(), SC_NS);
-        sc_time newt = sc_time_stamp() + lat;
-        uint64 val_newt = newt.value();
-        k.info2 = i;
-        cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",queuing k block <" << k << "> to arrive at time " << newt << " ( = " << val_newt << ")" << endl;
-        delayed_k.insert(std::make_pair(val_newt, std::make_pair(k, &(connAs[i]->k_rec))));
-        eqSend.notify(lat);
-        ++kblk_snt;
-        wait(bwKdelay, SC_NS);
-        // sometimes check routing to avoid disrupting chord connectivity
-        if (i % 20 == 0)
-        {
-            CheckR();
-        }
-    }
-}
-
-void Mnode::SendToConnectedA(lb_block& lb)
-{
-    for (int i = 0; i < connAs.size(); ++i)
-    {
-        // queuing write based on network latency
-        sc_time lat(randomALatency(), SC_NS);
-        sc_time newt = sc_time_stamp() + lat;
-        uint64 val_newt = newt.value();
-        lb.info2 = i;
-        cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",queuing lb block <" << lb << "> to arrive at time " << newt << " ( = " << val_newt << ")" << endl;
-        delayed_lb.insert(std::make_pair(val_newt, std::make_pair(lb, &(connAs[i]->lb_rec))));
-        eqSend.notify(lat);
-        ++lbblk_snt;
-        wait(bwLBdelay, SC_NS);
-        // sometimes check routing to avoid disrupting chord connectivity
-        if (i % 20 == 0)
-        {
-            CheckR();
-        }
-    }
-}
+//void Mnode::SendToConnectedA(k_block& k)
+//{
+//    for (int i = 0; i < connAs.size(); ++i)
+//    {
+//        // queuing write based on network latency
+//        sc_time lat(randomALatency(), SC_NS);
+//        sc_time newt = sc_time_stamp() + lat;
+//        uint64 val_newt = newt.value();
+//        k.info2 = i;
+//        cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",queuing k block <" << k << "> to arrive at time " << newt << " ( = " << val_newt << ")" << endl;
+//        delayed_k.insert(std::make_pair(val_newt, std::make_pair(k, &(connAs[i]->k_rec))));
+//        eqSend.notify(lat);
+//        ++kblk_snt;
+//        wait(bwKdelay, SC_NS);
+//        // sometimes check routing to avoid disrupting chord connectivity
+//        if (i % 20 == 0)
+//        {
+//            CheckR();
+//        }
+//    }
+//}
+//
+//void Mnode::SendToConnectedA(lb_block& lb)
+//{
+//    for (int i = 0; i < connAs.size(); ++i)
+//    {
+//        // queuing write based on network latency
+//        sc_time lat(randomALatency(), SC_NS);
+//        sc_time newt = sc_time_stamp() + lat;
+//        uint64 val_newt = newt.value();
+//        lb.info2 = i;
+//        cout << "Trace," << sc_time_stamp() << ",Mnode," << name() << ",queuing lb block <" << lb << "> to arrive at time " << newt << " ( = " << val_newt << ")" << endl;
+//        delayed_lb.insert(std::make_pair(val_newt, std::make_pair(lb, &(connAs[i]->lb_rec))));
+//        eqSend.notify(lat);
+//        ++lbblk_snt;
+//        wait(bwLBdelay, SC_NS);
+//        // sometimes check routing to avoid disrupting chord connectivity
+//        if (i % 20 == 0)
+//        {
+//            CheckR();
+//        }
+//    }
+//}
 
 int Mnode::CheckR()
 {

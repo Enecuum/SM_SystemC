@@ -46,20 +46,20 @@ SC_MODULE(Mnode) {
     int routed_snt;
 
     // S routes k, srq, spn, lb, msgn, m blocks
-    inK k_rec;
-    inSRQ srq_rec;
-    inSPN spn_rec;
+    //inK k_rec;
+    //inSRQ srq_rec;
+    //inSPN spn_rec;
     inLB lb_rec;
-    inMSGN msgn_rec;
-    inM m_rec;
+    //inMSGN msgn_rec;
+    //inM m_rec;
     inR r_rec;
 
     // managing network latency
     LatNode latNode;
     sc_event_queue eqSend;
     sc_event_queue eqVote;
-    std::multimap<uint64, std::pair<k_block, inKP>> delayed_k;
-    std::multimap<uint64, std::pair<lb_block, inLBP>> delayed_lb;
+    //std::multimap<uint64, std::pair<k_block, inKP>> delayed_k;
+    //std::multimap<uint64, std::pair<lb_block, inLBP>> delayed_lb;
     std::multimap<uint64, std::pair<routing_block, inRP>> delayed_r;
 
     // managing disk speed
@@ -71,7 +71,8 @@ SC_MODULE(Mnode) {
 
     SC_HAS_PROCESS(Mnode);
     Mnode(sc_module_name name, int num_, WSAP cc_) : sc_module(name),
-        k_rec("S_k_rec_fifo", 10), srq_rec("S_srq_fifo", 10), spn_rec("S_spn_fifo", 10), lb_rec("S_lb_fifo", 10), msgn_rec("S_msgn_fifo", bigFifo), m_rec("S_m_fifo", 10), r_rec("S_r_fifo", bigFifo),
+        //k_rec("S_k_rec_fifo", 10), srq_rec("S_srq_fifo", 10), spn_rec("S_spn_fifo", 10), msgn_rec("S_msgn_fifo", bigFifo), m_rec("S_m_fifo", 10),
+        lb_rec("S_lb_fifo", 10), r_rec("S_r_fifo", bigFifo),
         kblk_rec(0), kblk_snt(0), srqblk_rec(0), srqblk_snt(0), spnblk_rec(0), spnblk_snt(0), lbblk_rec(0), lbblk_snt(0), msgnblk_rec(0), msgnblk_snt(0), mblk_rec(0), mblk_snt(0), routed_rec(0), routed_snt(0),
         cc(cc_), number(num_),
         sent_k(0), sent_shrq(0), sent_shpn(0), sent_lb(0), sent_votes(0),
@@ -97,16 +98,16 @@ SC_MODULE(Mnode) {
     {
         //cout << "Destructor,Mnode," << name() << "," --- verbose vote casting information?
         int error = false;
-        if (0 < delayed_k.size())
-        {
-            error = true;
-            cout << "InternalError,Mnode," << name() << ",delayed_k is not empty: " << delayed_k.size() << endl;
-        }
-        if (0 < delayed_lb.size())
-        {
-            error = true;
-            cout << "InternalError,Mnode," << name() << ",delayed_lb is not empty: " << delayed_lb.size() << endl;
-        }
+        //if (0 < delayed_k.size())
+        //{
+        //    error = true;
+        //    cout << "InternalError,Mnode," << name() << ",delayed_k is not empty: " << delayed_k.size() << endl;
+        //}
+        //if (0 < delayed_lb.size())
+        //{
+        //    error = true;
+        //    cout << "InternalError,Mnode," << name() << ",delayed_lb is not empty: " << delayed_lb.size() << endl;
+        //}
         //if (!got_m)
         //{
         //    error = true;
@@ -146,8 +147,8 @@ SC_MODULE(Mnode) {
     void delayed_send();
 
     int CheckR();
-    void SendToConnectedA(k_block& k);
-    void SendToConnectedA(lb_block& lb);
+    //void SendToConnectedA(k_block& k);
+    //void SendToConnectedA(lb_block& lb);
     void InitializeFingers();
     //! receive block and/or send it further
     void ProcessRoutingBlock(routing_block& rb, double xdelay = 0);
