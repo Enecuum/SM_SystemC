@@ -2,7 +2,8 @@
 
 #include "stdafx.h"
 
-#define bigFifo 1000000
+//#define bigFifo 1000000
+#define bigFifo 10000
 
 extern double taprocessk;
 extern double taprocesslb;

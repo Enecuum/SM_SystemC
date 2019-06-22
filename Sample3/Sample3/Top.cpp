@@ -1,7 +1,8 @@
 #include "stdafx.h"
 
-WSA::WSA(sc_module_name name, int Snum_, int Anum_, int Wno_, int S1no_, int Sleaderno_, int Mno_, int Rno_, int rqV_)
-    : sc_module(name), Snum(Snum_), Anum(Anum_), Wno(Wno_), S1no(S1no_), Sleaderno(Sleaderno_), Mnum(Mno_), Rnum(Rno_), rqVotes(rqV_), currMaxVotes(0)
+WSA::WSA(sc_module_name name, int Snum_, int Anum_, int Wno_, int S1no_, int Sleaderno_, int Mno_, int Rno_, int rqV_, int dV_, int sAW_)
+    : sc_module(name), Snum(Snum_), Anum(Anum_), Wno(Wno_), S1no(S1no_), Sleaderno(Sleaderno_), Mnum(Mno_), rndNum(Rno_),
+    rqVotes(rqV_), currMaxVotes(0), dumpVotes(dV_), currWinners(0), stopWinners(sAW_)
 {
     std::stringstream namegen;
     //Snodes.resize(Snum);
@@ -39,13 +40,14 @@ WSA::WSA(sc_module_name name, int Snum_, int Anum_, int Wno_, int S1no_, int Sle
         Mnodes[i] = new Mnode(namegen.str().c_str(), i, this);
         Votes[i].clear(); // not necessary
     }
+    winTimes.resize(stopWinners);
 
     SC_THREAD(main);
 }
 
 WSA::~WSA()
 {
-    cout << "Destructor,top,start" << endl;
+    //### cout << "Destructor,top,start" << endl;
     //cout << "Destructing top." << endl;
     //for (int i = 0; i < Snum; ++i)
     //{
@@ -59,13 +61,55 @@ WSA::~WSA()
     {
         delete Mnodes[i];
     }
-    cout << "Destructor,top,end" << endl;
+    if (dumpVotes)
+    {
+        int totalDifferentVotes = 0;
+        int totalOverRq = 0;
+        for (int i = 0; i < Votes.size(); ++i)
+        {
+            int thisOneCast = 0;
+            for (int k = 0; k < Mnum; ++k)
+            {
+                if (Votes[k].find(i) != Votes[k].end())
+                {
+                    ++thisOneCast;
+                }
+            }
+            if (dumpVotes > 2) cout << "Votes for " << i << " (total: " << Votes[i].size() << ", cast: " << thisOneCast << "): ";
+            if (Votes[i].size() >= rqVotes)
+            {
+                ++totalOverRq;
+            }
+            totalDifferentVotes += Votes[i].size();
+            for (int j = 0; j < Mnum; ++j)
+            {
+                if (Votes[i].find(j) != Votes[i].end())
+                {
+                    if (dumpVotes > 3) cout << j << " ";
+                }
+            }
+            if (dumpVotes > 3) cout << endl;
+        }
+        if (dumpVotes > 1) cout << "Total different votes: " << totalDifferentVotes << " (out of " << Mnum*rndNum << ")." << endl;
+        if (dumpVotes > 1) cout << "Total winners: " << totalOverRq << endl;
+        cout << "WinTimes,";
+        if (currWinners == 0)
+        {
+            cout << "NO WINNERS";
+        }
+        for (int i = 0; i < winTimes.size() && i < currWinners; ++i)
+        {
+            cout << winTimes[i] << ",";
+        }
+        cout << endl;
+    }
+    //### cout << "Destructor,top,end" << endl;
     //cout << "Destructed top." << endl;
 }
 
 void WSA::main()
 {
-    cout << "NodeStart," << sc_time_stamp() << "," << name() << endl;
+    //cout << "NodeStart," << sc_time_stamp() << "," << name() << endl;
     //cout << sc_time_stamp() << ": WSA " << name() << " main is running." << endl;
 }
 

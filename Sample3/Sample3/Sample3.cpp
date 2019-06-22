@@ -49,8 +49,14 @@ int sc_main(int argc, char *argv[])
     int k = confInt(cnf_k);
     int r = confInt(cnf_r);
     int rqV = confInt(cnf_rqV);
+    int dV = confInt(cnf_dumpVotes);
+    int sAW = confInt(cnf_stopAtWinners);
+    if (sAW < 0)
+    {
+        sAW = n;
+    }
 
-    WSA wsa("WSA", n, k*n, confInt(cnf_W), confInt(cnf_S1), confInt(cnf_Sleader), n, r, rqV);
+    WSA wsa("WSA", n, k*n, confInt(cnf_W), confInt(cnf_S1), confInt(cnf_Sleader), n, r, rqV, dV, sAW);
 
     double Ttr = 1000e9;
     if (Ttr > 0)

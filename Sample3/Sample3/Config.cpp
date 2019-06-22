@@ -21,7 +21,7 @@ void Config::ParseConfig(std::string fileName)
                 value = "";
             }
             ConfigStorage[key] = value;
-            cout << "Trace,Config,key " << key << " = value " << value << endl;
+            //### cout << "Trace,Config,key " << key << " = value " << value << endl;
         }
     }
     file.close();
@@ -67,7 +67,7 @@ int Config::getValue(std::string key)
     else
     {
         int res = std::stoi(it->second);
-        cout << "Trace,Config,int " << key << " is " << res << endl;
+        //### cout << "Trace,Config,int " << key << " is " << res << endl;
         return res;
     }
 }
@@ -83,7 +83,7 @@ std::string Config::getValue(std::string key)
     }
     else
     {
-        cout << "Trace,Config,string " << key << " is " << it->second << endl;
+        //### cout << "Trace,Config,string " << key << " is " << it->second << endl;
         return it->second;
     }
 }
@@ -100,7 +100,7 @@ double Config::getValue(std::string key)
     else
     {
         double res = std::stod(it->second);
-        cout << "Trace,Config,double " << key << " is " << res << endl;
+        //### cout << "Trace,Config,double " << key << " is " << res << endl;
         return res;
     }
 }

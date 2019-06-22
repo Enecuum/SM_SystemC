@@ -8,6 +8,9 @@
 
 #define cnf_voteTime "voteTime"
 #define cnf_rqV "rqVotes"
+#define cnf_dumpVotes "dumpVotes"
+
+#define cnf_stopAtWinners "stopAtWinners"
 
 #define cnf_W "W"
 #define cnf_S1 "S1"
@@ -56,6 +59,9 @@ private:
 
         { "voteTime", { "40000000", "время до очередного голоса (за случайный узел)" } },
         { "rqVotes", { "50", "необходимое для победы число голосов" } },
+        { "dumpVotes", { "0", "подробность выдачи списка поданных голосов и статистики" } },
+
+        { "stopAtWinners", { "5", "остановить симуляцию, когда достигнуто указанное число победителей" } },
 
         { "W", { "0", "номер узла W" } },
         { "S1", { "1", "номер узла S1" } },

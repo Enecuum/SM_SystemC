@@ -15,7 +15,7 @@ void Mnode::main()
         {
             sent_votes = true;
             double totalDelay = 0;
-            for (int i = 0; i < cc->Rnum; ++i)
+            for (int i = 0; i < cc->rndNum; ++i)
             {
                 totalDelay += latNode.nextVoteLat();
                 int vote = latNode.nextVote();
@@ -202,16 +202,22 @@ void Mnode::ProcessBlock(routing_block& rb, double xdelay)
             int sz = cc->Votes[number].size();
             if (sz == cc->currMaxVotes)
             {
-                cout << "Tie," << sc_time_stamp() << ",Mnode," << name() << ",got " << cc->Votes[number].size() << " votes (last vote was from " << rb.R << ")" << endl;
+                //### cout << "Tie," << sc_time_stamp() << ",Mnode," << name() << ",got " << cc->Votes[number].size() << " votes (last vote was from " << rb.R << ")" << endl;
             }
             else if (sz > cc->currMaxVotes)
             {
                 cc->currMaxVotes = sz;
-                cout << "MAX," << sc_time_stamp() << ",Mnode," << name() << ",got " << cc->Votes[number].size() << " votes (last vote was from " << rb.R << ")" << endl;
+                //### cout << "MAX," << sc_time_stamp() << ",Mnode," << name() << ",got " << cc->Votes[number].size() << " votes (last vote was from " << rb.R << ")" << endl;
             }
             if (sz == cc->rqVotes)
             {
-                cout << "Success," << sc_time_stamp() << ",Mnode," << name() << ",got " << cc->Votes[number].size() << " votes (last vote was from " << rb.R << ")" << endl;
+                //### cout << "Success," << sc_time_stamp() << ",Mnode," << name() << ",got " << cc->Votes[number].size() << " votes (last vote was from " << rb.R << ")" << endl;
+                cc->winTimes[cc->currWinners] = sc_time_stamp().value();
+                ++(cc->currWinners);
+                if (cc->currWinners == cc->stopWinners)
+                {
+                    sc_stop(); // !!!
+                }
             }
         }
         else
@@ -318,10 +324,10 @@ void Mnode::InitializeFingers()
         fingers.push_back(j);
     }
     fingerM = (int)fingers.size();
-    cout << "Trace,0,Mnode," << name() << ",fingerM = " << fingerM << "; fingers: ";
+    //### cout << "Trace,0,Mnode," << name() << ",fingerM = " << fingerM << "; fingers: ";
     for (const auto i : fingers)
-        cout << i << " ";
-    cout << endl;
+        ; //### cout << i << " ";
+    //### cout << endl;
 }
 
 void Mnode::ForwardBlock(routing_block& rb, double xdelay)
