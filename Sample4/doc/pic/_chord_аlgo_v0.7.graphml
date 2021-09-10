@@ -1,0 +1,875 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:java="http://www.yworks.com/xml/yfiles-common/1.0/java" xmlns:sys="http://www.yworks.com/xml/yfiles-common/markup/primitives/2.0" xmlns:x="http://www.yworks.com/xml/yfiles-common/markup/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
+  <!--Created by yEd 3.21.1-->
+  <key attr.name="Description" attr.type="string" for="graph" id="d0"/>
+  <key for="port" id="d1" yfiles.type="portgraphics"/>
+  <key for="port" id="d2" yfiles.type="portgeometry"/>
+  <key for="port" id="d3" yfiles.type="portuserdata"/>
+  <key attr.name="url" attr.type="string" for="node" id="d4"/>
+  <key attr.name="description" attr.type="string" for="node" id="d5"/>
+  <key for="node" id="d6" yfiles.type="nodegraphics"/>
+  <key for="graphml" id="d7" yfiles.type="resources"/>
+  <key attr.name="url" attr.type="string" for="edge" id="d8"/>
+  <key attr.name="description" attr.type="string" for="edge" id="d9"/>
+  <key for="edge" id="d10" yfiles.type="edgegraphics"/>
+  <graph edgedefault="directed" id="G">
+    <data key="d0" xml:space="preserve"/>
+    <node id="n0">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="199.0533844539087" width="301.67581126266487" x="5330.60180277374" y="-458.01225101881573"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="195.115234375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="293.37109375" x="4.0" xml:space="preserve" y="4.0">                              JOIN
+
+Действия:
+1. Установка successor:
+    a.Отправка сообщения join к узлу из списка seed,
+    b.Ожидание прихода ответного
+       сообщения reply_find_successor 
+2. Уведомление узла successor о новом узле:
+    a.Отправка сообщения notify к successor узлу
+3. Установка таблицы fingers
+    a.Отправка серии сообщений find_successor
+    b.Ожидание прихода серии ответных
+       сообщений reply_find_successor</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n1">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="117.43480888553907" width="276.92799455107524" x="5778.067106114387" y="-458.01225101881573"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="77.505859375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="239.892578125" x="4.0" xml:space="preserve" y="4.0">                              INIT
+
+Действия:
+- инициализация таблицы fingers и latency
+  значениями по умолчанию (seed и 1сек)</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n2">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="212.44787598879253" width="289.3019029068698" x="5330.60180277374" y="-169.9198218193404"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="106.908203125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="257.46484375" x="4.0" xml:space="preserve" y="4.0">                              IDLE
+
+Действия:
+- проверка очереди запросов от приложения;
+- проверка очереди входящих сообщений;
+- ожидание истек ли Tupdate - таймаут
+  актуальности fingers, successor, precessor</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n3">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="165.55556360252015" width="276.927994551075" x="5342.975711129535" y="268.8221388289166"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="151.01171875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="271.837890625" x="4.0" xml:space="preserve" y="4.0">                              SERVICE
+
+Действия:
+- отправка ответного сообщения
+  reply_find_successor при наличии id в fingers
+  или пересылка find_successor в сеть по логике
+  LLChord c ожиданием подтверждения ack
+  в течение Tack
+- отложить сообщение в очередь при
+  истечении Tack</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n4">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="273.8761743608894" width="292.4520753025097" x="5852.7413738596115" y="149.03991266179162"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="268.62109375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="289.6328125" x="4.0" xml:space="preserve" y="4.0">                              UPDATE
+
+Действия:
+- установка id из notify в predecessor;
+- обновление fingers, successor, predecessor.
+  Действия указаны на примере fingers,
+  id = fingers[i]:
+  a. Отправка сообщения find_successor(id),
+  b. Ожидание прихода reply_find_successor(id`),
+  с. Установка id` в fingers из reply_find_successor,
+  d. Вычисление задержки и занесение в latency
+      на основании временных меток в сообщениях,
+  e. При отсутствии ответа в fingers[i] заносится
+      адрес узла из fingers[i+1] и узел считается узел
+      доступным;
+- при необходимости повторно взводится Tupdate
+- при недоступности полностью fingers, successor,
+  precessor сформировать запрос req_soft_reset</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n5">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="78.8411727917267" width="119.73572846731031" x="5330.60180277374" y="61.6330796657726"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="77.505859375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="108.701171875" x="4.0" xml:space="preserve" y="3.999999999999986">Принято
+сообщение
+из сети:
+- join(id)
+- find_successor(id)</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n6">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="67.37392930232556" width="186.6098287368518" x="5630.1432980208965" y="83.72625252011068"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="106.908203125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="r" textColor="#000000" verticalTextPosition="bottom" visible="true" width="191.81640625" x="-9.206577513148659" xml:space="preserve" y="-19.767136911337218">Принято сообщение
+из сети:
+- notify(id)
+- reply_find_successor(id)
+или
+- истек срок актуальности fingers,
+  successor или precessor Tupdate</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n7">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="170.33969989351272" width="292.4520753025097" x="5849.369278819973" y="-173.75382485693433"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="165.712890625" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="283.08203125" x="4.0" xml:space="preserve" y="4.0">                        IN_DATA
+
+Действия:
+- отбросить сообщение при х3 получении;
+- передать данные приложению при
+   соотвествии текущего узла адресату;
+-  отправить сообщение подтверждение 
+   получения ack;
+- переслать сообщение single или broadcast
+  далее по сети по логике LLChord или Broadcast
+  c ожиданием подтверждения ack в течение Tack</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n8">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="67.37392930232558" width="186.6098287368518" x="5619.90370568061" y="-157.9152221615165"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="br" textColor="#000000" verticalTextPosition="bottom" visible="true" width="164.482421875" x="18.12740686185225" xml:space="preserve" y="15.270413677325593">Принято сообщение из сети:
+- single(id)
+- broadcast(id)</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n9">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="284.5510304435699" width="284.52540776037745" x="6293.571911873304" y="143.76037842998576"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="268.62109375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="279.876953125" x="4.0" xml:space="preserve" y="4.0">                         APP_REQUEST
+
+Действия:
+- выполнить req_hard_reset: сброс таблицы
+  fingers и таблицы latency, таймеров и очередей;
+- выполнить req_soft_reset:
+  сброс таблицы fingers и таблицы latency;
+- выполнить req_flush: сброс таймеров
+  и очередей;
+- выполнить req_single: отправить единичное
+  сообщение по логике LLChord c 
+  ожиданием подтверждения ack в течение Tack;
+- выполнить req_broadcast: отправить
+  широковещательное сообщение по логике
+  Broadcast с ожиданием подтверждения ack
+  в течение Tack;
+- при истечении Tack отложить сообщение в 
+  очередь</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n10">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="27.06431982448443" width="193.311603420329" x="5642.1991700798635" y="-55.92554491084621"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="187.603515625" x="2.854043897664269" xml:space="preserve" y="-10.519597900257793">Данные из сообщения переданы
+приложению и/или сообщение
+переслано в сеть</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n11">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="117.43480888553907" width="90.36831930288963" x="6475.083468547181" y="-106.88417182473115"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="106.908203125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="br" textColor="#000000" verticalTextPosition="bottom" visible="true" width="96.05078125" x="-9.682461947109914" xml:space="preserve" y="6.52660576053907">Принят запрос
+от приложения:
+- req_hard_reset,
+- req_soft_reset,
+- req_flush,
+- req_single,
+- req_broadcast</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n12">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="46.250000000000014" width="105.4919850710844" x="6317.30701470789" y="-81.59469789918532"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="77.505859375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="105.419921875" x="0.036031598042427504" xml:space="preserve" y="-15.6279296875">Выполнен запрос:
+- req_soft_reset,
+- req_flush,
+- req_single,
+- req_broadcast
+</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n13">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="35.70991701244817" width="186.6098287368518" x="6475.083468547181" y="-434.6093265672444"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="33.40234375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="bl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="102.0859375" x="4.0" xml:space="preserve" y="-1.6924267375518411">Выполнен запрос
+req_hard_reset</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n14">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="46.25" width="142.0241493775925" x="6148.370605828916" y="246.30953447355097"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="62.8046875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="l" textColor="#000000" verticalTextPosition="bottom" visible="true" width="128.107421875" x="4.0" xml:space="preserve" y="-8.277343750000028">Выполнено:
+- узел доступен,
+- имеется отложенное
+  сообщение</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n15">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="35.70991701244816" width="142.02414937759272" x="5993.29822297053" y="22.115484101658637"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="77.505859375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="r" textColor="#000000" verticalTextPosition="bottom" visible="true" width="127.94921875" x="10.074930627592948" xml:space="preserve" y="-20.89797118127592">Выполнено:
+- узел недоступен,
+  истек Tack
+- сообщение для
+  пересылки отложено</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n16">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="72.44684534588401" width="105.49198507108417" x="5857.806237899446" y="17.715872241820364"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="92.20703125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="97.275390625" x="4.1082972230424275" xml:space="preserve" y="-9.880092952057993">Выполнено:
+- узел доступен,
+- имеется
+  отложенное
+  сообщение для
+  пересылки</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n17">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="30.0" width="169.38337708019526" x="5536.529710741492" y="-518.0122510188157"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="263.048828125" x="-46.83272552240214" xml:space="preserve" y="5.6494140625">Истек Сinit раз таймаут ожидания Tinit , 20 сек
+<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n18">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="56.608242650466195" width="203.93727595038672" x="5330.60180277374" y="-242.7434655173568"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="62.8046875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="l" textColor="#000000" verticalTextPosition="bottom" visible="true" width="136.1640625" x="4.0" xml:space="preserve" y="-3.0982224247669023">Выполнено:
+- установлен successor,
+- заполнены минимум
+  2 записи в fingers</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n19">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="35.70991701244816" width="142.02414937759272" x="6151.547762495711" y="355.62019916409105"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="62.8046875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="r" textColor="#000000" verticalTextPosition="bottom" visible="true" width="131.283203125" x="6.740946252592948" xml:space="preserve" y="-13.54738524377592">Выполнено:
+- узел недоступен,
+  Tack истек,
+- сообщение отложено</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n20">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="24.605327598841896" width="90.36831930288963" x="5662.277614036405" y="-436.1077190527581"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="33.40234375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="90.23828125" x="0.06501902644504298" xml:space="preserve" y="-4.398508075579059">Выполнена
+инициализация</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n21">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="78.8411727917267" width="203.9372759503865" x="5634.353901794917" y="267.1278988370679"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="77.505859375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="170.2421875" x="16.847544225192905" xml:space="preserve" y="0.6676567083633813">Выполнено:
+- узел недоступен, истек Tack
+- служебное сообщение
+  reply_find_successor или
+  find_successor отложено</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n22">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="78.8411727917267" width="142.0241493775925" x="5649.90370568061" y="386.55944135788224"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="92.20703125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="l" textColor="#000000" verticalTextPosition="bottom" visible="true" width="128.107421875" x="4.0" xml:space="preserve" y="-6.6829292291366755">Выполнено:
+- узел доступен,
+- имеется отложенное
+  сообщение
+  reply_find_successor
+  или find_successor</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n23">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="35.70991701244819" width="284.52540776037745" x="6018.967411510866" y="435.23500023022825"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="292.984375" x="-4.229483619811617" xml:space="preserve" y="-6.196799306275921">Выполнено:
+- узлы из fingers, successor и precessor недоступны,
+- сформирован запрос req_soft_reset</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n24">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="117.43480888553907" width="276.92799455107524" x="6181.725371258422" y="-458.01225101881573"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="77.505859375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="238.29296875" x="4.0" xml:space="preserve" y="4.0">                              LOAD
+
+Действия:
+- загрузка конфигурационных параметров
+(обнулены очереди и таймеры, таблицы)</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n25">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="35.70991701244817" width="186.6098287368518" x="5911.742604516181" y="-335.47807136154006"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="33.40234375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="bl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="300.900390625" x="4.0" xml:space="preserve" y="-1.6924267375518411">Выполнен запрос req_soft_reset,
+сохранены очереди сообщений, запросов и таймеры</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n26">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="30.364028719363105" width="73.86977482849625" x="6084.995100665462" y="-436.1077190527581"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="33.40234375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="67.404296875" x="3.2327389767478962" xml:space="preserve" y="-1.5191575153184544">Выполнена
+загрузка</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n27">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="78.8411727917267" width="119.73572846731031" x="5469.35445841189" y="61.6330796657726"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="92.20703125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="96.7421875" x="4.0" xml:space="preserve" y="3.999999999999986">Сообщение
+успешно
+обработано,
+ответ отправлен
+или пересылка
+выполнена</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n28">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="1.0" width="73.86977482849625" x="6283.254481119711" y="-517.3747778358953"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="bl" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="4.0" y="-7.0"/>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n29">
+      <data key="d4" xml:space="preserve"/>
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="17.499622330997283" width="19.14331732183382" x="5611.33221569678" y="-454.7522528196531"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:Image alphaImage="true" refid="1"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n30">
+      <data key="d4" xml:space="preserve"/>
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="17.499622330997283" width="19.14331732183382" x="5600.760388358776" y="-163.1821264292469"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:Image alphaImage="true" refid="1"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n31">
+      <data key="d4" xml:space="preserve"/>
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="17.499622330997283" width="19.14331732183382" x="5600.760388358775" y="271.65789451641484"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:Image alphaImage="true" refid="1"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n32">
+      <data key="d4" xml:space="preserve"/>
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="17.499622330997283" width="19.14331732183382" x="6126.050131840288" y="152.95437260493378"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:Image alphaImage="true" refid="1"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n33">
+      <data key="d4" xml:space="preserve"/>
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="17.499622330997283" width="19.14331732183382" x="6558.954002311848" y="148.67625662337184"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:Image alphaImage="true" refid="1"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n34">
+      <data key="d4" xml:space="preserve"/>
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="17.499622330997283" width="19.14331732183382" x="6122.678036800649" y="-173.75382485693433"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:Image alphaImage="true" refid="1"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n35">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="40.634359125490164" width="194.49393318968168" x="5608.126838758774" y="199.81764982709356"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="r" textColor="#000000" verticalTextPosition="bottom" visible="true" width="191.76953125" x="-1.2755980603187709" xml:space="preserve" y="-3.734578249754918">Выполнено запланированное
+обновление актуальности fingers,
+precessor или successor</y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <edge id="e0" source="n0" target="n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="148.81960888302217" sy="-78.80707353559228" tx="109.87624407319666" ty="-99.5361780369347">
+            <y:Point x="5630.259317288094" y="-483.3919717422654"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e1" source="n1" target="n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-138.49632167720483" sy="0.0" tx="148.29753665382304" ty="-40.809287784184846"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e2" source="n0" target="n2">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-9.964260723074403" sy="99.53703197687707" tx="-3.7773065451765433" ty="6.925360572223951"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e3" source="n2" target="n3">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-27.56962331408522" sy="106.19833056068705" tx="-35.02473145188196" ty="-83.85751341927079"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e4" source="n2" target="n4">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="135.07929279251766" sy="106.21305335131294" tx="-146.20669611576827" ty="-108.2834787838114">
+            <y:Point x="5610.332047019692" y="177.69452105842493"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e5" source="n2" target="n7">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="144.6420803190639" sy="-28.793491439549683" tx="-146.19083088520446" ty="-3.9054003543158444"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e6" source="n2" target="n9">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="60.55335976720317" sy="-106.22956285952398" tx="23.679860341763085" ty="-142.27411732151532">
+            <y:Point x="5535.8061139943775" y="-246.28429664429416"/>
+            <y:Point x="6459.514476095255" y="-246.28429664429416"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e7" source="n2" target="n2">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="134.4129932383732" sy="-83.58204529111808" tx="96.69052368269634" ty="-106.2363897851211">
+            <y:Point x="5626.906767009724" y="-189.6923167327617"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e8" source="n7" target="n2">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-146.21909452141674" sy="22.6421423602184" tx="144.6237299958321" ty="-2.245948725015438"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e9" source="n9" target="n2">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="-142.25404120258446" tx="84.13513426389834" ty="-106.23083802297393">
+            <y:Point x="6435.8346157534925" y="-223.5828692494208"/>
+            <y:Point x="5559.387888491073" y="-223.5828692494208"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e10" source="n9" target="n24">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="139.82244183124496" sy="30.872908004165144" tx="0.0" ty="0.0">
+            <y:Point x="6598.116554335871" y="316.90880165593586"/>
+            <y:Point x="6598.116554335871" y="-399.2948465760462"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e11" source="n9" target="n4">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-142.24578044718965" sy="49.58430551232033" tx="146.2572667975919" ty="49.64219932185472"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e12" source="n4" target="n9">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="146.23213991403463" sy="26.58153463131464" tx="-142.29775086228437" ty="26.523640821780248"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e13" source="n7" target="n4">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="3.372095039638225" sy="85.14098293748803" tx="0.0" ty="-136.92936493353452"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e14" source="n4" target="n7">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-25.66918854033611" sy="-136.9194457232821" tx="-22.29709350069771" ty="85.15518027693531"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e15" source="n3" target="n4">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="138.46966988335862" sy="-5.74939411405029" tx="-146.237612978769" ty="59.872526673890036"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e16" source="n4" target="n3">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-146.22353422081778" sy="86.45322168628894" tx="138.46966988335862" ty="20.831300898348616"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e17" source="n4" target="n9">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
+            <y:Point x="5998.967411510866" y="478.6260040351292"/>
+            <y:Point x="6435.8346157534925" y="478.6260040351292"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e18" source="n9" target="n1">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="142.2623176605568" sy="31.67526237124185" tx="-10.236412989634118" ty="58.696579401199585">
+            <y:Point x="6598.116554335871" y="317.71115602301256"/>
+            <y:Point x="6598.116554335871" y="-300.8535593083692"/>
+            <y:Point x="5906.29469040029" y="-300.8535593083692"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e19" source="n24" target="n1">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="73.63118808853233" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e20" source="n3" target="n2">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-14.203761103425677" sy="-82.75317324373043" tx="-8.016806925527817" ty="106.2284719072104"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e21" source="n28" target="n24">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="-0.22998611830487356" tx="0.0" ty="-58.68493182148637"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e22" source="n4" target="n2">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-146.24415740132463" sy="-90.23884778217487" tx="115.07929279251766" ty="106.21305335131296">
+            <y:Point x="5590.332047019692" y="195.73915206006146"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="true"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+  </graph>
+  <data key="d7">
+    <y:Resources>
+      <y:Resource id="1" type="java.awt.image.BufferedImage" xml:space="preserve">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</y:Resource>
+    </y:Resources>
+  </data>
+</graphml>
