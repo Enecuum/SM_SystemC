@@ -17,3 +17,8 @@
 /Sample3/ipch/*
 /Sample3/Sample3/Sample3.vcxproj.user
 /Sample3/Sample3/x64/*
+/Sample4/systemc-2.3.3/msvc10/SystemC/x64/*
+/Sample4/systemc-2.3.3/msvc10/SystemC/x64/*
+/Sample4/.vs/*
+/Sample4/ipch/*
+/Sample4/x64/*

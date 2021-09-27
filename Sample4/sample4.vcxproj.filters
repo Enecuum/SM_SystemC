@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\application.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\broadcast.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\low_latency_chord.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\network.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\node.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\transport_plus.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tpl_inc.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\log_defs.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sha1.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{395c397e-2242-49b5-81eb-e2e90ddc6283}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header">
+      <UniqueIdentifier>{856b0da0-6e41-4693-8e6f-92ca9ac45ed1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\application.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\tpl_inc.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\broadcast.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\low_latency_chord.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\network.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\node.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\transport_plus.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\sha1.hpp">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\log_defs.h">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
