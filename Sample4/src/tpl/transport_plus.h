@@ -1,9 +1,9 @@
 #ifndef __TRANSPORT_PLUS_H__ 
 #define __TRANSPORT_PLUS_H__
 
-#include "tpl_inc.h"
+#include "inc.h"
 #include "low_latency_chord.h"
-#include "log_defs.h"
+#include "log.h"
 
 
 
@@ -11,7 +11,7 @@ namespace P2P_MODEL
 {
 
     class transport_plus : public sc_module,
-                                 public MsgLog
+                                 public log
     {
     private:
 
@@ -29,16 +29,16 @@ namespace P2P_MODEL
         transport_plus(sc_module_name _name);
         ~transport_plus();
 
-        void config_req();
-        void mess_req();
-        void send_mess();
-        void receive_mess();
-        void set_network_address(const network_address& addr);
-        network_address& get_network_address();
+        void configReq();
+        void messReq();
+        void sendMess();
+        void receiveMess();
+        void setNetworkAddress(const network_address& addr);
+        network_address& getNetworkAddress();
 
     public:
     //private:
-        node_address& get_node_address();
+        node_address& getNodeAddress();
     };
 
 }

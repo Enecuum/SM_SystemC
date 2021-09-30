@@ -1,4 +1,4 @@
-#include "low_latency_chord.h"
+#include "tpl/low_latency_chord.h"
 
 namespace P2P_MODEL
 {
@@ -17,16 +17,16 @@ namespace P2P_MODEL
     low_latency_chord::~low_latency_chord() {    }
 
 
-    void low_latency_chord::set_network_address(const network_address& _netwAddr) {
-        m_netwAddr = _netwAddr;
-        m_nodeAddr.set(_netwAddr);
+    void low_latency_chord::setNetworkAddress(const network_address& addr) {
+        m_netwAddr = addr;
+        m_nodeAddr.set(addr);
     }
 
-    network_address& low_latency_chord::get_network_address() {
+    network_address& low_latency_chord::getNetworkAddress() {
         return m_netwAddr;
     }
 
-    node_address& low_latency_chord::get_node_address() {
+    node_address& low_latency_chord::getNodeAddress() {
         return m_nodeAddr;    
     }
 }

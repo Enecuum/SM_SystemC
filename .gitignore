@@ -22,3 +22,5 @@
 /Sample4/.vs/*
 /Sample4/ipch/*
 /Sample4/x64/*
+/Sample4/.user/*
+/Sample4/.db/*

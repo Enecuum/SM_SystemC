@@ -1,5 +1,5 @@
-#ifndef __TRANSPORT_PLUS_LAYER_INC_H__
-#define __TRANSPORT_PLUS_LAYER_INC_H__   //tpl = transport plus layer
+#ifndef __INC_H__
+#define __INC_H__   //tpl = transport plus layer
 
 #include <iostream>
 #include <sstream>
@@ -20,6 +20,7 @@ namespace P2P_MODEL {
     typedef sc_biguint<160>    uint160;
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
+    typedef long long data_size_type;
 
 
 

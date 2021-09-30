@@ -1,4 +1,4 @@
-#include "network.h"
+#include "net/network.h"
 
 namespace P2P_MODEL
 {

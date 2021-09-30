@@ -1,7 +1,7 @@
 #ifndef __LOW_LATENCY_CHORD_H__
 #define __LOW_LATENCY_CHORD_H__
 
-#include "tpl_inc.h"
+#include "inc.h"
 #include "sha1.hpp"
 
 using namespace std;
@@ -25,18 +25,18 @@ namespace P2P_MODEL
             reset();
         };
 
-        node_address(const node_address& src, sc_module_name _name = "node_address"): sc_module(_name) {
+        node_address(const node_address& src, sc_module_name name = "node_address"): sc_module(name) {
             set(src);
         }
 
 
-        node_address(const network_address& src, sc_module_name _name = "node_address"): sc_module(_name) {
+        node_address(const network_address& src, sc_module_name name = "node_address"): sc_module(name) {
             set(src);
         }
         
 
-        node_address(const string& _ip, uint _inSocket, uint _outSocket) {
-            set(_ip, _inSocket, _outSocket);
+        node_address(const string& ip, uint inSocket, uint outSocket) {
+            set(ip, inSocket, outSocket);
         }
       
 
@@ -57,8 +57,8 @@ namespace P2P_MODEL
         }
 
 
-        void set(const string& _ip, const uint _inSocket, const uint _outSocket) {
-            network_address::set(_ip, _inSocket, _outSocket);
+        void set(const string& ip, const uint inSocket, const uint outSocket) {
+            network_address::set(ip, inSocket, outSocket);
 
             string onlyNumbers = network_address::ip;
             onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
@@ -110,9 +110,9 @@ namespace P2P_MODEL
         //low_latency_chord(sc_module_name _name);
         ~low_latency_chord();
 
-        void              set_network_address(const network_address& _netwAddr);      
-        network_address&  get_network_address();        
-        node_address&     get_node_address();
+        void              setNetworkAddress(const network_address& _netwAddr);      
+        network_address&  getNetworkAddress();        
+        node_address&     getNodeAddress();
     };
 }
 #endif

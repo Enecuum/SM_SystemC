@@ -1,7 +1,7 @@
-#ifndef __LOG_DEFS_H__
-#define __LOG_DEFS_H__
+#ifndef __LOG_H__
+#define __LOG_H__
 
-#include "tpl_inc.h"
+#include "inc.h"
 
 #define LOG_TX  "Tx  "
 #define LOG_RX  "  Rx"
@@ -29,7 +29,7 @@ namespace P2P_MODEL
         DEFAULT_LOG_MODE = EXTERNAL_LOG
     };
 
-    class MsgLog
+    class log
     {
     private:
         bool m_isEnabled;
@@ -43,8 +43,8 @@ namespace P2P_MODEL
 
     public:
         
-        MsgLog();
-        ~MsgLog();
+        log();
+        ~log();
 
         void setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen);
         void setPathLog(const string& pathLog);

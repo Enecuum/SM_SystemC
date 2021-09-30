@@ -1,13 +1,13 @@
 #ifndef __NETWORK_H__
 #define __NETWORK_H__
 
-#include "tpl_inc.h"
-#include "log_defs.h"
+#include "inc.h"
+#include "log.h"
 
 namespace P2P_MODEL
 {
     class network : public sc_module,
-                    public MsgLog
+                    public log
     {
     private:
         sc_event m_eventSend;

@@ -2,69 +2,69 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="src\application.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\app\application.cpp">
+      <Filter>src\app</Filter>
     </ClCompile>
-    <ClCompile Include="src\broadcast.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\net\network.cpp">
+      <Filter>src\net</Filter>
     </ClCompile>
-    <ClCompile Include="src\low_latency_chord.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\tpl\broadcast.cpp">
+      <Filter>src\tpl</Filter>
     </ClCompile>
-    <ClCompile Include="src\network.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\tpl\low_latency_chord.cpp">
+      <Filter>src\tpl</Filter>
     </ClCompile>
-    <ClCompile Include="src\node.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\tpl\sha1.cpp">
+      <Filter>src\tpl</Filter>
     </ClCompile>
-    <ClCompile Include="src\transport_plus.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\tpl\transport_plus.cpp">
+      <Filter>src\tpl</Filter>
     </ClCompile>
-    <ClCompile Include="src\tpl_inc.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\inc.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\log_defs.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\sha1.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="src\log.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="source">
-      <UniqueIdentifier>{395c397e-2242-49b5-81eb-e2e90ddc6283}</UniqueIdentifier>
+    <Filter Include="src">
+      <UniqueIdentifier>{e8fbb06d-1b0f-4f18-b7b1-34b109621abd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="header">
-      <UniqueIdentifier>{856b0da0-6e41-4693-8e6f-92ca9ac45ed1}</UniqueIdentifier>
+    <Filter Include="src\app">
+      <UniqueIdentifier>{f9fa71ec-9e28-4bbd-a086-cedffcd89aa5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\net">
+      <UniqueIdentifier>{74670cd2-4845-4ed9-8b00-47d1fdf14b8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\tpl">
+      <UniqueIdentifier>{7e23d726-5040-4812-b6da-6cf32ab1c3a8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\application.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\app\application.h">
+      <Filter>src\app</Filter>
     </ClInclude>
-    <ClInclude Include="inc\tpl_inc.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\net\network.h">
+      <Filter>src\net</Filter>
     </ClInclude>
-    <ClInclude Include="inc\broadcast.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\tpl\broadcast.h">
+      <Filter>src\tpl</Filter>
     </ClInclude>
-    <ClInclude Include="inc\low_latency_chord.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\tpl\low_latency_chord.h">
+      <Filter>src\tpl</Filter>
     </ClInclude>
-    <ClInclude Include="inc\network.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\tpl\sha1.hpp">
+      <Filter>src\tpl</Filter>
     </ClInclude>
-    <ClInclude Include="inc\node.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\tpl\transport_plus.h">
+      <Filter>src\tpl</Filter>
     </ClInclude>
-    <ClInclude Include="inc\transport_plus.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\inc.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="inc\sha1.hpp">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\log_defs.h">
-      <Filter>header</Filter>
+    <ClInclude Include="src\log.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

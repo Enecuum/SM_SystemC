@@ -2,9 +2,9 @@
 #include <vector>
 #include <string>
 
-#include "application.h"
-#include "transport_plus.h"
-#include "low_latency_chord.h"
+#include "app/application.h"
+#include "tpl/transport_plus.h"
+#include "tpl/low_latency_chord.h"
 
 //#include "trafgen.h"
 //#include "basicchannel.h"
@@ -184,12 +184,12 @@ int main(int argc, char* argv[])
     networkAddr1.set("192.168.0.1", 4444, 1111);
     networkAddr2.set("192.168.0.2", 4444, 1111);
    
-    transport1.set_network_address(networkAddr1);
-    transport2.set_network_address(networkAddr2);
+    transport1.setNetworkAddress(networkAddr1);
+    transport2.setNetworkAddress(networkAddr2);
     node_address nodeAddr1, nodeAddr2;
-    nodeAddr1 = transport1.get_node_address();
+    nodeAddr1 = transport1.getNodeAddress();
     cout << nodeAddr1 << endl;
-    nodeAddr2 = transport2.get_node_address();
+    nodeAddr2 = transport2.getNodeAddress();
     cout << nodeAddr2 << endl;
     
     

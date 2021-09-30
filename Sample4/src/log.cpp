@@ -1,9 +1,9 @@
-#include "log_defs.h"
+#include "log.h"
 
 namespace P2P_MODEL
 {
 
-    MsgLog::MsgLog()
+    log::log()
     {
         m_maxLenMethodName = MAX_LEN_METHOD_NAME;
         m_maxLenTime = MAX_LEN_TIME;
@@ -11,69 +11,69 @@ namespace P2P_MODEL
         m_logMode = DEFAULT_LOG_MODE;
     }
 
-    MsgLog::~MsgLog() {   }
+    log::~log() {   }
 
 
-    void MsgLog::setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen) {
+    void log::setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen) {
         m_maxLenMethodName = methodNameLen;
         m_maxLenTime = timeLen;
     }
 
 
-    void MsgLog::setPathLog(const string& pathLog)
+    void log::setPathLog(const string& pathLog)
     {
         m_pathLog = pathLog;
     }
 
 
-    void MsgLog::setLogMode(const log_mode& logMode)
+    void log::setLogMode(const log_mode& logMode)
     {
         m_logMode = logMode;
     }
 
 
-    void MsgLog::setDisabledLog()
+    void log::setDisabledLog()
     {
         m_isEnabled = false;
     }
 
 
-    void MsgLog::setEnabledLog()
+    void log::setEnabledLog()
     {
         m_isEnabled = true;
     }
 
 
-    bool MsgLog::isEnabled()
+    bool log::isEnabled()
     {
         return m_isEnabled;
     }
 
 
-    void MsgLog::clearLog() {
+    void log::clearLog() {
         ofstream file;
         file.open(m_pathLog.c_str(), std::ofstream::out);
         file.close();
     }
 
 
-    void MsgLog::msgLog(const string& methodName, const string& text, const int &secondaryLogMode)
+    void log::msgLog(const string& methodName, const string& text, const int &secondaryLogMode)
     {
         messageLog(m_pathLog, methodName, m_logMode, static_cast<log_mode>(secondaryLogMode), string(""), string(""), text);
     }
 
-    void MsgLog::msgLog(const string& methodName, const string& logRxTx, const string& logInOut, const string& text, const int &secondaryLogMode)
+    void log::msgLog(const string& methodName, const string& logRxTx, const string& logInOut, const string& text, const int &secondaryLogMode)
     {
         messageLog(m_pathLog, methodName, m_logMode, static_cast<log_mode>(secondaryLogMode), logRxTx, logInOut, text);
     }
 
-    void MsgLog::msgLog(const string& methodName, const string& logRxTx, const string& logInOut, const string& text)   
+    void log::msgLog(const string& methodName, const string& logRxTx, const string& logInOut, const string& text)   
     {
         messageLog(m_pathLog, methodName, m_logMode, INTERNAL_LOG, logRxTx, logInOut, text);
     }
 
 
-    void MsgLog::messageLog(const string& filePath, const string& methodName, const log_mode &primary,
+    void log::messageLog(const string& filePath, const string& methodName, const log_mode &primary,
                             const log_mode &secondary, const string& logRxTx,
                             const string& logInOut,
                             const string& text)
@@ -116,7 +116,7 @@ namespace P2P_MODEL
 
    
 
-    const string &MsgLog::logText(const char logRxTx[], const char logInOut[], const string &text)
+    const string &log::logText(const char logRxTx[], const char logInOut[], const string &text)
     {
         static string tmpCharLog = "";
         tmpCharLog.clear();
