@@ -3,53 +3,10 @@
 
 #include "inc.h"
 #include "log.h"
+#include "trp/trp_application_if.h"
 
 namespace P2P_MODEL
 {
-
-    enum app_request_type {
-        HARD_RESET = 0,
-        SOFT_RESET,
-        FLUSH,
-        SINGL,
-        MULTICAST,
-        BROADCAST,
-        START,
-        STOP,
-        LAST
-    };
-    
-
-    enum payload_type {
-        K_BLOCK = 0,
-        S_MBLOCK,
-        M_BLOCK,
-        DATA
-    };
-
-    enum random_type {
-        NO_RANDOM = 0,
-        RAND_PERIOD,
-        RAND_FIRST_DELAY,
-        RAND_PERIOD_TAIL,
-        RAND_DATA_SIZE
-    };
-
-
-    struct app_request_params {
-        vector<network_address> destination;
-        app_request_type type;
-        payload_type payloadType; 
-        uint amount;
-        sc_time period;
-        sc_time firstDelay;
-        random_type randType;
-        uint randFrom;
-        uint randTo;
-        sc_time_unit   timeUnit;
-        data_size_type dataSize;
-    };
-
 
     class application: public sc_module,
                        public log
@@ -60,12 +17,21 @@ namespace P2P_MODEL
         sc_event m_eventGenerateSoftReset;
         sc_event m_eventGenerateFlush;
         sc_event m_eventGenerateSingle;
+        sc_event m_eventGenerateMulticast;
         sc_event m_eventGenerateBroadcast;
+        sc_event m_eventGeneratePause;
+        sc_event m_eventGenerateContinue;
 
         sc_event m_eventStart;
         
-        vector< vector<app_request_params> >  m_reqs;
+        vector< vector<sim_request> > m_reqs;
+        vector<int> m_sentReqCounter;
 
+        bool m_isPaused;
+        vector<bool> m_isTriggeredReq;
+    
+    public:
+        sc_port<trp_application_if> trp_port;
 
     public:
 
@@ -73,6 +39,8 @@ namespace P2P_MODEL
 
         application(sc_module_name _name);
         ~application();
+
+        
 
         void run();
 
@@ -84,12 +52,26 @@ namespace P2P_MODEL
 
         void generateSingle();
 
+        void generateMulticast();
+
         void generateBroadcast();
 
+        void generatePause();
+
+        void generateContinue();
+
+        void generateReq(const sim_request_type& type);
+
         
-        void pushSimulatingReq(const app_request_params& req);
+        void pushSimulatingReq(const sim_request& req);
 
+        app_request& createAppRequest(const sim_request& s);
 
+        sim_request& doRandSimReq(const sim_request& s);
+
+        app_request_type simReqType2appReqType(const sim_request_type& type);
+
+        sc_time findDelayToSendNextReq(const sim_request& message, const bool isFinished);
         
     };
 }

@@ -3,8 +3,8 @@
 #include <string>
 
 #include "app/application.h"
-#include "tpl/transport_plus.h"
-#include "tpl/low_latency_chord.h"
+#include "trp/transport_plus.h"
+#include "trp/low_latency_chord.h"
 
 //#include "trafgen.h"
 //#include "basicchannel.h"
@@ -163,29 +163,101 @@ int main(int argc, char* argv[])
     
     transport_plus   transport1("transport_1");
     transport_plus   transport2("transport_2");
+
+    application1.trp_port.bind(transport1);
+    application2.trp_port.bind(transport2);
+
     
 
-    //ЗАДАТЬ НАЧАЛЬНЫЕ НАСТРОЙКИ ПРИКЛАДНЫХ УРОВНЕЙ
+    //Set initial settings of Application layer and Transport+ layer
     application1.setEnabledLog();
     application1.setLogMode(EXTERNAL_LOG);
     application1.setPathLog("./log/app.txt");
+
+    transport1.setEnabledLog();
+    transport1.setLogMode(EXTERNAL_LOG);
+    transport1.setPathLog("./log/trp.txt");
 
     application2.setEnabledLog();
     application2.setLogMode(EXTERNAL_LOG);
     application2.setPathLog("./log/app.txt");
 
+    transport1.setEnabledLog();
+    transport1.setLogMode(EXTERNAL_LOG);
+    transport1.setPathLog("./log/trp.txt");
 
-    //ЗАДАТЬ СЦЕНАРИИ ВЫДАЧИ СООБЩЕНИЙ ОТ ПРИКЛАДНЫХ УРОВНЕЙ
+
+    //Set simulating scenario of message issueing from Application layer to Transport+ layer
+    sim_request req;
+    req.clear();
+    req.destination;
+    req.type = SIM_SINGLE;
+    req.payloadType = DATA;  
+    req.amount = 3;
+    req.period = sc_time(15, SC_SEC);
+    req.firstDelay = sc_time(0, SC_MS);
+    req.randType[RAND_DEST] = true;
+    req.randFrom[RAND_DEST] = 0;
+    req.randTo[RAND_DEST] = 256;
+    req.randAmount[RAND_DEST] = 1;
+    req.timeUnit = SC_MS;
+    req.dataSize = 1000;
+    application1.pushSimulatingReq(req);
+
+    req.clear();
+    req.destination;
+    req.type = SIM_MULTICAST;
+    req.payloadType = DATA;
+    req.amount = 4;
+    req.period = sc_time(15, SC_SEC);
+    req.firstDelay = sc_time(0, SC_MS);
+    req.randType[RAND_DEST] = true;
+    req.randFrom[RAND_DEST] = 0;
+    req.randTo[RAND_DEST] = 256;
+    req.randAmount[RAND_DEST] = 3;
+    req.randNeedRecalc[RAND_DEST] = true;
+    req.timeUnit = SC_MS;
+    req.dataSize = 1000;
+    application1.pushSimulatingReq(req);
+
+    req.clear();
+    req.type = SIM_HARD_RESET;
+    req.amount = 3;
+    req.period = sc_time(5, SC_SEC);
+    req.firstDelay = sc_time(1, SC_MS);
+    application1.pushSimulatingReq(req);
+
+    req.clear();
+    req.type = SIM_SOFT_RESET;
+    req.amount = 4;
+    req.period = sc_time(6, SC_SEC);
+    req.firstDelay = sc_time(2, SC_MS);
+    application1.pushSimulatingReq(req);
+
+    req.clear();
+    req.type = SIM_FLUSH;
+    req.amount = 5;
+    req.period = sc_time(7, SC_SEC);
+    req.firstDelay = sc_time(3, SC_MS);
+    application1.pushSimulatingReq(req);
 
 
 
-    //ЗАДАТЬ КОНФИГУРАЦИОННЫЕ ПАРАМЕТРЫ ДЛЯ Transport+ УРОВНЯ
-    network_address networkAddr1, networkAddr2;
-    networkAddr1.set("192.168.0.1", 4444, 1111);
-    networkAddr2.set("192.168.0.2", 4444, 1111);
+
+
+    //Set confinguratino parameters of Transport+ layer
+    network_address addr1("192.168.0.1", 4444, 1111);
+    network_address addr2("192.168.0.2", 4444, 1111);
    
-    transport1.setNetworkAddress(networkAddr1);
-    transport2.setNetworkAddress(networkAddr2);
+    transport1.setNetworkAddress(addr1);
+    transport2.setNetworkAddress(addr2);
+
+    vector<network_address> seed;
+    seed.push_back(addr1);
+    transport2.setSeedNodes(seed);
+
+
+    //LOG
     node_address nodeAddr1, nodeAddr2;
     nodeAddr1 = transport1.getNodeAddress();
     cout << nodeAddr1 << endl;
@@ -194,10 +266,10 @@ int main(int argc, char* argv[])
     
     
     
-    
+    //Run simulation
     cout << endl << "Run simulation" << endl;
 
-    sc_start(10, SC_SEC);
+    sc_start(60*10, SC_SEC);
     cout << endl << "Read results" << endl;
 
 

@@ -143,20 +143,21 @@
     <ClCompile Include="src\inc.cpp" />
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\net\network.cpp" />
-    <ClCompile Include="src\tpl\broadcast.cpp" />
-    <ClCompile Include="src\tpl\low_latency_chord.cpp" />
-    <ClCompile Include="src\tpl\sha1.cpp" />
-    <ClCompile Include="src\tpl\transport_plus.cpp" />
+    <ClCompile Include="src\trp\broadcast.cpp" />
+    <ClCompile Include="src\trp\low_latency_chord.cpp" />
+    <ClCompile Include="src\trp\sha1.cpp" />
+    <ClCompile Include="src\trp\transport_plus.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\app\application.h" />
     <ClInclude Include="src\inc.h" />
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\net\network.h" />
-    <ClInclude Include="src\tpl\broadcast.h" />
-    <ClInclude Include="src\tpl\low_latency_chord.h" />
-    <ClInclude Include="src\tpl\sha1.hpp" />
-    <ClInclude Include="src\tpl\transport_plus.h" />
+    <ClInclude Include="src\trp\broadcast.h" />
+    <ClInclude Include="src\trp\low_latency_chord.h" />
+    <ClInclude Include="src\trp\sha1.hpp" />
+    <ClInclude Include="src\trp\trp_application_if.h" />
+    <ClInclude Include="src\trp\transport_plus.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

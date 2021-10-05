@@ -81,7 +81,7 @@ namespace P2P_MODEL
         if (m_isEnabled) {
             if (primary & secondary) {
                 std::stringstream ss;
-                ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_string());
+                ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_seconds());
                 ss << LOG_SPACER;
                 ss << std::setw(m_maxLenMethodName) << std::setiosflags(std::ios::left) << methodName;
                 ss << LOG_SPACER;

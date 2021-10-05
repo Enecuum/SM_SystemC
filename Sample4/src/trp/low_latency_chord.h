@@ -1,6 +1,7 @@
 #ifndef __LOW_LATENCY_CHORD_H__
 #define __LOW_LATENCY_CHORD_H__
 
+#include "log.h"
 #include "inc.h"
 #include "sha1.hpp"
 
@@ -11,26 +12,24 @@ using namespace std;
 namespace P2P_MODEL
 {
 
-    class node_address: public network_address,
-                        public sc_module {
+    class node_address: public network_address {
     private:        
-        network_address m_tmp;
+        network_address m_tmp;         
 
     public:
         uint160 id;
 
-        //SC_HAS_PROCESS(node_address);
-
-        node_address(sc_module_name _name = "node_address"): sc_module(_name) {
+        node_address() {
             reset();
         };
 
-        node_address(const node_address& src, sc_module_name name = "node_address"): sc_module(name) {
+
+        node_address(const node_address& src) {
             set(src);
         }
 
 
-        node_address(const network_address& src, sc_module_name name = "node_address"): sc_module(name) {
+        node_address(const network_address& src) {
             set(src);
         }
         
@@ -44,7 +43,6 @@ namespace P2P_MODEL
             network_address::reset();
             id = "0xus0";
         }
-
 
 
         void set(const node_address& src) {
@@ -92,29 +90,64 @@ namespace P2P_MODEL
 
 
 
+    enum finite_state {
+        LOAD = 0,
+        INIT,
+        JOIN,
+        IDLE,
+        INDATA,
+        SERVICE,
+        UPDATE,
+        APPREQUEST,
+        MAX_FINITE_STATE,
+        OFF
+    };
+
+    #define ALL (-1)
+
+
 
 
     
-   
 
-
-
-    class low_latency_chord {
+    class low_latency_chord: public sc_module,
+                             public log
+    {
     private:
         network_address m_netwAddr;
-        node_address m_nodeAddr;   //ÀÄĞÅÑ, ÈÑÏÎËÜÇÓÅÌÛÉ ÄËß ÈÄÅÍÒÈÔÈÊÀÖÈÈ ÓÇËÀ ÍÀ Transport+ ÓĞÎÂÍÅ ïî ID, âû÷èñëÿåìîì, êàê SHA-1
+        node_address m_nodeAddr;                        //ÀÄĞÅÑ, ÈÑÏÎËÜÇÓÅÌÛÉ ÄËß ÈÄÅÍÒÈÔÈÊÀÖÈÈ ÓÇËÀ ÍÀ Transport+ ÓĞÎÂÍÅ ïî ID, âû÷èñëÿåìîì, êàê SHA-1
+        vector<network_address> m_seed;
+        
+        finite_state m_state;
+        vector< vector<chord_request> > m_bufferReq;
+        vector<int> m_maxBufferDeepProcess;
+        sc_event m_eventCore;
+        uint m_howManyBuffers;
+
+
 
     public:
-        
-        low_latency_chord();
-        //low_latency_chord(sc_module_name _name);
+        SC_HAS_PROCESS(low_latency_chord);
+
+        low_latency_chord(sc_module_name name);
         ~low_latency_chord();
 
-        void              setNetworkAddress(const network_address& _netwAddr);      
+        void              setNetworkAddress(const network_address& netwAddr);      
         network_address&  getNetworkAddress();        
         node_address&     getNodeAddress();
+
+        void setSeedNodes(const vector<network_address>& seed);
+        void pushNewRequest(const chord_request& req);
+
+    private:
+        void preinit();
+        void core();
+        void init();
+        void hard_reset();
+        void soft_reset();
+        void flush();
+
+        vector<chord_request>::iterator getReqByPriority();
     };
 }
 #endif
-
-

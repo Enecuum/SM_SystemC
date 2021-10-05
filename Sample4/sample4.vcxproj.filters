@@ -8,23 +8,23 @@
     <ClCompile Include="src\net\network.cpp">
       <Filter>src\net</Filter>
     </ClCompile>
-    <ClCompile Include="src\tpl\broadcast.cpp">
-      <Filter>src\tpl</Filter>
-    </ClCompile>
-    <ClCompile Include="src\tpl\low_latency_chord.cpp">
-      <Filter>src\tpl</Filter>
-    </ClCompile>
-    <ClCompile Include="src\tpl\sha1.cpp">
-      <Filter>src\tpl</Filter>
-    </ClCompile>
-    <ClCompile Include="src\tpl\transport_plus.cpp">
-      <Filter>src\tpl</Filter>
-    </ClCompile>
     <ClCompile Include="src\inc.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\log.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\broadcast.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\low_latency_chord.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\sha1.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\transport_plus.cpp">
+      <Filter>src\trp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -37,7 +37,7 @@
     <Filter Include="src\net">
       <UniqueIdentifier>{74670cd2-4845-4ed9-8b00-47d1fdf14b8a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\tpl">
+    <Filter Include="src\trp">
       <UniqueIdentifier>{7e23d726-5040-4812-b6da-6cf32ab1c3a8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -48,23 +48,26 @@
     <ClInclude Include="src\net\network.h">
       <Filter>src\net</Filter>
     </ClInclude>
-    <ClInclude Include="src\tpl\broadcast.h">
-      <Filter>src\tpl</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tpl\low_latency_chord.h">
-      <Filter>src\tpl</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tpl\sha1.hpp">
-      <Filter>src\tpl</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tpl\transport_plus.h">
-      <Filter>src\tpl</Filter>
-    </ClInclude>
     <ClInclude Include="src\inc.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\log.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\broadcast.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\low_latency_chord.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\sha1.hpp">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_application_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\transport_plus.h">
+      <Filter>src\trp</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

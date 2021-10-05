@@ -11,11 +11,11 @@
 #define LOG_INFO   ":::::"
 #define LOG_WARNING_INDICATOR  "!!!!!"
 #define LOG_ERROR_INDICATOR   LOG_WARNING_INDICATOR
-#define LOG_SPACER  " "
+#define LOG_SPACER  "\t"
 
 namespace P2P_MODEL
 {
-    const int MAX_LEN_METHOD_NAME = 50;
+    const int MAX_LEN_METHOD_NAME = 30;
     const int MAX_LEN_TIME = 20;
 
     enum log_mode {
@@ -48,7 +48,7 @@ namespace P2P_MODEL
 
         void setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen);
         void setPathLog(const string& pathLog);
-        void setLogMode(const log_mode& isLogEnabled);
+        void setLogMode(const log_mode& logMode);
         void setDisabledLog();
         void setEnabledLog();
 
