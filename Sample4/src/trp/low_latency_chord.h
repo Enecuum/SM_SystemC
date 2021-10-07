@@ -4,6 +4,7 @@
 #include "log.h"
 #include "inc.h"
 #include "sha1.hpp"
+#include "req_buffer.h"
 
 using namespace std;
 
@@ -12,81 +13,7 @@ using namespace std;
 namespace P2P_MODEL
 {
 
-    class node_address: public network_address {
-    private:        
-        network_address m_tmp;         
-
-    public:
-        uint160 id;
-
-        node_address() {
-            reset();
-        };
-
-
-        node_address(const node_address& src) {
-            set(src);
-        }
-
-
-        node_address(const network_address& src) {
-            set(src);
-        }
-        
-
-        node_address(const string& ip, uint inSocket, uint outSocket) {
-            set(ip, inSocket, outSocket);
-        }
-      
-
-        void reset() {
-            network_address::reset();
-            id = "0xus0";
-        }
-
-
-        void set(const node_address& src) {
-            set(src.ip, src.inSocket, src.outSocket);
-        }
-
-
-        void set(const network_address& src) {
-            set(src.ip, src.inSocket, src.outSocket);
-        }
-
-
-        void set(const string& ip, const uint inSocket, const uint outSocket) {
-            network_address::set(ip, inSocket, outSocket);
-
-            string onlyNumbers = network_address::ip;
-            onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
-            onlyNumbers.append(to_string(network_address::inSocket));
-            id = sha1(onlyNumbers);
-        }
-
-
-        node_address& operator= (const node_address& src) {
-            if (this == &src)
-                return *this;
-
-            set(src.ip, src.inSocket, src.outSocket);
-            return *this;
-        }
-
-        friend ostream& operator<< (ostream& out, const node_address& r);
-
-
-    private:
-        uint160 sha1(const string& str) {
-            SHA1 checksum;
-            checksum.update(str);
-            string strID = checksum.final();
-            strID.insert(0, "0xus").c_str();
-            uint160 res = strID.c_str();            
-            return res;
-        }
-    };
-
+   
 
 
 
@@ -103,12 +30,22 @@ namespace P2P_MODEL
         OFF
     };
 
-    #define ALL (-1)
 
+    const int MAX_SIZE_BUFF_CONFIG_REQ = 100;
+    const int MAX_SIZE_BUFF_TIMER_REQ = 100;
+    const int MAX_SIZE_BUFF_MESS_REQ = 100;
+    const int MAX_SIZE_BUFF_RX_MESS = 100;
+    const int MAX_SIZE_BUFF_TX_MESS = MAX_SIZE_BUFF_MESS_REQ + MAX_SIZE_BUFF_RX_MESS + 1;
 
+    const int ERROR = -1;
+    const int MAX_DEEP_BUFF_CONFIG_REQ = MAX_SIZE_BUFF_CONFIG_REQ;
+    const int MAX_DEEP_BUFF_TIMER_REQ = MAX_SIZE_BUFF_TIMER_REQ;
+    const int MAX_DEEP_BUFF_MESS_REQ = 1;
+    const int MAX_DEEP_BUFF_RX_MESS = 1;
+    const int MAX_DEEP_BUFF_TX_MESS = MAX_DEEP_BUFF_MESS_REQ + MAX_DEEP_BUFF_RX_MESS + 1;
 
+    const int BUFFER_NOT_CHOOSEN = -1;
 
-    
 
     class low_latency_chord: public sc_module,
                              public log
@@ -119,9 +56,10 @@ namespace P2P_MODEL
         vector<network_address> m_seed;
         
         finite_state m_state;
-        vector< vector<chord_request> > m_bufferReq;
-        vector<int> m_maxBufferDeepProcess;
+        vector<req_buffer> m_buffer;
+        int m_IndexLastBufferCall;
         sc_event m_eventCore;
+        
         uint m_howManyBuffers;
 
 
@@ -147,7 +85,10 @@ namespace P2P_MODEL
         void soft_reset();
         void flush();
 
-        vector<chord_request>::iterator getReqByPriority();
+        chord_request* firstReqByPriority();
+        void eraseFirstReq();
+        
+        int chordReqType2buffIndex(const uint type);
     };
 }
 #endif

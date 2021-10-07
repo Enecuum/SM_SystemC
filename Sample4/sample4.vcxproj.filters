@@ -69,5 +69,8 @@
     <ClInclude Include="src\trp\transport_plus.h">
       <Filter>src\trp</Filter>
     </ClInclude>
+    <ClInclude Include="src\trp\req_buffer.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

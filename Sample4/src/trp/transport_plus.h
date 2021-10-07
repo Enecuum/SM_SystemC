@@ -18,8 +18,8 @@ namespace P2P_MODEL
     {
     private:
 
-        sc_event m_eventReceiveMess;
-        sc_event m_eventSendMess;
+        //sc_event m_eventReceiveMess;
+        //sc_event m_eventSendMess;
 
         low_latency_chord m_llchord;
 

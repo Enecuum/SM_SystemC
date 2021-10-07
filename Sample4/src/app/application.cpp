@@ -44,8 +44,8 @@ namespace P2P_MODEL
 
     void application::run() {      
         for (int i = 0; i < m_reqs.size(); ++i) {
-            if (m_reqs.at(i).size() > 0) {
-                vector<sim_request>::iterator r = m_reqs.at(i).begin();
+            if (m_reqs[i].size() > 0) {
+                vector<sim_request>::iterator r = m_reqs[i].begin();
                 switch (r->type)
                 {
                 case SIM_HARD_RESET:
@@ -87,7 +87,9 @@ namespace P2P_MODEL
                     break;
 
                 default:
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "run", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                    //ERROR
+                    m_strLogText = "run" + LOG_SPACER + r->type2str();
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                     return;
                 }
             }
@@ -95,16 +97,24 @@ namespace P2P_MODEL
     }
 
 
-
     void application::generateReq(const sim_request_type& type) {
         if (m_isPaused) {
             m_isTriggeredReq[type] = true;
         }
-        else {            
-            vector<sim_request>::iterator currReq = m_reqs.at(type).begin();
+        else {             
+            if (!(type < m_reqs.size())) {
+                //ERROR
+                m_strLogText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                return;
+            }
 
-            if (currReq->type != type) {                 
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "generateReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+            vector<sim_request>::iterator currReq = m_reqs[type].begin();
+
+            if (currReq->type != type) {
+                //ERROR
+                m_strLogText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                 return;
             }
 
@@ -125,14 +135,16 @@ namespace P2P_MODEL
                 break;
 
             default:
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "generateReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                //ERROR
+                m_strLogText = "generateReq" + LOG_SPACER + currReq->type2str();
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                 return;
             }
             m_sentReqCounter[type]++;
 
             
-            m_strLogText = "generateReq";
-            m_strLogText += " " + to_string(m_sentReqCounter[type]) + "(" + to_string(currReq->amount) + ")";
+            m_strLogText = "generateReq" + LOG_SPACER;
+            m_strLogText +=  to_string(m_sentReqCounter[type]) + "(" + to_string(currReq->amount) + ")";
             m_strLogText += " " + a.toStr();
             msgLog(name(), LOG_TX, LOG_OUT, m_strLogText, DEBUG_LOG | EXTERNAL_LOG);
             
@@ -141,10 +153,10 @@ namespace P2P_MODEL
 
             sc_time nextGenerate;
             if (m_sentReqCounter[type] == currReq->amount) {
-                m_reqs.at(type).erase(currReq);
+                m_reqs[type].erase(currReq);
                 m_sentReqCounter[type] = 0;
 
-                if (m_reqs.at(type).size() > 0) {
+                if (m_reqs[type].size() > 0) {
                     vector<sim_request>::iterator nextReq = m_reqs.at(type).begin();
                     nextGenerate = nextReq->firstDelay;
                 }
@@ -165,7 +177,10 @@ namespace P2P_MODEL
                 case SIM_PAUSE: m_eventGeneratePause.notify(nextGenerate); break;
                 case SIM_CONTINUE: m_eventGenerateContinue.notify(nextGenerate); break;
                 default:
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "generateReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                    //ERROR        
+                    m_strLogText = "generateReq" + LOG_SPACER + currReq->type2str();
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                    break;
             }
         }
     }
@@ -184,7 +199,7 @@ namespace P2P_MODEL
     }
     
 
-    app_request_type application::simReqType2appReqType(const sim_request_type& type) {
+    app_request_type application::simReqType2appReqType(const uint& type) {
         switch (type)
         {
             case SIM_HARD_RESET: return APP_HARD_RESET;
@@ -194,6 +209,7 @@ namespace P2P_MODEL
             case SIM_MULTICAST: return APP_MULTICAST;
             case SIM_BROADCAST: return APP_BROADCAST;       
             default:
+                //ERROR
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "simReqType2appReqType", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                 return APP_UNKNOWN;
         }
@@ -206,14 +222,13 @@ namespace P2P_MODEL
         if (isFilled.size() == 0)
             isFilled.resize(MAX_SIM_REQ_TYPE, false);
 
-        if (!((s.type >= 0) && (s.type < MAX_SIM_REQ_TYPE))) {
+        if (!(s.type < MAX_SIM_REQ_TYPE)) {
             msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
             return res[0];
         }
 
         if (isFilled[s.type] == false)            
             res[s.type] = s;
-
 
         for (uint i = 0; i < MAX_RAND_TYPE; ++i) {
             if (s.randType[i] == true) {
@@ -264,8 +279,8 @@ namespace P2P_MODEL
                         }    
                     } break;
 
-                case RAND_UNKNOWN:
                 default:
+                    //ERROR
                     msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                     break;
                 }
@@ -305,6 +320,7 @@ namespace P2P_MODEL
                 break;
 
             default:
+                //ERROR
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppRequest", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                 break;
             }

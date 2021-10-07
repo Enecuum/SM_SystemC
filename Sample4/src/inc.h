@@ -69,24 +69,37 @@ namespace P2P_MODEL {
 
     
     enum chord_request_type {
-        CHORD_HARD_RESET = 0,  //TRP is abbrivation "TRansport Plus"
+        CHORD_HARD_RESET = 0,  
         CHORD_SOFT_RESET,
         CHORD_FLUSH,
 
-        CHORD_JOIN,
-        CHORD_NOTIFY,
-        CHORD_ACK,
-        CHORD_REPLY_FIND_SUCESSOR,
-        CHORD_FIND_SUCCESSOR,
-        CHORD_FORWARD_BROADCAST,
-        CHORD_FORWARD_MULTICAST,
-        CHORD_FORWARD_SINGLE,
         CHORD_BROADCAST,
-        CHORD_MULTICAST,        
+        CHORD_MULTICAST,
         CHORD_SINGLE,
+
+        CHORD_RX_JOIN,
+        CHORD_RX_NOTIFY,
+        CHORD_RX_ACK,
+        CHORD_RX_REPLY_FIND_SUCESSOR,
+        CHORD_RX_FIND_SUCCESSOR,
+        CHORD_RX_BROADCAST,
+        CHORD_RX_MULTICAST,
+        CHORD_RX_SINGLE,
+
+        CHORD_TX_JOIN,
+        CHORD_TX_NOTIFY,
+        CHORD_TX_ACK,
+        CHORD_TX_REPLY_FIND_SUCESSOR,
+        CHORD_TX_FIND_SUCCESSOR,
+        CHORD_TX_BROADCAST,
+        CHORD_TX_MULTICAST,
+        CHORD_TX_SINGLE,
+        
         MAX_CHORD_REQ_TYPE,
         CHORD_UNKNOWN
     };
+
+
 
          
     class network_address {
@@ -148,7 +161,7 @@ namespace P2P_MODEL {
     class sim_request {
     public:
         vector<network_address> destination;
-        sim_request_type type;
+        uint type;
         payload_type payloadType;
         uint amount;                    
         sc_time period;
@@ -325,7 +338,7 @@ namespace P2P_MODEL {
         network_address source;
 
         chord_request() {
-            clear();
+            chord_request::clear();
         }
 
         chord_request(const chord_request& src) {
@@ -358,17 +371,29 @@ namespace P2P_MODEL {
                 case CHORD_HARD_RESET:          return res = app_request::type2str(SIM_HARD_RESET);
                 case CHORD_SOFT_RESET:          return res = app_request::type2str(SIM_SOFT_RESET);
                 case CHORD_FLUSH:               return res = app_request::type2str(SIM_FLUSH);
-                case CHORD_JOIN:                return res = "JOIN";
-                case CHORD_NOTIFY:              return res = "NOTIFY";
-                case CHORD_ACK:                 return res = "ACK";
-                case CHORD_REPLY_FIND_SUCESSOR: return res = "REPLY_FIND_SUCC";
-                case CHORD_FIND_SUCCESSOR:      return res = "FIND_SUCC";
-                case CHORD_FORWARD_BROADCAST:   return res = "FW_BROADCAST";
-                case CHORD_FORWARD_MULTICAST:   return res = "FW_MULTICAST";
-                case CHORD_FORWARD_SINGLE:      return res = "FW_SINGLE";
+
                 case CHORD_BROADCAST:           return res = app_request::type2str(SIM_BROADCAST);
                 case CHORD_MULTICAST:           return res = app_request::type2str(SIM_MULTICAST);
                 case CHORD_SINGLE:              return res = app_request::type2str(SIM_SINGLE);
+
+                case CHORD_RX_JOIN:                return res = "RX_JOIN";
+                case CHORD_RX_NOTIFY:              return res = "RX_NOTIFY";
+                case CHORD_RX_ACK:                 return res = "RX_ACK";
+                case CHORD_RX_REPLY_FIND_SUCESSOR: return res = "RX_REPLY_FIND_SUCC";
+                case CHORD_RX_FIND_SUCCESSOR:      return res = "RX_FIND_SUCC";
+                case CHORD_RX_BROADCAST:           return res = "RX_BROADCAST";
+                case CHORD_RX_MULTICAST:           return res = "RX_MULTICAST";
+                case CHORD_RX_SINGLE:              return res = "RX_SINGLE";
+
+                case CHORD_TX_JOIN:                return res = "TX_JOIN";
+                case CHORD_TX_NOTIFY:              return res = "TX_NOTIFY";
+                case CHORD_TX_ACK:                 return res = "TX_ACK";
+                case CHORD_TX_REPLY_FIND_SUCESSOR: return res = "TX_REPLY_FIND_SUCC";
+                case CHORD_TX_FIND_SUCCESSOR:      return res = "TX_FIND_SUCC";
+                case CHORD_TX_BROADCAST:           return res = "TX_BROADCAST";
+                case CHORD_TX_MULTICAST:           return res = "TX_MULTICAST";
+                case CHORD_TX_SINGLE:              return res = "TX_SINGLE";
+               
                 default: return res = "CHORD_UNKNOWN";
             }
         }

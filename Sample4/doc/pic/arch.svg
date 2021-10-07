@@ -61,7 +61,7 @@
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,-7557,1252)" stroke-linecap="butt">
       <rect x="7609.2653" y="-740.1052" clip-path="url(#clipPath2)" fill="none" width="162.9468" rx="4" ry="4" height="69.7349"/>
       <text x="7634.7261" xml:space="preserve" y="-707.8745" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">RX_MESS_BUFFER</text>
-      <text x="7629.2153" xml:space="preserve" y="-693.1733" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Приоритет очереди: 3</text>
+      <text x="7629.2153" xml:space="preserve" y="-693.1733" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Приоритет очереди: 4</text>
     </g>
     <g fill="white" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,-7557,1252)" stroke="white">
       <rect x="7867.3165" y="-740.1052" clip-path="url(#clipPath2)" width="187.9275" rx="4" ry="4" height="69.7349" stroke="none"/>
@@ -69,7 +69,7 @@
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,-7557,1252)" stroke-linecap="butt">
       <rect x="7867.3165" y="-740.1052" clip-path="url(#clipPath2)" fill="none" width="187.9275" rx="4" ry="4" height="69.7349"/>
       <text x="7905.9355" xml:space="preserve" y="-707.8745" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">TX_MESS_BUFFER</text>
-      <text x="7899.7568" xml:space="preserve" y="-693.1733" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Приоритет очереди: 4</text>
+      <text x="7899.7568" xml:space="preserve" y="-693.1733" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Приоритет очереди: 5</text>
     </g>
     <g fill="white" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,-7557,1252)" stroke="white">
       <rect x="7783.7902" y="-928.791" clip-path="url(#clipPath2)" width="271.4538" rx="4" ry="4" height="142.0763" stroke="none"/>

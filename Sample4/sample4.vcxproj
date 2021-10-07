@@ -155,6 +155,7 @@
     <ClInclude Include="src\net\network.h" />
     <ClInclude Include="src\trp\broadcast.h" />
     <ClInclude Include="src\trp\low_latency_chord.h" />
+    <ClInclude Include="src\trp\req_buffer.h" />
     <ClInclude Include="src\trp\sha1.hpp" />
     <ClInclude Include="src\trp\trp_application_if.h" />
     <ClInclude Include="src\trp\transport_plus.h" />

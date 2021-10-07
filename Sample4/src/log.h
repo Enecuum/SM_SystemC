@@ -3,18 +3,19 @@
 
 #include "inc.h"
 
-#define LOG_TX  "Tx  "
-#define LOG_RX  "  Rx"
-#define LOG_TXRX   "TxRx"
-#define LOG_IN    "< < <"
-#define LOG_OUT    "> > >"
-#define LOG_INFO   ":::::"
-#define LOG_WARNING_INDICATOR  "!!!!!"
-#define LOG_ERROR_INDICATOR   LOG_WARNING_INDICATOR
-#define LOG_SPACER  "\t"
 
 namespace P2P_MODEL
 {
+    const string LOG_SPACER            = string("\t");
+    const string LOG_TX                = string("Tx  ");
+    const string LOG_RX                = string("  Rx");
+    const string LOG_TXRX              = string("TxRx");
+    const string LOG_IN                = string("< < <");
+    const string LOG_OUT               = string("> > >");
+    const string LOG_INFO              = string(":::::");
+    const string LOG_WARNING_INDICATOR = string("!!!!!");
+    const string LOG_ERROR_INDICATOR   = LOG_WARNING_INDICATOR;
+
     const int MAX_LEN_METHOD_NAME = 30;
     const int MAX_LEN_TIME = 20;
 

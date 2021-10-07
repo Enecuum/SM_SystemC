@@ -69,7 +69,7 @@ namespace P2P_MODEL
 
         sim_request& doRandSimReq(const sim_request& s);
 
-        app_request_type simReqType2appReqType(const sim_request_type& type);
+        app_request_type simReqType2appReqType(const uint& type);
 
         sc_time findDelayToSendNextReq(const sim_request& message, const bool isFinished);
         

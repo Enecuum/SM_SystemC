@@ -3,8 +3,7 @@
 namespace P2P_MODEL
 {
 
-    log::log()
-    {
+    log::log() {
         m_maxLenMethodName = MAX_LEN_METHOD_NAME;
         m_maxLenTime = MAX_LEN_TIME;
         m_isEnabled = false;
@@ -16,7 +15,7 @@ namespace P2P_MODEL
 
     void log::setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen) {
         m_maxLenMethodName = methodNameLen;
-        m_maxLenTime = timeLen;
+        int m_maxLenTime = timeLen;        
     }
 
 

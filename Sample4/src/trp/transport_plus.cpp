@@ -25,6 +25,7 @@ namespace P2P_MODEL
             case APP_MULTICAST: res.type = CHORD_MULTICAST; break;
             case APP_BROADCAST: res.type = CHORD_BROADCAST; break;
             default:
+                //ERROR
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appReq2trpReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
                 break;
         }
