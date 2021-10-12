@@ -176,12 +176,13 @@
       <text x="8254.4912" xml:space="preserve" y="-540.8362" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">create_tx_message</text>
     </g>
     <g fill="white" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,-7557,1252)" stroke="white">
-      <rect x="8062.9611" y="-1046.2157" clip-path="url(#clipPath2)" width="180.2174" rx="4" ry="4" height="52.7224" stroke="none"/>
+      <rect x="8062.9611" y="-1046.2157" clip-path="url(#clipPath2)" width="196.9227" rx="4" ry="4" height="52.7224" stroke="none"/>
     </g>
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,-7557,1252)" stroke-linecap="butt">
-      <rect x="8062.9611" y="-1046.2157" clip-path="url(#clipPath2)" fill="none" width="180.2174" rx="4" ry="4" height="52.7224"/>
-      <text x="8118.0659" xml:space="preserve" y="-1022.4912" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">REQ_TIMER</text>
-      <text x="8085.9272" xml:space="preserve" y="-1007.79" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Приоритет обработки: 2</text>
+      <rect x="8062.9611" y="-1046.2157" clip-path="url(#clipPath2)" fill="none" width="196.9227" rx="4" ry="4" height="52.7224"/>
+      <text x="8126.4185" xml:space="preserve" y="-1029.8418" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">REQ_TIMER</text>
+      <text x="8069.2866" xml:space="preserve" y="-1015.1406" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Приоритет обработки очереди: 2</text>
+      <text x="8094.3999" xml:space="preserve" y="-1000.4395" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Выполнить немедленно</text>
       <text x="8171.5107" xml:space="preserve" y="-964.7732" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">уведомление</text>
       <text x="8171.5107" xml:space="preserve" y="-950.072" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">истек таймер</text>
     </g>
@@ -247,8 +248,8 @@
       <path d="M8238.8125 -556.3372 L8243.8125 -568.3372 L8238.8125 -565.3372 L8233.8125 -568.3372 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M8306.8535 -534.7361 L8306.8535 -513.7385" clip-path="url(#clipPath2)"/>
       <path d="M8306.8535 -505.7385 L8311.8535 -517.7385 L8306.8535 -514.7385 L8301.8535 -517.7385 Z" clip-path="url(#clipPath2)" stroke="none"/>
-      <path fill="none" d="M8153.0698 -993.4756 L8153.0698 -904.2953 L8063.2568 -904.2953" clip-path="url(#clipPath2)"/>
-      <path d="M8055.2568 -904.2953 L8067.2568 -899.2953 L8064.2568 -904.2953 L8067.2568 -909.2953 Z" clip-path="url(#clipPath2)" stroke="none"/>
+      <path fill="none" d="M8161.4224 -993.4756 L8161.4224 -904.2953 L8063.2148 -904.2953" clip-path="url(#clipPath2)"/>
+      <path d="M8055.2148 -904.2953 L8067.2148 -899.2953 L8064.2148 -904.2953 L8067.2148 -909.2953 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" stroke-dasharray="6,2" d="M8316.8594 -783.6934 L8294.8584 -783.6934" clip-path="url(#clipPath2)"/>
       <path stroke-dasharray="6,2" d="M8286.8584 -783.6934 L8298.8584 -778.6934 L8295.8584 -783.6934 L8298.8584 -788.6934 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M8075.5635 -405.693 L8133.5024 -405.693" clip-path="url(#clipPath2)"/>

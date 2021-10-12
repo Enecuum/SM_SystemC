@@ -330,11 +330,12 @@ LLChord или Broadcast</y:NodeLabel>
     <node id="n25">
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="52.722399027424984" width="180.2174188648005" x="8062.961063110625" y="-1046.2156820724013"/>
+          <y:Geometry height="52.722399027424984" width="196.92267376676136" x="8062.961063110625" y="-1046.2156820724013"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="33.40234375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="138.28515625" x="20.966131307400246" xml:space="preserve" y="9.660027638712563">REQ_TIMER
-Приоритет обработки: 2</y:NodeLabel>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="188.271484375" x="4.325594695880682" xml:space="preserve" y="2.309441701212563">REQ_TIMER
+Приоритет обработки очереди: 2
+Выполнить немедленно</y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
       </data>
@@ -607,7 +608,7 @@ LLChord или Broadcast</y:NodeLabel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="117.86039215686196" ty="-46.5424046757181">
-            <y:Point x="8153.0697725430255" y="-904.2952899290336"/>
+            <y:Point x="8161.422399994006" y="-904.2952899290336"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
