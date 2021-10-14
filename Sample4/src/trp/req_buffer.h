@@ -2,9 +2,8 @@
 #define __REQ_BUFFER_H__
 
 #include "inc.h"
-#include "sha1.hpp"
 
-#include "req_buffer.h"
+
 
 using namespace std;
 
@@ -12,13 +11,26 @@ using namespace std;
 
 namespace P2P_MODEL
 {
+    typedef list<chord_request> req_buff_container;
 
     enum buffer_type {
         BUFF_CONFIG_REQ = 0,
         BUFF_TIMER_REQ,
         BUFF_MESS_REQ,
         BUFF_RX_MESS,
-        BUFF_TX_MESS,
+
+        BUFF_TX_JOIN,
+        BUFF_TX_NOTIFY,
+        BUFF_TX_ACK,
+        BUFF_TX_REPLY_FIND_SUCCESSOR,
+        BUFF_TX_FIND_SUCCESSOR,
+        BUFF_TX_FWD_BROADCAST,
+        BUFF_TX_FWD_MULTICAST,
+        BUFF_TX_FWD_SINGLE,
+        BUFF_TX_BROADCAST,
+        BUFF_TX_MULTICAST,
+        BUFF_TX_SINGLE,
+        
         MAX_BUFF_TYPE,
         BUFF_UNKNOWN
     };
@@ -26,12 +38,12 @@ namespace P2P_MODEL
 
     class req_buffer {
     private:
-        vector<chord_request> reqs;
+        req_buff_container reqs;
         int maxDeep;
         int priority;
         bool immediate;
         int maxSize;
-        int reqCounter;
+        int reqsCounter;
         buffer_type type;       
         sc_time lastCallTime;
         
@@ -48,14 +60,11 @@ namespace P2P_MODEL
             *this = src;
         }
 
-        void clear() {
-            reqs.clear();
-            type = BUFF_UNKNOWN;
-            maxDeep = 0;
-            priority = 0;
-            immediate = false;
-            maxSize = 0;
-            reqCounter = 0;            
+
+
+        void clearReqs() {
+            reqs.clear();            
+            reqsCounter = 0;
             lastCallTime = SC_ZERO_TIME;
         }
 
@@ -77,33 +86,8 @@ namespace P2P_MODEL
 
         uint size() {
             return (uint) reqs.size();
-        }
-
-    private:
-        vector<chord_request>::iterator firstReqIteratorByImmediate() {
-            vector<chord_request>::iterator it = reqs.end();
-
-            if (reqs.size() > 0) 
-            {
-                if (sc_time_stamp() != lastCallTime)
-                    reqCounter = 0;
-
-                if (immediate == true) {
-                
-                    it = reqs.begin();
-                    lastCallTime = sc_time_stamp();
-                    ++reqCounter;
-                }
-                else {
-                    if ((reqCounter < maxDeep) && (reqCounter < maxSize)) {
-                        it = reqs.begin();
-                        lastCallTime = sc_time_stamp();
-                        ++reqCounter;                   
-                    }
-                }
-            }
-            return it;
-        }
+        }    
+        
 
     public:
         uint buffType() {
@@ -112,20 +96,20 @@ namespace P2P_MODEL
 
         chord_request& firstReqByImmediate() {
             static chord_request r;
-            vector<chord_request>::iterator it = firstReqIteratorByImmediate();
+            req_buff_container::iterator it = firstReqIteratorByImmediate();
             if (it == reqs.end())
                 return r;
             return *it;
         }
 
         chord_request* firstReqPointerByImmediate() {
-            vector<chord_request>::iterator it = firstReqIteratorByImmediate();
+            req_buff_container::iterator it = firstReqIteratorByImmediate();
             if (it == reqs.end())
                 return nullptr;
             return &(*it);
         }
 
-        void erase(const vector<chord_request>::iterator& it) {
+        void erase(const req_buff_container::iterator& it) {
             reqs.erase(it);
         }
 
@@ -135,8 +119,8 @@ namespace P2P_MODEL
                 erase(reqs.begin());
         }
 
-        void resetReqCounter() {
-            reqCounter = 0;
+        void clearReqsCounter() {
+            reqsCounter = 0;
         }
 
 
@@ -161,7 +145,7 @@ namespace P2P_MODEL
             this->priority = src.priority;
             this->immediate = src.immediate;
             this->maxSize = src.maxSize;
-            this->reqCounter = src.reqCounter;
+            this->reqsCounter = src.reqsCounter;
             return *this;
         }
 
@@ -170,105 +154,66 @@ namespace P2P_MODEL
             str.clear();
             string typeStr;
             switch (type) {
-                case BUFF_CONFIG_REQ: typeStr = "BUFF_CONFIG_REQ"; break;
-                case BUFF_TIMER_REQ:  typeStr = "BUFF_TIMER_REQ"; break;
-                case BUFF_MESS_REQ:   typeStr = "BUFF_MESS_REQ"; break;
-                case BUFF_RX_MESS:    typeStr = "BUFF_RX_MESS"; break;
-                case BUFF_TX_MESS:    typeStr = "BUFF_TX_MESS"; break;
-                default: typeStr = "BUFF_UNKNOWN"; break;
+                case BUFF_CONFIG_REQ:              typeStr = "BUFF_CONFIG_REQ"; break;
+                case BUFF_TIMER_REQ:               typeStr = "BUFF_TIMER_REQ"; break;
+                case BUFF_MESS_REQ:                typeStr = "BUFF_MESS_REQ"; break;
+                case BUFF_RX_MESS:                 typeStr = "BUFF_RX_MESS"; break;
+
+                case BUFF_TX_JOIN:                 typeStr = "BUFF_TX_JOIN"; break;
+                case BUFF_TX_NOTIFY:               typeStr = "BUFF_TX_NOTIFY"; break;
+                case BUFF_TX_ACK:                  typeStr = "BUFF_TX_ACK"; break;
+                case BUFF_TX_REPLY_FIND_SUCCESSOR: typeStr = "BUFF_TX_REPLY_FIND_SUCCESSOR"; break;
+                case BUFF_TX_FIND_SUCCESSOR:       typeStr = "BUFF_TX_FIND_SUCCESSOR"; break;
+                case BUFF_TX_FWD_BROADCAST:        typeStr = "BUFF_TX_FWD_BROADCAST"; break;
+                case BUFF_TX_FWD_MULTICAST:        typeStr = "BUFF_TX_FWD_MULTICAST"; break;
+                case BUFF_TX_FWD_SINGLE:           typeStr = "BUFF_TX_FWD_SINGLE"; break;
+                case BUFF_TX_BROADCAST:            typeStr = "BUFF_TX_BROADCAST"; break;
+                case BUFF_TX_MULTICAST:            typeStr = "BUFF_TX_MULTICAST"; break;
+                case BUFF_TX_SINGLE:               typeStr = "BUFF_TX_SINGLE"; break;
+                //case BUFF_TX_MESS:    typeStr = "BUFF_TX_MESS"; break;
+                default:              typeStr = "BUFF_UNKNOWN"; break;
             }
             str = typeStr + "\timmediate\t" + string(immediate == true ? "true" : "false") + "\tpri\t" + to_string(priority);
             return str;
         }
-    };
-
-
-    
-    class chord_buffer {
-    public:
-        vector<req_buffer> buffer;
-
-        chord_buffer() { };
-
-
-        void setPriority();
-    };
-
-
-
-    class node_address : public network_address {
-    private:
-        network_address m_tmp;
-
-    public:
-        uint160 id;
-
-        node_address() {
-            reset();
-        };
-
-
-        node_address(const node_address& src) {
-            set(src);
-        }
-
-
-        node_address(const network_address& src) {
-            set(src);
-        }
-
-
-        node_address(const string& ip, uint inSocket, uint outSocket) {
-            set(ip, inSocket, outSocket);
-        }
-
-
-        void reset() {
-            network_address::reset();
-            id = "0xus0";
-        }
-
-
-        void set(const node_address& src) {
-            set(src.ip, src.inSocket, src.outSocket);
-        }
-
-
-        void set(const network_address& src) {
-            set(src.ip, src.inSocket, src.outSocket);
-        }
-
-
-        void set(const string& ip, const uint inSocket, const uint outSocket) {
-            network_address::set(ip, inSocket, outSocket);
-
-            string onlyNumbers = network_address::ip;
-            onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
-            onlyNumbers.append(to_string(network_address::inSocket));
-            id = sha1(onlyNumbers);
-        }
-
-
-        node_address& operator= (const node_address& src) {
-            if (this == &src)
-                return *this;
-
-            set(src.ip, src.inSocket, src.outSocket);
-            return *this;
-        }
-
-        friend ostream& operator<< (ostream& out, const node_address& r);
-
 
     private:
-        uint160 sha1(const string& str) {
-            SHA1 checksum;
-            checksum.update(str);
-            string strID = checksum.final();
-            strID.insert(0, "0xus");
-            uint160 res = strID.c_str();
-            return res;
+        void clear() {
+            reqs.clear();
+            type = BUFF_UNKNOWN;
+            maxDeep = 0;
+            priority = 0;
+            immediate = false;
+            maxSize = 0;
+            reqsCounter = 0;
+            lastCallTime = SC_ZERO_TIME;
+        }
+
+        req_buff_container::iterator firstReqIteratorByImmediate() {
+            req_buff_container::iterator it = reqs.end();
+
+            if (reqs.size() > 0)
+            {
+                if (sc_time_stamp() != lastCallTime)
+                    reqsCounter = 0;
+
+                if (immediate == true) {
+
+                    it = reqs.begin();
+                    lastCallTime = sc_time_stamp();
+                    ++reqsCounter;
+                }
+                else {
+                    if ((reqsCounter < maxDeep) && (reqsCounter < maxSize)) {
+                        it = reqs.begin();
+                        lastCallTime = sc_time_stamp();
+                        ++reqsCounter;
+                    }
+                }
+            }
+            return it;
         }
     };
+
 }
 #endif

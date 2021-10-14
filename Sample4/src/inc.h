@@ -7,9 +7,11 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <list>
 #include <string>
 
 #include <systemc.h>
+#include "trp/sha1.hpp"
 
 using namespace std;
 
@@ -19,7 +21,7 @@ namespace P2P_MODEL {
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
-    typedef vector<char>       data_type;
+    typedef list<char>         data_type;
 
     
     enum payload_type {
@@ -51,6 +53,7 @@ namespace P2P_MODEL {
         SIM_BROADCAST,
         SIM_CONTINUE,
         SIM_PAUSE,
+        SIM_CONF,
         MAX_SIM_REQ_TYPE,
         SIM_UNKNOWN
     };
@@ -63,6 +66,7 @@ namespace P2P_MODEL {
         APP_SINGLE,
         APP_MULTICAST,
         APP_BROADCAST,
+        APP_CONF,
         MAX_APP_REQ_TYPE,
         APP_UNKNOWN
     };
@@ -76,6 +80,8 @@ namespace P2P_MODEL {
         CHORD_BROADCAST,
         CHORD_MULTICAST,
         CHORD_SINGLE,
+
+        CHORD_CONF,
 
         CHORD_RX_JOIN,
         CHORD_RX_NOTIFY,
@@ -91,9 +97,17 @@ namespace P2P_MODEL {
         CHORD_TX_ACK,
         CHORD_TX_REPLY_FIND_SUCESSOR,
         CHORD_TX_FIND_SUCCESSOR,
+        CHORD_TX_FWD_BROADCAST,
+        CHORD_TX_FWD_MULTICAST,
+        CHORD_TX_FWD_SINGLE,
         CHORD_TX_BROADCAST,
         CHORD_TX_MULTICAST,
         CHORD_TX_SINGLE,
+
+        CHORD_TIMER_ACK,
+        CHORD_TIMER_REPLY_FIND_SUCC,
+        CHORD_TIMER_REPLY_FIND_SUCC_JOIN,
+        CHORD_TIMER_UPDATE,
         
         MAX_CHORD_REQ_TYPE,
         CHORD_UNKNOWN
@@ -109,7 +123,7 @@ namespace P2P_MODEL {
         uint outSocket;
 
         network_address() {
-            reset();
+            clear();
         };
 
         network_address(const network_address& src) {
@@ -122,7 +136,7 @@ namespace P2P_MODEL {
         };
 
 
-        void reset() {
+        void clear() {
             ip = "0.0.0.0";
             inSocket = 0;
             outSocket = 0;
@@ -148,8 +162,8 @@ namespace P2P_MODEL {
             return *this;
         }
 
-        string toStr() {
-            string str;            
+        string& toStr() {
+            static string str;            
             str = "" + ip + " " + to_string(inSocket) + " " + to_string(outSocket);
             return str;
         }
@@ -158,10 +172,92 @@ namespace P2P_MODEL {
     };
 
 
+    class node_address : public network_address {
+    public:
+        uint160 id;
+
+        node_address() {
+            clear();
+        };
+
+
+        node_address(const node_address& src) {
+            set(src);
+        }
+
+
+        node_address(const network_address& src) {
+            set(src);
+        }
+
+
+        node_address(const string& ip, uint inSocket, uint outSocket) {
+            set(ip, inSocket, outSocket);
+        }
+
+
+        void clear() {
+            network_address::clear();
+            id = "0xus0";
+        }
+
+
+        void set(const node_address& src) {
+            set(src.ip, src.inSocket, src.outSocket);
+        }
+
+
+        void set(const network_address& src) {
+            set(src.ip, src.inSocket, src.outSocket);
+        }
+
+
+        void set(const string& ip, const uint inSocket, const uint outSocket) {
+            network_address::set(ip, inSocket, outSocket);
+
+            string onlyNumbers = network_address::ip;
+            onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
+            onlyNumbers.append(to_string(network_address::inSocket));
+            id = sha1(onlyNumbers);
+        }
+
+
+        node_address& operator= (const node_address& src) {
+            if (this == &src)
+                return *this;
+
+            set(src.ip, src.inSocket, src.outSocket);
+            return *this;
+        }
+
+        string& toStr() {
+            static string str;
+            str = network_address::toStr() + " " + id.to_string(SC_HEX_US);
+            return str;
+        }
+
+        friend ostream& operator<< (ostream& out, node_address& r);
+
+
+    private:
+        uint160 sha1(const string& str) {
+            SHA1 checksum;
+            checksum.update(str);
+            string strID = checksum.final();
+            strID.insert(0, "0xus");
+            uint160 res = strID.c_str();
+            return res;
+        }
+    };
+
+
+
+
+
     class sim_request {
     public:
         vector<network_address> destination;
-        uint type;
+        sim_request_type type;
         payload_type payloadType;
         uint amount;                    
         sc_time period;
@@ -234,15 +330,16 @@ namespace P2P_MODEL {
                 t = this->type;
 
             switch (t) {
-            case SIM_HARD_RESET: return res = "HARD_RESET";
-            case SIM_SOFT_RESET: return res = "SOFT_RESET";
-            case SIM_FLUSH:      return res = "FLUSH";
-            case SIM_SINGLE:     return res = "SINGLE";
-            case SIM_MULTICAST:  return res = "MULTICAST";
-            case SIM_BROADCAST:  return res = "BROADCAST";
-            case SIM_PAUSE:      return res = "PAUSE";
-            case SIM_CONTINUE:   return res = "CONTINUE";
-            default:             return res = "SIM_UNKNOWN";
+                case SIM_HARD_RESET: return res = "HARD_RESET";
+                case SIM_SOFT_RESET: return res = "SOFT_RESET";
+                case SIM_FLUSH:      return res = "FLUSH";
+                case SIM_SINGLE:     return res = "SINGLE";
+                case SIM_MULTICAST:  return res = "MULTICAST";
+                case SIM_BROADCAST:  return res = "BROADCAST";
+                case SIM_PAUSE:      return res = "PAUSE";
+                case SIM_CONTINUE:   return res = "CONTINUE";
+                case SIM_CONF:       return res = "CONF";
+                default:             return res = "SIM_UNKNOWN";
             }
         }
 
@@ -250,16 +347,18 @@ namespace P2P_MODEL {
             static string str;
             str = type2str();
             if ((type == SIM_SINGLE) || (type == SIM_MULTICAST) || (type == SIM_BROADCAST))
+            //{
                 str += " " + to_string(dataSize);
 
-            if (destination.size() > 0) {
-                str += " dest: ";
-                str += destination.at(0).toStr();
-            }
-            for (size_t i = 1; i < destination.size(); ++i) {
-                str += ", ";
-                str += destination.at(i).toStr();
-            }
+                if (destination.size() > 0) {
+                    str += " dest: ";
+                    str += destination.at(0).toStr();
+                }
+                for (size_t i = 1; i < destination.size(); ++i) {
+                    str += ", ";
+                    str += destination.at(i).toStr();
+                }
+            //}
             return str;
         }
     };
@@ -270,6 +369,7 @@ namespace P2P_MODEL {
         vector<network_address> destination;
         uint type;
         data_type payload;
+        data_size_type payloadSize;
 
         app_request() {
             clear();
@@ -286,6 +386,7 @@ namespace P2P_MODEL {
             destination = src.destination;
             type = src.type;
             payload = src.payload;
+            payloadSize = src.payloadSize;
             return *this;
         }
 
@@ -293,6 +394,7 @@ namespace P2P_MODEL {
             destination.clear();
             type = APP_UNKNOWN;
             payload.clear();
+            payloadSize = 0;
         }
 
         string& type2str(const int& type = -1) {
@@ -308,6 +410,7 @@ namespace P2P_MODEL {
                 case APP_SINGLE:     return res = "SINGLE";
                 case APP_MULTICAST:  return res = "MULTICAST";
                 case APP_BROADCAST:  return res = "BROADCAST";
+                case APP_CONF:       return res = "CONF";
                 default:             return res = "APP_UNKNOWN";
             }
         }
@@ -316,15 +419,12 @@ namespace P2P_MODEL {
             static string str;
             str = type2str();
             if ((type == APP_SINGLE) || (type == APP_MULTICAST) || (type == APP_BROADCAST))
-                str += " " + to_string(payload.size());
-           
+                str += " " + to_string(payloadSize/*payload.size()*/);           
+
             if (destination.size() > 0) {
-                str += " dest: ";
-                str += destination.at(0).toStr();
-            }
-            for (size_t i = 1; i < destination.size(); ++i) {
-                str += ", ";
-                str += destination.at(i).toStr();
+                str += " dest: " + destination.at(0).toStr();                
+                for (size_t i = 1; i < destination.size(); ++i) 
+                    str += ", " + destination.at(i).toStr();
             }
             return str;
         }
@@ -336,13 +436,20 @@ namespace P2P_MODEL {
     class chord_request: public app_request {
     public:
         network_address source;
+        network_address mediator;
+        sc_time  appearanceTime;
+        chord_request* reqCopy;
 
-        chord_request() {
-            chord_request::clear();
+        chord_request(): reqCopy(nullptr) {
+            clear();
         }
 
-        chord_request(const chord_request& src) {
+        chord_request(const chord_request& src): reqCopy(nullptr) {
             *this = src;
+        }
+
+        ~chord_request() {
+            clear();
         }
 
         chord_request& operator= (const chord_request& src) {
@@ -352,13 +459,41 @@ namespace P2P_MODEL {
             destination = src.destination;
             type = src.type;
             payload = src.payload;
+            payloadSize = src.payloadSize;
             source = src.source;
+            mediator = src.mediator;
+            appearanceTime = src.appearanceTime;
+            
+            if (reqCopy != nullptr) {
+                delete reqCopy;
+                reqCopy = nullptr;
+            }
+            if (src.reqCopy != nullptr) {
+                reqCopy = new chord_request();
+                *reqCopy = *(src.reqCopy);
+            }
+            cout << toStr() << endl;
             return *this;
         }
 
         void clear() {
             app_request::clear();
             type = CHORD_UNKNOWN;
+            source.clear();
+            mediator.clear();
+            appearanceTime = SC_ZERO_TIME;
+
+            if (reqCopy != nullptr) {
+                delete reqCopy;
+                reqCopy = nullptr;
+            }
+        }
+
+        chord_request* clone() {
+            chord_request* p = nullptr;
+            p = new chord_request();
+            *p = *this;
+            return p;
         }
 
         string& type2str(const int& type = -1) {
@@ -368,13 +503,15 @@ namespace P2P_MODEL {
                 t = this->type;
 
             switch (t) {
-                case CHORD_HARD_RESET:          return res = app_request::type2str(SIM_HARD_RESET);
-                case CHORD_SOFT_RESET:          return res = app_request::type2str(SIM_SOFT_RESET);
-                case CHORD_FLUSH:               return res = app_request::type2str(SIM_FLUSH);
-
-                case CHORD_BROADCAST:           return res = app_request::type2str(SIM_BROADCAST);
-                case CHORD_MULTICAST:           return res = app_request::type2str(SIM_MULTICAST);
-                case CHORD_SINGLE:              return res = app_request::type2str(SIM_SINGLE);
+                case CHORD_HARD_RESET:             return res = app_request::type2str(APP_HARD_RESET);
+                case CHORD_SOFT_RESET:             return res = app_request::type2str(APP_SOFT_RESET);
+                case CHORD_FLUSH:                  return res = app_request::type2str(APP_FLUSH);
+                                                   
+                case CHORD_BROADCAST:              return res = app_request::type2str(APP_BROADCAST);
+                case CHORD_MULTICAST:              return res = app_request::type2str(APP_MULTICAST);
+                case CHORD_SINGLE:                 return res = app_request::type2str(APP_SINGLE);
+                                                   
+                case CHORD_CONF:                   return res = app_request::type2str(APP_CONF);
 
                 case CHORD_RX_JOIN:                return res = "RX_JOIN";
                 case CHORD_RX_NOTIFY:              return res = "RX_NOTIFY";
@@ -390,31 +527,73 @@ namespace P2P_MODEL {
                 case CHORD_TX_ACK:                 return res = "TX_ACK";
                 case CHORD_TX_REPLY_FIND_SUCESSOR: return res = "TX_REPLY_FIND_SUCC";
                 case CHORD_TX_FIND_SUCCESSOR:      return res = "TX_FIND_SUCC";
+                case CHORD_TX_FWD_BROADCAST:       return res = "TX_FWD_BROADCAST";
+                case CHORD_TX_FWD_MULTICAST:       return res = "TX_FWD_MULTICAST";
+                case CHORD_TX_FWD_SINGLE:          return res = "TX_FWD_SINGLE";
                 case CHORD_TX_BROADCAST:           return res = "TX_BROADCAST";
                 case CHORD_TX_MULTICAST:           return res = "TX_MULTICAST";
-                case CHORD_TX_SINGLE:              return res = "TX_SINGLE";
-               
-                default: return res = "CHORD_UNKNOWN";
+                case CHORD_TX_SINGLE:              return res = "TX_SINGLE";     
+                
+                case CHORD_TIMER_ACK:              return res = "TIMER_ACK";
+                case CHORD_TIMER_REPLY_FIND_SUCC:  return res = "TIMER_REPLY_FIND_SUCC";
+                case CHORD_TIMER_REPLY_FIND_SUCC_JOIN:  return res = "TIMER_REPLY_FIND_SUCC_JOIN";
+                case CHORD_TIMER_UPDATE:           return res = "TIMER_UPDATE";
+                default:                           return res = "CHORD_UNKNOWN";
             }
         }
 
         string& toStr() {
             static string str;
-            str = type2str();
-            if ((type == CHORD_SINGLE) || (type == CHORD_MULTICAST) || (type == CHORD_BROADCAST))
-                str += " " + to_string(payload.size());
-           
-            if (destination.size() > 0)  {
-                str += " dest: ";
-                str += destination.at(0).toStr();
+            str.clear();
+
+            switch (type) {
+            case CHORD_HARD_RESET:
+            case CHORD_SOFT_RESET:
+            case CHORD_FLUSH: str = type2str(); break;
+
+            case CHORD_BROADCAST:
+            case CHORD_MULTICAST:
+            case CHORD_SINGLE:
+
+            case CHORD_RX_JOIN:
+            case CHORD_RX_NOTIFY:
+            case CHORD_RX_ACK:
+            case CHORD_RX_REPLY_FIND_SUCESSOR:
+            case CHORD_RX_FIND_SUCCESSOR:
+            case CHORD_RX_BROADCAST:
+            case CHORD_RX_MULTICAST:
+            case CHORD_RX_SINGLE:
+
+            case CHORD_TX_JOIN:
+            case CHORD_TX_NOTIFY:
+            case CHORD_TX_ACK:
+            case CHORD_TX_REPLY_FIND_SUCESSOR:
+            case CHORD_TX_FIND_SUCCESSOR:
+            case CHORD_TX_BROADCAST:
+            case CHORD_TX_MULTICAST:
+            case CHORD_TX_SINGLE:
+                str = type2str();
+                str += " " + to_string(payloadSize);
+
+                if (destination.size() > 0) {
+                    str += " dest: " + destination.at(0).toStr();
+                
+                    for (size_t i = 1; i < destination.size(); ++i) 
+                        str += ", " + destination.at(i).toStr();
+                }
+                str += " " + string("src: ") + source.toStr();
+                str += " " + string("med: ") + mediator.toStr();
+                str += " " + appearanceTime.to_string();
+                str += " " + (reqCopy == nullptr ? string("nullptr") : string("\r\n") + reqCopy->toStr());
+                break;
+
+            case CHORD_TIMER_ACK:
+            case CHORD_TIMER_REPLY_FIND_SUCC:
+            case CHORD_TIMER_REPLY_FIND_SUCC_JOIN:
+            case CHORD_TIMER_UPDATE: str = type2str(); break;
+
+            default: str = "CHORD_UNKOWN"; break;
             }
-            for (size_t i = 1; i < destination.size(); ++i) {
-                str += ", ";
-                str += destination.at(i).toStr();
-            }
-            str += " ";
-            str += "src: ";
-            str += source.toStr();
             return str;
         }
 

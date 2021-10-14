@@ -26,7 +26,7 @@ namespace P2P_MODEL
             case APP_BROADCAST: res.type = CHORD_BROADCAST; break;
             default:
                 //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appReq2trpReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appReq2trpReq", DEBUG_LOG | ERROR_LOG);
                 break;
         }
 
@@ -95,7 +95,12 @@ namespace P2P_MODEL
     }
 
 
-    void transport_plus::setSeedNodes(const vector<network_address> seed) {
+    void transport_plus::setSeedNodes(const vector<network_address>& seed) {
         m_llchord.setSeedNodes(seed);
+    }
+
+
+    void transport_plus::setConfParameters(const chord_conf_parameters& params) {
+        m_llchord.setConfParameters(params);
     }
 }

@@ -21,7 +21,7 @@ namespace P2P_MODEL
 
     void log::setPathLog(const string& pathLog)
     {
-        m_pathLog = pathLog;
+        m_logPath = pathLog;
     }
 
 
@@ -51,24 +51,24 @@ namespace P2P_MODEL
 
     void log::clearLog() {
         ofstream file;
-        file.open(m_pathLog.c_str(), std::ofstream::out);
+        file.open(m_logPath.c_str(), std::ofstream::out);
         file.close();
     }
 
 
     void log::msgLog(const string& methodName, const string& text, const int &secondaryLogMode)
     {
-        messageLog(m_pathLog, methodName, m_logMode, static_cast<log_mode>(secondaryLogMode), string(""), string(""), text);
+        messageLog(m_logPath, methodName, m_logMode, static_cast<log_mode>(secondaryLogMode), string(""), string(""), text);
     }
 
     void log::msgLog(const string& methodName, const string& logRxTx, const string& logInOut, const string& text, const int &secondaryLogMode)
     {
-        messageLog(m_pathLog, methodName, m_logMode, static_cast<log_mode>(secondaryLogMode), logRxTx, logInOut, text);
+        messageLog(m_logPath, methodName, m_logMode, static_cast<log_mode>(secondaryLogMode), logRxTx, logInOut, text);
     }
 
     void log::msgLog(const string& methodName, const string& logRxTx, const string& logInOut, const string& text)   
     {
-        messageLog(m_pathLog, methodName, m_logMode, INTERNAL_LOG, logRxTx, logInOut, text);
+        messageLog(m_logPath, methodName, m_logMode, INTERNAL_LOG, logRxTx, logInOut, text);
     }
 
 
@@ -78,7 +78,8 @@ namespace P2P_MODEL
                             const string& text)
     {
         if (m_isEnabled) {
-            if (primary & secondary) {
+            uint isMatched = primary & secondary;
+            if (isMatched > 0) {
                 std::stringstream ss;
                 ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_seconds());
                 ss << LOG_SPACER;

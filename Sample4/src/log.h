@@ -15,6 +15,7 @@ namespace P2P_MODEL
     const string LOG_INFO              = string(":::::");
     const string LOG_WARNING_INDICATOR = string("!!!!!");
     const string LOG_ERROR_INDICATOR   = LOG_WARNING_INDICATOR;
+    const string LOG_ERROR_OVERFLOW    = string("OVERFLOW BUFFER");
 
     const int MAX_LEN_METHOD_NAME = 30;
     const int MAX_LEN_TIME = 20;
@@ -38,9 +39,9 @@ namespace P2P_MODEL
         int m_maxLenTime;
 
     protected:
-        string m_pathLog;
+        string m_logPath;
         log_mode m_logMode;
-        string m_strLogText;
+        string m_logText;
 
     public:
         

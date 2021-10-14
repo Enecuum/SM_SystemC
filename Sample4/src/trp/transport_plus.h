@@ -45,7 +45,9 @@ namespace P2P_MODEL
         void setDisabledLog();
         void setEnabledLog();
 
-        void setSeedNodes(const vector<network_address> seed);
+        void setSeedNodes(const vector<network_address>& seed);
+
+        void setConfParameters(const chord_conf_parameters& params);
 
 
     public:

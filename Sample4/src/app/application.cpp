@@ -88,8 +88,8 @@ namespace P2P_MODEL
 
                 default:
                     //ERROR
-                    m_strLogText = "run" + LOG_SPACER + r->type2str();
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                    m_logText = "run" + LOG_SPACER + r->type2str();
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                     return;
                 }
             }
@@ -104,8 +104,8 @@ namespace P2P_MODEL
         else {             
             if (!(type < m_reqs.size())) {
                 //ERROR
-                m_strLogText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                m_logText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
 
@@ -113,8 +113,8 @@ namespace P2P_MODEL
 
             if (currReq->type != type) {
                 //ERROR
-                m_strLogText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                m_logText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
 
@@ -136,17 +136,17 @@ namespace P2P_MODEL
 
             default:
                 //ERROR
-                m_strLogText = "generateReq" + LOG_SPACER + currReq->type2str();
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                m_logText = "generateReq" + LOG_SPACER + currReq->type2str();
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
             m_sentReqCounter[type]++;
 
             
-            m_strLogText = "generateReq" + LOG_SPACER;
-            m_strLogText +=  to_string(m_sentReqCounter[type]) + "(" + to_string(currReq->amount) + ")";
-            m_strLogText += " " + a.toStr();
-            msgLog(name(), LOG_TX, LOG_OUT, m_strLogText, DEBUG_LOG | EXTERNAL_LOG);
+            m_logText = "generateReq" + LOG_SPACER;
+            m_logText +=  to_string(m_sentReqCounter[type]) + "(" + to_string(currReq->amount) + ")";
+            m_logText += " " + a.toStr();
+            msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | EXTERNAL_LOG);
             
 
             m_isTriggeredReq[type] = false;
@@ -168,19 +168,19 @@ namespace P2P_MODEL
             }
 
             switch (type) {
-                case SIM_HARD_RESET: m_eventGenerateHardReset.notify(nextGenerate); break;
-                case SIM_SOFT_RESET: m_eventGenerateSoftReset.notify(nextGenerate); break;
-                case SIM_FLUSH: m_eventGenerateFlush.notify(nextGenerate); break;
-                case SIM_SINGLE: m_eventGenerateSingle.notify(nextGenerate); break;
-                case SIM_MULTICAST: m_eventGenerateMulticast.notify(nextGenerate); break;
-                case SIM_BROADCAST: m_eventGenerateBroadcast.notify(nextGenerate); break;
-                case SIM_PAUSE: m_eventGeneratePause.notify(nextGenerate); break;
-                case SIM_CONTINUE: m_eventGenerateContinue.notify(nextGenerate); break;
-                default:
-                    //ERROR        
-                    m_strLogText = "generateReq" + LOG_SPACER + currReq->type2str();
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_strLogText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
-                    break;
+            case SIM_HARD_RESET: m_eventGenerateHardReset.notify(nextGenerate); break;
+            case SIM_SOFT_RESET: m_eventGenerateSoftReset.notify(nextGenerate); break;
+            case SIM_FLUSH: m_eventGenerateFlush.notify(nextGenerate); break;
+            case SIM_SINGLE: m_eventGenerateSingle.notify(nextGenerate); break;
+            case SIM_MULTICAST: m_eventGenerateMulticast.notify(nextGenerate); break;
+            case SIM_BROADCAST: m_eventGenerateBroadcast.notify(nextGenerate); break;
+            case SIM_PAUSE: m_eventGeneratePause.notify(nextGenerate); break;
+            case SIM_CONTINUE: m_eventGenerateContinue.notify(nextGenerate); break;
+            default:
+                //ERROR        
+                m_logText = "generateReq" + LOG_SPACER + currReq->type2str();
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                break;
             }
         }
     }
@@ -202,71 +202,75 @@ namespace P2P_MODEL
     app_request_type application::simReqType2appReqType(const uint& type) {
         switch (type)
         {
-            case SIM_HARD_RESET: return APP_HARD_RESET;
-            case SIM_SOFT_RESET: return APP_SOFT_RESET;
-            case SIM_FLUSH:  return APP_FLUSH;
-            case SIM_SINGLE: return APP_SINGLE;
-            case SIM_MULTICAST: return APP_MULTICAST;
-            case SIM_BROADCAST: return APP_BROADCAST;       
-            default:
-                //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "simReqType2appReqType", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
-                return APP_UNKNOWN;
+        case SIM_HARD_RESET: return APP_HARD_RESET;
+        case SIM_SOFT_RESET: return APP_SOFT_RESET;
+        case SIM_FLUSH:      return APP_FLUSH;
+        case SIM_SINGLE:     return APP_SINGLE;
+        case SIM_MULTICAST:  return APP_MULTICAST;
+        case SIM_BROADCAST:  return APP_BROADCAST;       
+        case SIM_CONF:       return APP_CONF;
+        default:
+            //ERROR
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "simReqType2appReqType", DEBUG_LOG | ERROR_LOG);
+            return APP_UNKNOWN;
         }
     }
 
 
     sim_request& application::doRandSimReq(const sim_request& s) {
-        static sim_request res[MAX_SIM_REQ_TYPE];
-        static vector<bool> isFilled;
-        if (isFilled.size() == 0)
-            isFilled.resize(MAX_SIM_REQ_TYPE, false);
+        if (m_randSimReq.size() == 0)
+            m_randSimReq.resize(MAX_SIM_REQ_TYPE, sim_request());
+
+        if (m_isFilled.size() == 0)
+            m_isFilled.resize(MAX_SIM_REQ_TYPE, false);
 
         if (!(s.type < MAX_SIM_REQ_TYPE)) {
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
-            return res[0];
+            //ERROR
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG);
+            m_randSimReq[0].clear();
+            return m_randSimReq[0];
         }
 
-        if (isFilled[s.type] == false)            
-            res[s.type] = s;
+        if (m_isFilled[s.type] == false)            
+            m_randSimReq[s.type] = s;
 
         for (uint i = 0; i < MAX_RAND_TYPE; ++i) {
             if (s.randType[i] == true) {
                 switch (i) {
                 case RAND_PERIOD: 
-                    if ((s.randNeedRecalc[i] == true) || (isFilled[s.type] == false))
-                        res[s.type].period = sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                    if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false))
+                        m_randSimReq[s.type].period = sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
                     break;
             
                 case RAND_FIRST_DELAY:
-                    if (isFilled[s.type] == false)
-                        res[s.type].firstDelay = sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                    if (m_isFilled[s.type] == false)
+                        m_randSimReq[s.type].firstDelay = sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
                     break;
 
                 case RAND_PERIOD_TAIL: 
-                    if ((s.randNeedRecalc[i] == true) || (isFilled[s.type] == false)) {
+                    if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false)) {
                         int sign = rand() % 1;
                         if (sign == 1)
-                            res[s.type].period += sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                            m_randSimReq[s.type].period += sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
                         else
-                            res[s.type].period -= sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                            m_randSimReq[s.type].period -= sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
                     } break;
 
                 case RAND_DATA_SIZE:
-                    if ((s.randNeedRecalc[i] == true) || (isFilled[s.type] == false)) {
+                    if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false)) {
                         if ((s.type == SIM_SINGLE) || (s.type == SIM_MULTICAST) || (s.type == SIM_BROADCAST))
-                            res[s.type].dataSize = s.randFrom[i] + rand() % s.randTo[i];
+                            m_randSimReq[s.type].dataSize = s.randFrom[i] + rand() % s.randTo[i];
                         else 
-                            res[s.type].dataSize = 0;
+                            m_randSimReq[s.type].dataSize = 0;
                     } break;
 
                 case RAND_DEST:                     
-                    if ((s.randNeedRecalc[i] == true) || (isFilled[s.type] == false)) {
+                    if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false)) {
                         int amount = 1;
                         if ((s.type == SIM_BROADCAST) || (s.type == SIM_MULTICAST))
                             amount = s.randAmount[i];
                     
-                        res[s.type].destination.clear();
+                        m_randSimReq[s.type].destination.clear();
                         for (int j = 0; j < amount; ++j) {
                             network_address tmp;
                             tmp.ip  = to_string(s.randFrom[i] + rand() % s.randTo[i]); tmp.ip += ".";
@@ -275,53 +279,57 @@ namespace P2P_MODEL
                             tmp.ip += to_string(s.randFrom[i] + rand() % s.randTo[i]);
                             tmp.inSocket = s.randFrom[i] + rand() % s.randTo[i];
                             tmp.outSocket = s.randFrom[i] + rand() % s.randTo[i];
-                            res[s.type].destination.push_back(tmp);
+                            m_randSimReq[s.type].destination.push_back(tmp);
                         }    
                     } break;
 
                 default:
                     //ERROR
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG);
                     break;
                 }
             }
         }
 
-        if (isFilled[s.type] == false)
-            isFilled[s.type] = true;
+        if (m_isFilled[s.type] == false)
+            m_isFilled[s.type] = true;
 
-        return res[s.type];
+        return m_randSimReq[s.type];
     }
 
     app_request& application::createAppRequest(const sim_request& s) {
-        static app_request res;
-        
+        static app_request res;        
+        res.clear();
+
         res.destination = s.destination;        
         res.type = simReqType2appReqType(s.type);
         
         res.payload.clear();
         if ((s.type == SIM_SINGLE) || (s.type == SIM_MULTICAST) || (s.type == SIM_BROADCAST)) {
-            switch (s.payloadType)
-            {
-            case DATA:
-                res.payload.resize(s.dataSize, 1);
+            switch (s.payloadType) {
+            case DATA:                
+                res.payloadSize = s.dataSize;
+                res.payload.resize(res.payloadSize, 1);
                 break;
 
             case K_BLOCK:
-                res.payload.resize(2025, 1);
+                res.payloadSize = 2025;
+                res.payload.resize(res.payloadSize, 1);
                 break;
 
             case M_BLOCK:
-                res.payload.resize(6533, 1);
+                res.payloadSize = 6533;
+                res.payload.resize(res.payloadSize, 1);
                 break;
 
             case S_BLOCK:
-                res.payload.resize(558, 1);
+                res.payloadSize = 558;
+                res.payload.resize(res.payloadSize, 1);
                 break;
 
             default:
                 //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppRequest", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppRequest", DEBUG_LOG | ERROR_LOG);
                 break;
             }
         }
