@@ -1,0 +1,13 @@
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	pushNewRequest	HARD_RESET
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	core	HARD_RESET
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	STATE_LOAD
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	STATE_INIT
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	STATE_JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	goStateJoin	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 0.0.0.0 0 0 0xus0000000000000000000000000000000000000000 1 ms nullptr
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	pushNewRequest	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 0.0.0.0 0 0 0xus0000000000000000000000000000000000000000 1 ms nullptr
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	pushNewRequest	TIMER_REPLY_FIND_SUCC_JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	core	TIMER_REPLY_FIND_SUCC_JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	core	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 0.0.0.0 0 0 0xus0000000000000000000000000000000000000000 1 ms nullptr
+0.001               	transport_2.low_latency_chord 	Tx  	> > >	STATE_JOIN	sendMessage	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 0.0.0.0 0 0 0xus0000000000000000000000000000000000000000 1 ms nullptr
+0.001               	transport_1.low_latency_chord 	TxRx	< < <	pushNewRequest	RX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 0.0.0.0 0 0 0xus0000000000000000000000000000000000000000 1 ms nullptr
+0.001               	transport_1.low_latency_chord 	TxRx	:::::	core	RX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 0.0.0.0 0 0 0xus0000000000000000000000000000000000000000 1 ms nullptr

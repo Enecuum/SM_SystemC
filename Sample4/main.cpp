@@ -4,10 +4,9 @@
 
 #include "app/application.h"
 #include "trp/transport_plus.h"
-#include "trp/low_latency_chord.h"
+//#include "trp/low_latency_chord.h"
+#include "net/network.h"
 
-//#include "trafgen.h"
-//#include "basicchannel.h"
 
 
 using namespace P2P_MODEL;
@@ -112,51 +111,7 @@ int main(int argc, char* argv[])
         auto itRemoveSymbol = remove(itBegin, itEnd, ',');
         argvStr[i].erase(itRemoveSymbol, itEnd);
     }
-
-    //init_configuration();
-
-    //unsigned int testScenarioN = 1;
-    //unsigned int testBuferrsN = 1;
-    //if (argc >= 2)
-    //    testScenarioN = atoi(argvStr.at(1).c_str());
-    //if (argc >= 3)
-    //    testBuferrsN = atoi(argvStr.at(2).c_str());
-
-
-    //switch (testScenarioN)
-    //{
-    //case 0:
-    //default:                                           //amount datasize           verify reply  increment period
-    //    init_message_transmission_parameters(WRITE_COMMAND, 3,  1024,               false, false, true,      0.5); break;
-    //case 1:
-    //    init_message_transmission_parameters(WRITE_COMMAND, 10,  1*1024*1024 ,       true, true, true,        30); break;
-    //case 2:
-    //    init_message_transmission_parameters(READ_COMMAND, 3,   1024,               false, true, true,        10); break;
-    //case 3:
-    //    init_message_transmission_parameters(READ_COMMAND, 10,  1*1024*1024,        false, true, true,        40); break;
-    //case 4:
-    //    init_message_transmission_parameters(RMW_COMMAND,   3,           2,         true, true, true,          1); break;
-    //case 5:
-    //    init_message_transmission_parameters(RMW_COMMAND,   10,         8,          true, true, true,          1); break;
-    //}
-
-
-
-    //switch (testBuferrsN)
-    //{
-    //case 0:
-    //default:
-    //    init_speed_buffers(1.25, 4, 1024, 512);
-    //    break;
-
-    //case 1:
-    //    init_speed_buffers(1.25, 4, 1024*1024, 512);
-    //    break;
-
-    //case 2:
-    //    init_speed_buffers(1.25, 4, 1024*1024, 2*1024*1024);
-    //    break;
-    //}
+    
 
     application    application1("application_1");
     application    application2("application_2");
@@ -164,97 +119,126 @@ int main(int argc, char* argv[])
     transport_plus   transport1("transport_1");
     transport_plus   transport2("transport_2");
 
+    uint nodes = 2;
+    network          network1("network", nodes);;
+
     application1.trp_port.bind(transport1);
     application2.trp_port.bind(transport2);
 
+    transport1.network_port.bind(network1);
+    transport2.network_port.bind(network1);
+
     
+    uint nodeIndex = 0;    
+    network1.trp_ports[nodeIndex++]->bind(transport1);
+    network1.trp_ports[nodeIndex++]->bind(transport2);
 
     //Set initial settings of Application layer and Transport+ layer
     application1.setEnabledLog();
-    application1.setLogMode(EXTERNAL_LOG);
+    application1.setLogMode(ALL_LOG);
     application1.setPathLog("./log/app.txt");
 
     transport1.setEnabledLog();
-    transport1.setLogMode(EXTERNAL_LOG);
+    transport1.setLogMode(ALL_LOG);
     transport1.setPathLog("./log/trp.txt");
 
     application2.setEnabledLog();
-    application2.setLogMode(EXTERNAL_LOG);
+    application2.setLogMode(ALL_LOG);
     application2.setPathLog("./log/app.txt");
 
-    transport1.setEnabledLog();
-    transport1.setLogMode(EXTERNAL_LOG);
-    transport1.setPathLog("./log/trp.txt");
+    transport2.setEnabledLog();
+    transport2.setLogMode(ALL_LOG);
+    transport2.setPathLog("./log/trp.txt");
 
 
-    //Set simulating scenario of message issueing from Application layer to Transport+ layer
+    network1.setEnabledLog();
+    network1.setLogMode(ALL_LOG);
+    network1.setPathLog("./log/net.txt");
+
+
+    //Set simulating scenarios of message issueing for Application layer
     sim_request req;
-    req.clear();
-    req.destination;
-    req.type = SIM_SINGLE;
-    req.payloadType = DATA;  
-    req.amount = 3;
-    req.period = sc_time(15, SC_SEC);
-    req.firstDelay = sc_time(0, SC_MS);
-    req.randType[RAND_DEST] = true;
-    req.randFrom[RAND_DEST] = 0;
-    req.randTo[RAND_DEST] = 256;
-    req.randAmount[RAND_DEST] = 1;
-    req.timeUnit = SC_MS;
-    req.dataSize = 1000;
-    application1.pushSimulatingReq(req);
 
-    req.clear();
-    req.destination;
-    req.type = SIM_MULTICAST;
-    req.payloadType = DATA;
-    req.amount = 4;
-    req.period = sc_time(15, SC_SEC);
-    req.firstDelay = sc_time(0, SC_MS);
-    req.randType[RAND_DEST] = true;
-    req.randFrom[RAND_DEST] = 0;
-    req.randTo[RAND_DEST] = 256;
-    req.randAmount[RAND_DEST] = 3;
-    req.randNeedRecalc[RAND_DEST] = true;
-    req.timeUnit = SC_MS;
-    req.dataSize = 1000;
-    application1.pushSimulatingReq(req);
+    //req.clear();
+    //req.type = SIM_HARD_RESET;
+    //req.amount = 1;    
+    //req.firstDelay = sc_time(1, SC_MS);
+    //application1.pushSimulatingReq(req);
+
+
+    //req.clear();
+    //req.destination;
+    //req.type = SIM_SINGLE;
+    //req.payloadType = DATA;  
+    //req.amount = 1;
+    //req.period = sc_time(15, SC_SEC);
+    //req.firstDelay = sc_time(0, SC_MS);
+    //req.randType[RAND_DEST] = true;
+    //req.randFrom[RAND_DEST] = 0;
+    //req.randTo[RAND_DEST] = 256;
+    //req.randAmount[RAND_DEST] = 1;
+    //req.timeUnit = SC_MS;
+    //req.dataSize = 1000;
+    //application2.pushSimulatingReq(req);
+
+    //req.clear();
+    //req.destination;
+    //req.type = SIM_MULTICAST;
+    //req.payloadType = DATA;
+    //req.amount = 4;
+    //req.period = sc_time(15, SC_SEC);
+    //req.firstDelay = sc_time(0, SC_MS);
+    //req.randType[RAND_DEST] = true;
+    //req.randFrom[RAND_DEST] = 0;
+    //req.randTo[RAND_DEST] = 256;
+    //req.randAmount[RAND_DEST] = 3;
+    //req.randNeedRecalc[RAND_DEST] = true;
+    //req.timeUnit = SC_MS;
+    //req.dataSize = 1000;
+    //application2.pushSimulatingReq(req);
 
     req.clear();
     req.type = SIM_HARD_RESET;
-    req.amount = 3;
+    req.amount = 1;
     req.period = sc_time(5, SC_SEC);
     req.firstDelay = sc_time(1, SC_MS);
-    application1.pushSimulatingReq(req);
+    application2.pushSimulatingReq(req);
 
-    req.clear();
-    req.type = SIM_SOFT_RESET;
-    req.amount = 4;
-    req.period = sc_time(6, SC_SEC);
-    req.firstDelay = sc_time(2, SC_MS);
-    application1.pushSimulatingReq(req);
+    //req.clear();
+    //req.type = SIM_SOFT_RESET;
+    //req.amount = 4;
+    //req.period = sc_time(6, SC_SEC);
+    //req.firstDelay = sc_time(2, SC_MS);
+    //application2.pushSimulatingReq(req);
 
-    req.clear();
-    req.type = SIM_FLUSH;
-    req.amount = 5;
-    req.period = sc_time(7, SC_SEC);
-    req.firstDelay = sc_time(3, SC_MS);
-    application1.pushSimulatingReq(req);
-
-
+    //req.clear();
+    //req.type = SIM_FLUSH;
+    //req.amount = 5;
+    //req.period = sc_time(7, SC_SEC);
+    //req.firstDelay = sc_time(3, SC_MS);
+    //application2.pushSimulatingReq(req);
 
 
+    //Set configuration parameters of Transport+ layer
+    chord_conf_parameters params1, params2;    
+    params1.netwAddr.set("192.168.0.1", 4444, 1111);
+    params2.netwAddr.set("192.168.0.2", 4444, 1111);
+    
+    params1.setDefaultTimersCountersFingersSize();
 
-    //Set confinguratino parameters of Transport+ layer
-    network_address addr1("192.168.0.1", 4444, 1111);
-    network_address addr2("192.168.0.2", 4444, 1111);
+    params2.setDefaultTimersCountersFingersSize();
+    params2.seed.push_back(params1.netwAddr);
    
-    transport1.setNetworkAddress(addr1);
-    transport2.setNetworkAddress(addr2);
+    transport1.setConfParameters(params1);
+    transport2.setConfParameters(params2);
 
-    vector<network_address> seed;
-    seed.push_back(addr1);
-    transport2.setSeedNodes(seed);
+    //Set configuration parameters of network model
+    node_address a;
+    a.set(params1.netwAddr);    
+    network1.pushLatency(a.id, sc_time(50, SC_MS));
+
+    a.set(params2.netwAddr);
+    network1.pushLatency(a.id, sc_time(70, SC_MS));
 
 
     //LOG

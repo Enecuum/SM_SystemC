@@ -6,7 +6,7 @@
 namespace P2P_MODEL {
 
     const int MAX_SIZE_BUFF_CONFIG_REQ = 100;
-    const int MAX_SIZE_BUFF_TIMER_REQ = 100;
+    const int MAX_SIZE_BUFF_TIMER_REQ = 10000;
     const int MAX_SIZE_BUFF_MESS_REQ = 100;
     const int MAX_SIZE_BUFF_RX_MESS = 100;
     const int MAX_SIZE_BUFF_TX_MESS = MAX_SIZE_BUFF_MESS_REQ + MAX_SIZE_BUFF_RX_MESS + 1;

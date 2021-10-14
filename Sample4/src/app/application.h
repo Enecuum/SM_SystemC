@@ -12,6 +12,8 @@ namespace P2P_MODEL
                        public log
     {
     private:
+        vector<sim_request> m_randSimReq;
+        vector<bool> m_isFilled;
 
         sc_event m_eventGenerateHardReset;
         sc_event m_eventGenerateSoftReset;

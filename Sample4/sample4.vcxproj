@@ -150,15 +150,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\app\application.h" />
+    <ClInclude Include="src\app\application_if.h" />
     <ClInclude Include="src\inc.h" />
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\net\network.h" />
+    <ClInclude Include="src\net\network_trp_if.h" />
     <ClInclude Include="src\trp\broadcast.h" />
     <ClInclude Include="src\trp\low_latency_chord.h" />
     <ClInclude Include="src\trp\req_buffer.h" />
     <ClInclude Include="src\trp\sha1.hpp" />
+    <ClInclude Include="src\trp\llchord_classes_defs.h" />
     <ClInclude Include="src\trp\trp_application_if.h" />
     <ClInclude Include="src\trp\transport_plus.h" />
+    <ClInclude Include="src\trp\trp_llchord_if.h" />
+    <ClInclude Include="src\trp\trp_network_if.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

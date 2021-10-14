@@ -72,5 +72,20 @@
     <ClInclude Include="src\trp\req_buffer.h">
       <Filter>src\trp</Filter>
     </ClInclude>
+    <ClInclude Include="src\trp\llchord_classes_defs.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\net\network_trp_if.h">
+      <Filter>src\net</Filter>
+    </ClInclude>
+    <ClInclude Include="src\app\application_if.h">
+      <Filter>src\app</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_network_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_llchord_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

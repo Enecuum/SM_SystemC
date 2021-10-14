@@ -120,7 +120,8 @@ namespace P2P_MODEL
 
 
     void low_latency_chord::pushNewRequest(const chord_request& req) {
-        chord_request r = req;
+        //chord_request& r = const_cast<chord_request&>(req);
+        chord_request r = const_cast<chord_request&>(req);        
         r.appearanceTime = sc_time_stamp();
 
         int i = chordReqType2buffIndex(r.type);
@@ -192,53 +193,58 @@ namespace P2P_MODEL
         chord_request* p = firstReqByPriority();
         if (p != nullptr) {
             
-            m_logText = "core" + LOG_SPACER + p->type2str();
+            m_logText = "core" + LOG_SPACER + p->toStr();
             msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | INTERNAL_LOG);
 
             switch (m_state)
             {
             case STATE_OFF:
-                if (p->type == CHORD_HARD_RESET) {
-                    eraseFirstReq();
-                    hardReset();   
-                    goStateLoad();
+                switch (p->type) {
+                case CHORD_HARD_RESET:  eraseFirstReq(); hardReset();  goStateLoad(); break;
+                default:                eraseFirstReq(); break;
                 } break;
 
             case STATE_INIT:
-                break;
+                switch (p->type) {
+                case CHORD_HARD_RESET:  eraseFirstReq(); hardReset();  goStateLoad(); break;
+                case CHORD_SOFT_RESET:  eraseFirstReq(); softReset();  goStateInit(); break;
+                case CHORD_FLUSH:       eraseFirstReq(); flush();      goStateIdle(); break;
+                default:                eraseFirstReq(); break;
+                } break;
             
             case STATE_JOIN:
-                if (p->type == CHORD_TX_JOIN) {
-                    
-                }
-                break;
+                switch (p->type) {
+                case CHORD_HARD_RESET:  eraseFirstReq(); hardReset();  goStateLoad(); break;
+                case CHORD_SOFT_RESET:  eraseFirstReq(); softReset();  goStateInit(); break;
+                case CHORD_FLUSH:       eraseFirstReq(); flush();      goStateIdle(); break;
+                
+                case CHORD_TX_JOIN:
+                case CHORD_TX_FIND_SUCCESSOR:            sendMessage(*p); eraseFirstReq();  break;
+
+                case CHORD_RX_REPLY_FIND_SUCCESSOR:
+                case CHORD_RX_ACK:                    break;
+                default:                eraseFirstReq(); break;
+                } break;
             
-            case STATE_IDLE:
-                break;
+            case STATE_IDLE: eraseFirstReq(); break;
             
-            case STATE_INDATA:
-                break;
+            case STATE_INDATA: eraseFirstReq(); break;
             
-            case STATE_SERVICE:
-                break;
+            case STATE_SERVICE: eraseFirstReq(); break;
             
-            case STATE_UPDATE:
-                break;
+            case STATE_UPDATE: eraseFirstReq(); break;
             
-            case STATE_APPREQUEST:
-                break;
+            case STATE_APPREQUEST: eraseFirstReq(); break;
 
             default:
+                eraseFirstReq();
                 //ERROR
                 m_logText = "core" + LOG_SPACER + state2str(m_state);
                 msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
-            eraseFirstReq();
-
-            /*
-            switch (p->type)
-            {
+            
+            /* {
             case CHORD_HARD_RESET:
                 
                 break;
@@ -274,7 +280,7 @@ namespace P2P_MODEL
             case CHORD_RX_JOIN:
             case CHORD_RX_NOTIFY:
             case CHORD_RX_ACK:
-            case CHORD_RX_REPLY_FIND_SUCESSOR:
+            case CHORD_RX_REPLY_FIND_SUCCESSOR:
             case CHORD_RX_FIND_SUCCESSOR:
             case CHORD_RX_BROADCAST:
             case CHORD_RX_MULTICAST:
@@ -358,17 +364,21 @@ namespace P2P_MODEL
         chord_request req;
         if (m_isSuccessorSet == false) {
             req.destination.push_back(m_confParams.seed.front());
+            req.destNodeID = node_address(req.destination[0]).id;
             req.source = m_nodeAddr;
+            req.mediator.clear();
             req.type = CHORD_TX_JOIN;
             req.appearanceTime = sc_time_stamp();
             
             if (m_counterJoin <= m_confParams.CtxJoin) {
+                m_logText = "goStateJoin" + LOG_SPACER + req.toStr();
+                msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | INTERNAL_LOG);
 
-                req.reqCopy = req.clone(); 
                 pushNewRequest(req);
 
                 chord_request timer;
                 timer.type = CHORD_TIMER_REPLY_FIND_SUCC_JOIN;
+                timer.reqCopy = req.clone();
                 pushNewRequest(timer);
                 m_eventCore.notify(0, SC_NS);
             }
@@ -429,7 +439,7 @@ namespace P2P_MODEL
         case CHORD_RX_JOIN:
         case CHORD_RX_NOTIFY:
         case CHORD_RX_ACK:
-        case CHORD_RX_REPLY_FIND_SUCESSOR:
+        case CHORD_RX_REPLY_FIND_SUCCESSOR:
         case CHORD_RX_FIND_SUCCESSOR:
         case CHORD_RX_BROADCAST:
         case CHORD_RX_MULTICAST:
@@ -507,6 +517,15 @@ namespace P2P_MODEL
         //Fingers, latency, precessor, successor are stored
     }
 
+
+    void low_latency_chord::sendMessage(const chord_request& req) {    
+        m_logText = state2str(m_state) + LOG_SPACER + string("sendMessage") + LOG_SPACER + const_cast<chord_request&>(req).toStr();
+        msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | INTERNAL_LOG);
+
+        message_info message;        
+        message.req = req;
+        trp_port->send_mess(message);
+    }
 
 
 }

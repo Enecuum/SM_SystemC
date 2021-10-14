@@ -21,7 +21,8 @@ namespace P2P_MODEL {
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
-    typedef list<char>         data_type;
+    typedef vector<char>       data_type;
+    typedef data_type          raw_message;
 
     
     enum payload_type {
@@ -86,7 +87,7 @@ namespace P2P_MODEL {
         CHORD_RX_JOIN,
         CHORD_RX_NOTIFY,
         CHORD_RX_ACK,
-        CHORD_RX_REPLY_FIND_SUCESSOR,
+        CHORD_RX_REPLY_FIND_SUCCESSOR,
         CHORD_RX_FIND_SUCCESSOR,
         CHORD_RX_BROADCAST,
         CHORD_RX_MULTICAST,
@@ -158,7 +159,9 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            set(src.ip, src.inSocket, src.outSocket);
+            this->ip        = src.ip;
+            this->inSocket  = src.inSocket;
+            this->outSocket = src.outSocket;
             return *this;
         }
 
@@ -198,7 +201,7 @@ namespace P2P_MODEL {
 
         void clear() {
             network_address::clear();
-            id = "0xus0";
+            id = 0;
         }
 
 
@@ -216,8 +219,8 @@ namespace P2P_MODEL {
             network_address::set(ip, inSocket, outSocket);
 
             string onlyNumbers = network_address::ip;
-            onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
-            onlyNumbers.append(to_string(network_address::inSocket));
+            //onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
+            //onlyNumbers.append(to_string(network_address::inSocket));
             id = sha1(onlyNumbers);
         }
 
@@ -226,7 +229,8 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            set(src.ip, src.inSocket, src.outSocket);
+            network_address::operator=(src);
+            this->id = src.id;
             return *this;
         }
 
@@ -435,8 +439,9 @@ namespace P2P_MODEL {
 
     class chord_request: public app_request {
     public:
-        network_address source;
-        network_address mediator;
+        node_address source;
+        node_address mediator;
+        uint160 destNodeID;
         sc_time  appearanceTime;
         chord_request* reqCopy;
 
@@ -456,12 +461,14 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            destination = src.destination;
-            type = src.type;
-            payload = src.payload;
-            payloadSize = src.payloadSize;
-            source = src.source;
-            mediator = src.mediator;
+            destination    = src.destination;
+            type           = src.type;
+            payload        = src.payload;
+            payloadSize    = src.payloadSize;
+            source         = src.source;
+            mediator       = src.mediator;
+
+            destNodeID     = src.destNodeID;
             appearanceTime = src.appearanceTime;
             
             if (reqCopy != nullptr) {
@@ -470,9 +477,16 @@ namespace P2P_MODEL {
             }
             if (src.reqCopy != nullptr) {
                 reqCopy = new chord_request();
-                *reqCopy = *(src.reqCopy);
+                (*reqCopy).destination    = (*(src.reqCopy)).destination;
+                (*reqCopy).type           = (*(src.reqCopy)).type;
+                (*reqCopy).payload        = (*(src.reqCopy)).payload;
+                (*reqCopy).payloadSize    = (*(src.reqCopy)).payloadSize;
+                (*reqCopy).source         = (*(src.reqCopy)).source;
+                (*reqCopy).mediator       = (*(src.reqCopy)).mediator;
+                (*reqCopy).destNodeID     = (*(src.reqCopy)).destNodeID;
+                (*reqCopy).appearanceTime = (*(src.reqCopy)).appearanceTime;;
             }
-            cout << toStr() << endl;
+            //cout << toStr() << endl;
             return *this;
         }
 
@@ -481,7 +495,8 @@ namespace P2P_MODEL {
             type = CHORD_UNKNOWN;
             source.clear();
             mediator.clear();
-            appearanceTime = SC_ZERO_TIME;
+            destNodeID = 0;
+            appearanceTime = SC_ZERO_TIME;            
 
             if (reqCopy != nullptr) {
                 delete reqCopy;
@@ -516,7 +531,7 @@ namespace P2P_MODEL {
                 case CHORD_RX_JOIN:                return res = "RX_JOIN";
                 case CHORD_RX_NOTIFY:              return res = "RX_NOTIFY";
                 case CHORD_RX_ACK:                 return res = "RX_ACK";
-                case CHORD_RX_REPLY_FIND_SUCESSOR: return res = "RX_REPLY_FIND_SUCC";
+                case CHORD_RX_REPLY_FIND_SUCCESSOR: return res = "RX_REPLY_FIND_SUCC";
                 case CHORD_RX_FIND_SUCCESSOR:      return res = "RX_FIND_SUCC";
                 case CHORD_RX_BROADCAST:           return res = "RX_BROADCAST";
                 case CHORD_RX_MULTICAST:           return res = "RX_MULTICAST";
@@ -558,7 +573,7 @@ namespace P2P_MODEL {
             case CHORD_RX_JOIN:
             case CHORD_RX_NOTIFY:
             case CHORD_RX_ACK:
-            case CHORD_RX_REPLY_FIND_SUCESSOR:
+            case CHORD_RX_REPLY_FIND_SUCCESSOR:
             case CHORD_RX_FIND_SUCCESSOR:
             case CHORD_RX_BROADCAST:
             case CHORD_RX_MULTICAST:
@@ -581,16 +596,17 @@ namespace P2P_MODEL {
                     for (size_t i = 1; i < destination.size(); ++i) 
                         str += ", " + destination.at(i).toStr();
                 }
+                str += " " + destNodeID.to_string(SC_HEX_US);
                 str += " " + string("src: ") + source.toStr();
                 str += " " + string("med: ") + mediator.toStr();
                 str += " " + appearanceTime.to_string();
-                str += " " + (reqCopy == nullptr ? string("nullptr") : string("\r\n") + reqCopy->toStr());
+                str += " " + (reqCopy == nullptr ? string("nullptr") : string("hasCopy"));
                 break;
 
             case CHORD_TIMER_ACK:
             case CHORD_TIMER_REPLY_FIND_SUCC:
             case CHORD_TIMER_REPLY_FIND_SUCC_JOIN:
-            case CHORD_TIMER_UPDATE: str = type2str(); break;
+            case CHORD_TIMER_UPDATE:               str = type2str(); break;
 
             default: str = "CHORD_UNKOWN"; break;
             }
@@ -600,5 +616,10 @@ namespace P2P_MODEL {
         friend ostream& operator<< (ostream& out, const chord_request& r);
     };
 
+
+    struct message_info {
+        chord_request req;
+        raw_message mess;
+    };
 }
 #endif

@@ -6,6 +6,7 @@
 
 #include "req_buffer.h"
 #include "llchord_classes_defs.h"
+#include "trp_llchord_if.h"
 
 using namespace std;
 
@@ -13,7 +14,7 @@ using namespace std;
 
 namespace P2P_MODEL
 {
-    typedef data_type raw_message;
+    
 
     enum finite_state {
         STATE_LOAD = 0,
@@ -38,6 +39,8 @@ namespace P2P_MODEL
     class low_latency_chord: public sc_module,
                              public log
     {
+    public:
+        sc_port<trp_llchord_if> trp_port;
     private:
         node_address m_nodeAddr;                        //ÀÄĞÅÑ, ÈÑÏÎËÜÇÓÅÌÛÉ ÄËß ÈÄÅÍÒÈÔÈÊÀÖÈÈ ÓÇËÀ ÍÀ Transport+ ÓĞÎÂÍÅ ïî ID, âû÷èñëÿåìîì, êàê SHA-1
         uint         m_currSeed;
@@ -109,7 +112,7 @@ namespace P2P_MODEL
         int chordReqType2buffIndex(const uint type);
 
 
-        void sendMessage(const raw_message&);
+        void sendMessage(const chord_request & req);
        
     };
 }
