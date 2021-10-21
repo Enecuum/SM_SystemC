@@ -1,36 +1,41 @@
-#ifndef __LLCHORD_CLASSES_DEFS_H__
+#ifndef __LLCHORD_CLASSES_DEFS_H__ //LLCHORD is "low lotency chord"
 #define __LLCHORD_CLASSES_DEFS_H__
 
 #include "inc.h"
 
 namespace P2P_MODEL {
-
-    const int MAX_SIZE_BUFF_CONFIG_REQ = 100;
-    const int MAX_SIZE_BUFF_TIMER_REQ = 10000;
-    const int MAX_SIZE_BUFF_MESS_REQ = 100;
-    const int MAX_SIZE_BUFF_RX_MESS = 100;
-    const int MAX_SIZE_BUFF_TX_MESS = MAX_SIZE_BUFF_MESS_REQ + MAX_SIZE_BUFF_RX_MESS + 1;
-
-    const int MAX_DEEP_BUFF_CONFIG_REQ = MAX_SIZE_BUFF_CONFIG_REQ;
-    const int MAX_DEEP_BUFF_TIMER_REQ = MAX_SIZE_BUFF_TIMER_REQ;
-    const int MAX_DEEP_BUFF_MESS_REQ = 1;
-    const int MAX_DEEP_BUFF_RX_MESS = 1;
-    const int MAX_DEEP_BUFF_TX_MESS = MAX_DEEP_BUFF_MESS_REQ + MAX_DEEP_BUFF_RX_MESS + 1;
-
     const int ERROR = -1;
     const int BUFFER_NOT_CHOOSEN = -1;
 
-    const sc_time DEFAULT_TIMOUT_RXFINDSUCCJOIN = sc_time(15, SC_SEC);
-    const sc_time DEFAULT_TIMOUT_RXFINDSUCC = sc_time(5, SC_SEC);
-    const sc_time DEFAULT_TIMOUT_UPDATE = sc_time(1, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RXACK = sc_time(300, SC_MS);
-    const sc_time DEFAULT_TIMEOUT_RXDUPLE = sc_time(2 * DEFAULT_TIMOUT_RXFINDSUCCJOIN.to_seconds(), SC_SEC);
-    const uint    DEFAULT_COUNTER_TXJOIN = 1;
-    const uint    DEFAULT_COUNTER_TXFINDSUCC = 1;
-    const uint    DEFAULT_COUNTER_TXACK = 1;
-    const uint    DEFAULT_COUNTER_RXDUPLE = 1;
-    const uint    DEFAULT_FINGERS_ZIZE = 32;
+    //Default constants to init buffers of low_latency_chord
+    const int MAX_SIZE_BUFF_CONFIG = 100;
+    const int MAX_SIZE_BUFF_TIMER = 10000;
+    const int MAX_SIZE_BUFF_APPTXDATA = 100;
+    const int MAX_SIZE_BUFF_RX_MESS = 100;
+    const int MAX_SIZE_BUFF_TX_MESS = MAX_SIZE_BUFF_APPTXDATA + MAX_SIZE_BUFF_RX_MESS + 1;
+
+    const int MAX_DEEP_BUFF_CONFIG = MAX_SIZE_BUFF_CONFIG;
+    const int MAX_DEEP_BUFF_TIMER = MAX_SIZE_BUFF_TIMER;
+    const int MAX_DEEP_BUFF_APPTXDATA = 1;
+    const int MAX_DEEP_BUFF_RX_MESS = 1;
+    const int MAX_DEEP_BUFF_TX_MESS = MAX_DEEP_BUFF_APPTXDATA + MAX_DEEP_BUFF_RX_MESS + 1;
+    
+    //Default constants to init timers of low_latency_chord
+    const sc_time DEFAULT_TIMEOUT_RX_FIND_SUCC_JOIN = sc_time(15, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_FIND_SUCC = sc_time(5, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(300, SC_MS);
+    const sc_time DEFAULT_TIMEOUT_RX_DUPLE = sc_time(2 * DEFAULT_TIMEOUT_RX_FIND_SUCC_JOIN.to_seconds(), SC_SEC);
+
+    //Default constants to init retry counters of low_latency_chord
+    const uint    DEFAULT_COUNTER_TX_JOIN = 1;
+    const uint    DEFAULT_COUNTER_TX_FIND_SUCC = 1;
+    const uint    DEFAULT_COUNTER_TX_ACK = 1;
+    const uint    DEFAULT_COUNTER_RX_DUPLE = 1;
+    const uint    DEFAULT_FINGERS_SIZE = 32;
     const sc_time NO_TIMEOUT = SC_ZERO_TIME;
+
+    
 
     
 
@@ -61,28 +66,28 @@ namespace P2P_MODEL {
             seed.clear();
             netwAddr.clear();
             TrxFindSuccJoin = NO_TIMEOUT;
-            TrxFindSucc = NO_TIMEOUT;
-            Tupdate = NO_TIMEOUT;
-            TrxAck = NO_TIMEOUT;
-            TrxDuple = NO_TIMEOUT;
-            CtxJoin = 0;
-            CtxFindSucc = 0;
-            CtxAck = 0;
-            CrxDuple = 0;
-            fingersSize = 1;
+            TrxFindSucc     = NO_TIMEOUT;
+            Tupdate         = NO_TIMEOUT;
+            TrxAck          = NO_TIMEOUT;
+            TrxDuple        = NO_TIMEOUT;
+            CtxJoin         = 0;
+            CtxFindSucc     = 0;
+            CtxAck          = 0;
+            CrxDuple        = 0;
+            fingersSize     = 1;
         }
 
         void setDefaultTimersCountersFingersSize() {
-            TrxFindSuccJoin = DEFAULT_TIMOUT_RXFINDSUCCJOIN;
-            TrxFindSucc = DEFAULT_TIMOUT_RXFINDSUCC;
-            Tupdate = DEFAULT_TIMOUT_UPDATE;
-            TrxAck = DEFAULT_TIMEOUT_RXACK;
-            TrxDuple = DEFAULT_TIMEOUT_RXDUPLE;
-            CtxJoin = DEFAULT_COUNTER_TXJOIN;
-            CtxFindSucc = DEFAULT_COUNTER_TXFINDSUCC;
-            CtxAck = DEFAULT_COUNTER_TXACK;
-            CrxDuple = DEFAULT_COUNTER_RXDUPLE;
-            fingersSize = DEFAULT_FINGERS_ZIZE;
+            TrxFindSuccJoin = DEFAULT_TIMEOUT_RX_FIND_SUCC_JOIN;
+            TrxFindSucc     = DEFAULT_TIMEOUT_RX_FIND_SUCC;
+            Tupdate         = DEFAULT_TIMEOUT_UPDATE;
+            TrxAck          = DEFAULT_TIMEOUT_RX_ACK;
+            TrxDuple        = DEFAULT_TIMEOUT_RX_DUPLE;
+            CtxJoin         = DEFAULT_COUNTER_TX_JOIN;
+            CtxFindSucc     = DEFAULT_COUNTER_TX_FIND_SUCC;
+            CtxAck          = DEFAULT_COUNTER_TX_ACK;
+            CrxDuple        = DEFAULT_COUNTER_RX_DUPLE;
+            fingersSize     = DEFAULT_FINGERS_SIZE;
         }
 
         chord_conf_parameters& operator= (const chord_conf_parameters& src) {

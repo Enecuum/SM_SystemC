@@ -4,7 +4,7 @@
 #include "log.h"
 #include "inc.h"
 
-#include "req_buffer.h"
+#include "message_buffer.h"
 #include "llchord_classes_defs.h"
 #include "trp_llchord_if.h"
 
@@ -30,7 +30,7 @@ namespace P2P_MODEL
         STATE_UNKNOWN
     };
 
-    string& state2str(const finite_state& state);
+    
 
 
 
@@ -41,6 +41,7 @@ namespace P2P_MODEL
     {
     public:
         sc_port<trp_llchord_if> trp_port;
+
     private:
         node_address m_nodeAddr;                        //¿ƒ–≈—, »—œŒÀ‹«”≈Ã€… ƒÀﬂ »ƒ≈Õ“»‘» ¿÷»» ”«À¿ Õ¿ Transport+ ”–Œ¬Õ≈ ÔÓ ID, ‚˚˜ËÒÎˇÂÏÓÏ, Í‡Í SHA-1
         uint         m_currSeed;
@@ -48,7 +49,7 @@ namespace P2P_MODEL
         sc_event     m_eventCore;
 
         finite_state       m_state;
-        vector<req_buffer> m_buffer;
+        vector<message_buffer> m_buffer;
         
         uint m_howManyBuffers;
         int  m_indexLastBufferCall;
@@ -61,7 +62,8 @@ namespace P2P_MODEL
         vector<node_address>  m_fingersPos;
         vector<node_address>  m_fingersNeg;
         vector<sc_time>       m_latency;
-        chord_conf_parameters m_confParams;
+        map<uint160, sc_time>       m_isAcked;
+        chord_conf_parameters m_confParams; 
 
         bool m_isSuccessorSet;
         bool m_isPrecessorSet;
@@ -82,37 +84,41 @@ namespace P2P_MODEL
 
         void setSeedNodes(const vector<network_address>& seed);
         void setConfParameters(const chord_conf_parameters& params);
-        void pushNewRequest(const chord_request& req);
+        void pushNewMessage(const chord_message& mess);
 
     private:
         void preinit();
         void core();
-        //void finiteStateMachine(chord_request* p);
+        //void finiteStateMachine(chord_message* p);
 
         void hardReset();
         void softReset();
         void flush();
 
+        void findSuccessor(const chord_message* mess);
+
        
         void goStateLoad(); 
-        void goStateInit();
-        void goStateJoin();
-        void goStateIdle();
-        void goStateIndata();
-        void goStateService();
-        void goStateUpdate();
-        void goStateApprequest();
+        void goStateInit(const chord_message* mess = nullptr);
+        void goStateJoin(const chord_message* mess = nullptr);
+        void goStateIdle(const chord_message* mess = nullptr);
+        void goStateIndata(const chord_message* mess = nullptr);
+        void goStateService(const chord_message* mess = nullptr);
+        void goStateUpdate(const chord_message* mess = nullptr);
+        void goStateApprequest(const chord_message* mess = nullptr);
 
+        bool doResetFlushIfMess(const chord_message* mess);
+        bool isMessValid(const chord_message* mess);
 
+        chord_message* firstMessByPriority();
+        void eraseFirstMess();
         
-
-        chord_request* firstReqByPriority();
-        void eraseFirstReq();
-        
-        int chordReqType2buffIndex(const uint type);
+        int chordMessType2buffIndex(const uint type);
 
 
-        void sendMessage(const chord_request & req);
+        void sendMessage(const chord_message & mess);
+
+        string& state2str(const finite_state& state);
        
     };
 }

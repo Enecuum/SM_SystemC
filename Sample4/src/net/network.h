@@ -3,12 +3,17 @@
 
 #include "inc.h"
 #include "log.h"
-#include "trp/req_buffer.h"
+#include "trp/message_buffer.h"
 #include "trp/trp_network_if.h"
 #include "net/network_trp_if.h"
 
 namespace P2P_MODEL
 {
+    struct message_wake_up_info {
+        int     bufIndex;
+        sc_time time;
+    };
+
 
 
     class network : public sc_module,
@@ -16,11 +21,23 @@ namespace P2P_MODEL
                     public network_trp_if
     {
     private:
-        vector< sc_event* > m_eventSend;        
-        vector< vector<message_info> > m_messages;        
+        vector< sc_event* > m_eventSend;
+        sc_event m_eventCheckReceive;
+
+        vector< list <raw_chord_message> > m_buffMess;        
         map<uint160, uint> m_portIndexByNodeID;
-        map<uint, sc_time> m_latencyByPortIndex;   
-        vector<bool> m_hasMessageInBuffer;
+
+        vector< vector<sc_time> > m_latencyTable;
+       
+       
+        vector<message_wake_up_info> m_wakeUpInfo;
+        vector<uint> m_randDesperseMillisec;
+
+        bool m_hasNewMess;
+
+        
+
+        const int CAN_USE = -1;
         
     public:
         vector< sc_port<trp_network_if>* > trp_ports;
@@ -32,11 +49,10 @@ namespace P2P_MODEL
         network(sc_module_name name, const uint nodes = 2);
         ~network();
 
-        void push_into_network(const message_info& mess);
+        void push_into_network(const raw_chord_message& mess);
 
-        void pushLatency(const uint160 nodeID, const sc_time latency);
-
-        //void setLatencyTable();
+        void setNodeAddressList(const vector<network_address>& addrs);
+        void setRandomLatencyTable(const uint millisecFrom, const uint millisecTo, const uint millisecDesperse);
                 
 
     private:        
@@ -44,6 +60,10 @@ namespace P2P_MODEL
         void deleteEventsPorts();
         void createNewEventPort();        
         void setNodeAmount(const uint nodess);
+        void checkReceive();
+        
+        //void pushLatency(const uint160 nodeID, const sc_time latency);
+        uint specifyNewMessType(const uint type);
     };
 }
 #endif

@@ -12,7 +12,7 @@ namespace P2P_MODEL
                        public log
     {
     private:
-        vector<sim_request> m_randSimReq;
+        vector<sim_message> m_randSimReq;
         vector<bool> m_isFilled;
 
         sc_event m_eventGenerateHardReset;
@@ -26,7 +26,7 @@ namespace P2P_MODEL
 
         sc_event m_eventStart;
         
-        vector< vector<sim_request> > m_reqs;
+        vector< vector<sim_message> > m_reqs;
         vector<int> m_sentReqCounter;
 
         bool m_isPaused;
@@ -62,18 +62,17 @@ namespace P2P_MODEL
 
         void generateContinue();
 
-        void generateReq(const sim_request_type& type);
+        void generateMess(const sim_message_type& type);
 
         
-        void pushSimulatingReq(const sim_request& req);
+        void pushSimulatingMess(const sim_message& mess);
 
-        app_request& createAppRequest(const sim_request& s);
+        app_message& createAppMess(const sim_message& s);
 
-        sim_request& doRandSimReq(const sim_request& s);
+        sim_message& doRandSimMess(const sim_message& s);
 
-        app_request_type simReqType2appReqType(const uint& type);
+        app_message_type simMessType2appMessType(const uint& type);
 
-        sc_time findDelayToSendNextReq(const sim_request& message, const bool isFinished);
         
     };
 }

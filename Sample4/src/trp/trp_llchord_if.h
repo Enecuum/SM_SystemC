@@ -7,7 +7,7 @@
 namespace P2P_MODEL {
     class trp_llchord_if : public sc_interface {
     public:        
-        virtual void send_mess(const message_info& mess) = 0;
+        virtual void send_mess(const chord_message&) = 0;
     };
 }
 

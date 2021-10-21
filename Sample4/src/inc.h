@@ -22,7 +22,7 @@ namespace P2P_MODEL {
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
     typedef vector<char>       data_type;
-    typedef data_type          raw_message;
+    typedef data_type          data_unit;
 
     
     enum payload_type {
@@ -45,7 +45,7 @@ namespace P2P_MODEL {
     };
 
 
-    enum sim_request_type {
+    enum sim_message_type {
         SIM_HARD_RESET = 0,
         SIM_SOFT_RESET,
         SIM_FLUSH,
@@ -55,12 +55,12 @@ namespace P2P_MODEL {
         SIM_CONTINUE,
         SIM_PAUSE,
         SIM_CONF,
-        MAX_SIM_REQ_TYPE,
+        MAX_SIM_MESS_TYPE,
         SIM_UNKNOWN
     };
 
 
-    enum app_request_type {
+    enum app_message_type {
         APP_HARD_RESET = 0,
         APP_SOFT_RESET,
         APP_FLUSH,
@@ -68,12 +68,12 @@ namespace P2P_MODEL {
         APP_MULTICAST,
         APP_BROADCAST,
         APP_CONF,
-        MAX_APP_REQ_TYPE,
+        MAX_APP_MESS_TYPE,
         APP_UNKNOWN
     };
 
     
-    enum chord_request_type {
+    enum chord_message_type {
         CHORD_HARD_RESET = 0,  
         CHORD_SOFT_RESET,
         CHORD_FLUSH,
@@ -110,7 +110,7 @@ namespace P2P_MODEL {
         CHORD_TIMER_REPLY_FIND_SUCC_JOIN,
         CHORD_TIMER_UPDATE,
         
-        MAX_CHORD_REQ_TYPE,
+        MAX_CHORD_MESS_TYPE,
         CHORD_UNKNOWN
     };
 
@@ -258,10 +258,10 @@ namespace P2P_MODEL {
 
 
 
-    class sim_request {
+    class sim_message {
     public:
         vector<network_address> destination;
-        sim_request_type type;
+        sim_message_type type;
         payload_type payloadType;
         uint amount;                    
         sc_time period;
@@ -274,15 +274,15 @@ namespace P2P_MODEL {
         sc_time_unit   timeUnit;
         data_size_type dataSize;
 
-        sim_request() {
+        sim_message() {
             clear();
         }
 
-        sim_request(const sim_request& src) {
+        sim_message(const sim_message& src) {
             *this = src;
         }
 
-        sim_request& operator= (const sim_request& src) {
+        sim_message& operator= (const sim_message& src) {
             if (this == &src)
                 return *this;
 
@@ -368,22 +368,22 @@ namespace P2P_MODEL {
     };
 
 
-    class app_request {
+    class app_message {
     public:
         vector<network_address> destination;
         uint type;
         data_type payload;
         data_size_type payloadSize;
 
-        app_request() {
+        app_message() {
             clear();
         }
 
-        app_request(const app_request& src) {
+        app_message(const app_message& src) {
             *this = src;
         }
 
-        app_request& operator= (const app_request& src) {
+        app_message& operator= (const app_message& src) {
             if (this == &src)
                 return *this;
 
@@ -433,31 +433,31 @@ namespace P2P_MODEL {
             return str;
         }
 
-        friend ostream& operator<< (ostream& out, app_request& r);
+        friend ostream& operator<< (ostream& out, app_message& r);
     };
 
 
-    class chord_request: public app_request {
+    class chord_message: public app_message {
     public:
         node_address source;
         node_address mediator;
         uint160 destNodeID;
         sc_time  appearanceTime;
-        chord_request* reqCopy;
+        chord_message* retryMess;
 
-        chord_request(): reqCopy(nullptr) {
+        chord_message(): retryMess(nullptr) {
             clear();
         }
 
-        chord_request(const chord_request& src): reqCopy(nullptr) {
+        chord_message(const chord_message& src): retryMess(nullptr) {
             *this = src;
         }
 
-        ~chord_request() {
+        ~chord_message() {
             clear();
         }
 
-        chord_request& operator= (const chord_request& src) {
+        chord_message& operator= (const chord_message& src) {
             if (this == &src)
                 return *this;
 
@@ -471,42 +471,42 @@ namespace P2P_MODEL {
             destNodeID     = src.destNodeID;
             appearanceTime = src.appearanceTime;
             
-            if (reqCopy != nullptr) {
-                delete reqCopy;
-                reqCopy = nullptr;
+            if (retryMess != nullptr) {
+                delete retryMess;
+                retryMess = nullptr;
             }
-            if (src.reqCopy != nullptr) {
-                reqCopy = new chord_request();
-                (*reqCopy).destination    = (*(src.reqCopy)).destination;
-                (*reqCopy).type           = (*(src.reqCopy)).type;
-                (*reqCopy).payload        = (*(src.reqCopy)).payload;
-                (*reqCopy).payloadSize    = (*(src.reqCopy)).payloadSize;
-                (*reqCopy).source         = (*(src.reqCopy)).source;
-                (*reqCopy).mediator       = (*(src.reqCopy)).mediator;
-                (*reqCopy).destNodeID     = (*(src.reqCopy)).destNodeID;
-                (*reqCopy).appearanceTime = (*(src.reqCopy)).appearanceTime;;
+            if (src.retryMess != nullptr) {
+                retryMess = new chord_message();
+                (*retryMess).destination    = (*(src.retryMess)).destination;
+                (*retryMess).type           = (*(src.retryMess)).type;
+                (*retryMess).payload        = (*(src.retryMess)).payload;
+                (*retryMess).payloadSize    = (*(src.retryMess)).payloadSize;
+                (*retryMess).source         = (*(src.retryMess)).source;
+                (*retryMess).mediator       = (*(src.retryMess)).mediator;
+                (*retryMess).destNodeID     = (*(src.retryMess)).destNodeID;
+                (*retryMess).appearanceTime = (*(src.retryMess)).appearanceTime;;
             }
             //cout << toStr() << endl;
             return *this;
         }
 
         void clear() {
-            app_request::clear();
+            app_message::clear();
             type = CHORD_UNKNOWN;
             source.clear();
             mediator.clear();
             destNodeID = 0;
             appearanceTime = SC_ZERO_TIME;            
 
-            if (reqCopy != nullptr) {
-                delete reqCopy;
-                reqCopy = nullptr;
+            if (retryMess != nullptr) {
+                delete retryMess;
+                retryMess = nullptr;
             }
         }
 
-        chord_request* clone() {
-            chord_request* p = nullptr;
-            p = new chord_request();
+        chord_message* clone() {
+            chord_message* p = nullptr;
+            p = new chord_message();
             *p = *this;
             return p;
         }
@@ -518,15 +518,15 @@ namespace P2P_MODEL {
                 t = this->type;
 
             switch (t) {
-                case CHORD_HARD_RESET:             return res = app_request::type2str(APP_HARD_RESET);
-                case CHORD_SOFT_RESET:             return res = app_request::type2str(APP_SOFT_RESET);
-                case CHORD_FLUSH:                  return res = app_request::type2str(APP_FLUSH);
+                case CHORD_HARD_RESET:             return res = app_message::type2str(APP_HARD_RESET);
+                case CHORD_SOFT_RESET:             return res = app_message::type2str(APP_SOFT_RESET);
+                case CHORD_FLUSH:                  return res = app_message::type2str(APP_FLUSH);
                                                    
-                case CHORD_BROADCAST:              return res = app_request::type2str(APP_BROADCAST);
-                case CHORD_MULTICAST:              return res = app_request::type2str(APP_MULTICAST);
-                case CHORD_SINGLE:                 return res = app_request::type2str(APP_SINGLE);
+                case CHORD_BROADCAST:              return res = app_message::type2str(APP_BROADCAST);
+                case CHORD_MULTICAST:              return res = app_message::type2str(APP_MULTICAST);
+                case CHORD_SINGLE:                 return res = app_message::type2str(APP_SINGLE);
                                                    
-                case CHORD_CONF:                   return res = app_request::type2str(APP_CONF);
+                case CHORD_CONF:                   return res = app_message::type2str(APP_CONF);
 
                 case CHORD_RX_JOIN:                return res = "RX_JOIN";
                 case CHORD_RX_NOTIFY:              return res = "RX_NOTIFY";
@@ -599,8 +599,8 @@ namespace P2P_MODEL {
                 str += " " + destNodeID.to_string(SC_HEX_US);
                 str += " " + string("src: ") + source.toStr();
                 str += " " + string("med: ") + mediator.toStr();
-                str += " " + appearanceTime.to_string();
-                str += " " + (reqCopy == nullptr ? string("nullptr") : string("hasCopy"));
+                str += " appeared " + appearanceTime.to_string();
+                str += " " + (retryMess == nullptr ? string("nullptr") : string("hasRetry"));
                 break;
 
             case CHORD_TIMER_ACK:
@@ -613,13 +613,13 @@ namespace P2P_MODEL {
             return str;
         }
 
-        friend ostream& operator<< (ostream& out, const chord_request& r);
+        friend ostream& operator<< (ostream& out, const chord_message& r);
     };
 
 
-    struct message_info {
-        chord_request req;
-        raw_message mess;
+    struct raw_chord_message {
+        chord_message info;
+        data_unit rawByteArray;
     };
 }
 #endif

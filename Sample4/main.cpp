@@ -4,7 +4,6 @@
 
 #include "app/application.h"
 #include "trp/transport_plus.h"
-//#include "trp/low_latency_chord.h"
 #include "net/network.h"
 
 
@@ -133,7 +132,7 @@ int main(int argc, char* argv[])
     network1.trp_ports[nodeIndex++]->bind(transport1);
     network1.trp_ports[nodeIndex++]->bind(transport2);
 
-    //Set initial settings of Application layer and Transport+ layer
+    //Set initial settings of layers: Application, Transport+ and Network model
     application1.setEnabledLog();
     application1.setLogMode(ALL_LOG);
     application1.setPathLog("./log/app.txt");
@@ -150,73 +149,71 @@ int main(int argc, char* argv[])
     transport2.setLogMode(ALL_LOG);
     transport2.setPathLog("./log/trp.txt");
 
-
     network1.setEnabledLog();
     network1.setLogMode(ALL_LOG);
     network1.setPathLog("./log/net.txt");
 
 
-    //Set simulating scenarios of message issueing for Application layer
-    sim_request req;
+    //Set simulating scenarios of message issuing for Application layer
+    sim_message mess;
 
-    //req.clear();
-    //req.type = SIM_HARD_RESET;
-    //req.amount = 1;    
-    //req.firstDelay = sc_time(1, SC_MS);
-    //application1.pushSimulatingReq(req);
+    //mess.clear();
+    mess.type = SIM_HARD_RESET;
+    mess.amount = 1;
+    mess.firstDelay = sc_time(0, SC_MS);
+    application1.pushSimulatingMess(mess);
 
 
-    //req.clear();
-    //req.destination;
-    //req.type = SIM_SINGLE;
-    //req.payloadType = DATA;  
-    //req.amount = 1;
-    //req.period = sc_time(15, SC_SEC);
-    //req.firstDelay = sc_time(0, SC_MS);
-    //req.randType[RAND_DEST] = true;
-    //req.randFrom[RAND_DEST] = 0;
-    //req.randTo[RAND_DEST] = 256;
-    //req.randAmount[RAND_DEST] = 1;
-    //req.timeUnit = SC_MS;
-    //req.dataSize = 1000;
-    //application2.pushSimulatingReq(req);
+    //mess.clear();
+    //mess.destination;
+    //mess.type = SIM_SINGLE;
+    //mess.payloadType = DATA;  
+    //mess.amount = 1;
+    //mess.period = sc_time(15, SC_SEC);
+    //mess.firstDelay = sc_time(0, SC_MS);
+    //mess.randType[RAND_DEST] = true;
+    //mess.randFrom[RAND_DEST] = 0;
+    //mess.randTo[RAND_DEST] = 256;
+    //mess.randAmount[RAND_DEST] = 1;
+    //mess.timeUnit = SC_MS;
+    //mess.dataSize = 1000;
+    //application2.pushSimulatingMess(mess);
 
-    //req.clear();
-    //req.destination;
-    //req.type = SIM_MULTICAST;
-    //req.payloadType = DATA;
-    //req.amount = 4;
-    //req.period = sc_time(15, SC_SEC);
-    //req.firstDelay = sc_time(0, SC_MS);
-    //req.randType[RAND_DEST] = true;
-    //req.randFrom[RAND_DEST] = 0;
-    //req.randTo[RAND_DEST] = 256;
-    //req.randAmount[RAND_DEST] = 3;
-    //req.randNeedRecalc[RAND_DEST] = true;
-    //req.timeUnit = SC_MS;
-    //req.dataSize = 1000;
-    //application2.pushSimulatingReq(req);
+    //mess.clear();
+    //mess.destination;
+    //mess.type = SIM_MULTICAST;
+    //mess.payloadType = DATA;
+    //mess.amount = 4;
+    //mess.period = sc_time(15, SC_SEC);
+    //mess.firstDelay = sc_time(0, SC_MS);
+    //mess.randType[RAND_DEST] = true;
+    //mess.randFrom[RAND_DEST] = 0;
+    //mess.randTo[RAND_DEST] = 256;
+    //mess.randAmount[RAND_DEST] = 3;
+    //mess.randNeedRecalc[RAND_DEST] = true;
+    //mess.timeUnit = SC_MS;
+    //mess.dataSize = 1000;
+    //application2.pushSimulatingMess(mess);
 
-    req.clear();
-    req.type = SIM_HARD_RESET;
-    req.amount = 1;
-    req.period = sc_time(5, SC_SEC);
-    req.firstDelay = sc_time(1, SC_MS);
-    application2.pushSimulatingReq(req);
+    mess.clear();
+    mess.type = SIM_HARD_RESET;
+    mess.amount = 1;
+    mess.firstDelay = sc_time(500, SC_MS);
+    application2.pushSimulatingMess(mess);
 
-    //req.clear();
-    //req.type = SIM_SOFT_RESET;
-    //req.amount = 4;
-    //req.period = sc_time(6, SC_SEC);
-    //req.firstDelay = sc_time(2, SC_MS);
-    //application2.pushSimulatingReq(req);
+    //mess.clear();
+    //mess.type = SIM_SOFT_RESET;
+    //mess.amount = 4;
+    //mess.period = sc_time(6, SC_SEC);
+    //mess.firstDelay = sc_time(2, SC_MS);
+    //application2.pushSimulatingMess(mess);
 
-    //req.clear();
-    //req.type = SIM_FLUSH;
-    //req.amount = 5;
-    //req.period = sc_time(7, SC_SEC);
-    //req.firstDelay = sc_time(3, SC_MS);
-    //application2.pushSimulatingReq(req);
+    //mess.clear();
+    //mess.type = SIM_FLUSH;
+    //mess.amount = 5;
+    //mess.period = sc_time(7, SC_SEC);
+    //mess.firstDelay = sc_time(3, SC_MS);
+    //application2.pushSimulatingMess(mess);
 
 
     //Set configuration parameters of Transport+ layer
@@ -232,13 +229,14 @@ int main(int argc, char* argv[])
     transport1.setConfParameters(params1);
     transport2.setConfParameters(params2);
 
-    //Set configuration parameters of network model
-    node_address a;
-    a.set(params1.netwAddr);    
-    network1.pushLatency(a.id, sc_time(50, SC_MS));
 
-    a.set(params2.netwAddr);
-    network1.pushLatency(a.id, sc_time(70, SC_MS));
+    //Set configuration parameters of Network model (simplified simulation model of TCP/IP network or network on UDP protocol)    
+    vector<network_address> addrs;
+    addrs.push_back( params1.netwAddr );
+    addrs.push_back( params2.netwAddr );
+
+    network1.setNodeAddressList(addrs);
+    network1.setRandomLatencyTable(70, 70, 0);
 
 
     //LOG

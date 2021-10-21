@@ -6,7 +6,8 @@
 
 namespace P2P_MODEL
 {
-    const string LOG_SPACER            = string("\t");
+    const string LOG_SPACE             = string(" ");
+    const string LOG_TAB               = string("\t");
     const string LOG_TX                = string("Tx  ");
     const string LOG_RX                = string("  Rx");
     const string LOG_TXRX              = string("TxRx");

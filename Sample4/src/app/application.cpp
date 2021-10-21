@@ -31,9 +31,9 @@ namespace P2P_MODEL
         SC_METHOD(run);        
         sensitive << m_eventStart;  
         
-        m_reqs.resize(MAX_SIM_REQ_TYPE, vector<sim_request>());
-        m_sentReqCounter.resize(MAX_SIM_REQ_TYPE, 0);
-        m_isTriggeredReq.resize(MAX_SIM_REQ_TYPE, false);
+        m_reqs.resize(MAX_SIM_MESS_TYPE, vector<sim_message>());
+        m_sentReqCounter.resize(MAX_SIM_MESS_TYPE, 0);
+        m_isTriggeredReq.resize(MAX_SIM_MESS_TYPE, false);
         m_isPaused = false;
     }
 
@@ -45,7 +45,7 @@ namespace P2P_MODEL
     void application::run() {      
         for (int i = 0; i < m_reqs.size(); ++i) {
             if (m_reqs[i].size() > 0) {
-                vector<sim_request>::iterator r = m_reqs[i].begin();
+                vector<sim_message>::iterator r = m_reqs[i].begin();
                 switch (r->type)
                 {
                 case SIM_HARD_RESET:
@@ -88,7 +88,7 @@ namespace P2P_MODEL
 
                 default:
                     //ERROR
-                    m_logText = "run" + LOG_SPACER + r->type2str();
+                    m_logText = "run" + LOG_TAB + r->type2str();
                     msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                     return;
                 }
@@ -97,29 +97,29 @@ namespace P2P_MODEL
     }
 
 
-    void application::generateReq(const sim_request_type& type) {
+    void application::generateMess(const sim_message_type& type) {
         if (m_isPaused) {
             m_isTriggeredReq[type] = true;
         }
         else {             
             if (!(type < m_reqs.size())) {
                 //ERROR
-                m_logText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
+                m_logText = "generateMess" + LOG_TAB + sim_message().type2str(type);
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
 
-            vector<sim_request>::iterator currReq = m_reqs[type].begin();
+            vector<sim_message>::iterator currReq = m_reqs[type].begin();
 
             if (currReq->type != type) {
                 //ERROR
-                m_logText = "generateReq" + LOG_SPACER + sim_request().type2str(type);
+                m_logText = "generateMess" + LOG_TAB + sim_message().type2str(type);
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
 
-            sim_request s = doRandSimReq(*currReq);
-            app_request a = createAppRequest(s);
+            sim_message s = doRandSimMess(*currReq);
+            app_message a = createAppMess(s);
 
             switch (type) {
             case SIM_HARD_RESET: 
@@ -136,14 +136,14 @@ namespace P2P_MODEL
 
             default:
                 //ERROR
-                m_logText = "generateReq" + LOG_SPACER + currReq->type2str();
+                m_logText = "generateMess" + LOG_TAB + currReq->type2str();
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
             m_sentReqCounter[type]++;
 
             
-            m_logText = "generateReq" + LOG_SPACER;
+            m_logText = "generateMess" + LOG_TAB;
             m_logText +=  to_string(m_sentReqCounter[type]) + "(" + to_string(currReq->amount) + ")";
             m_logText += " " + a.toStr();
             msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | EXTERNAL_LOG);
@@ -157,7 +157,7 @@ namespace P2P_MODEL
                 m_sentReqCounter[type] = 0;
 
                 if (m_reqs[type].size() > 0) {
-                    vector<sim_request>::iterator nextReq = m_reqs.at(type).begin();
+                    vector<sim_message>::iterator nextReq = m_reqs.at(type).begin();
                     nextGenerate = nextReq->firstDelay;
                 }
                 else
@@ -178,7 +178,7 @@ namespace P2P_MODEL
             case SIM_CONTINUE: m_eventGenerateContinue.notify(nextGenerate); break;
             default:
                 //ERROR        
-                m_logText = "generateReq" + LOG_SPACER + currReq->type2str();
+                m_logText = "generateMess" + LOG_TAB + currReq->type2str();
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 break;
             }
@@ -187,19 +187,19 @@ namespace P2P_MODEL
 
 
     void application::generateHardReset() {
-        generateReq(SIM_HARD_RESET);
+        generateMess(SIM_HARD_RESET);
     }
 
     void application::generateSoftReset() {
-        generateReq(SIM_SOFT_RESET);
+        generateMess(SIM_SOFT_RESET);
     }
 
     void application::generateFlush() {
-        generateReq(SIM_FLUSH);
+        generateMess(SIM_FLUSH);
     }
     
 
-    app_request_type application::simReqType2appReqType(const uint& type) {
+    app_message_type application::simMessType2appMessType(const uint& type) {
         switch (type)
         {
         case SIM_HARD_RESET: return APP_HARD_RESET;
@@ -211,22 +211,22 @@ namespace P2P_MODEL
         case SIM_CONF:       return APP_CONF;
         default:
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "simReqType2appReqType", DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "simMessType2appMessType", DEBUG_LOG | ERROR_LOG);
             return APP_UNKNOWN;
         }
     }
 
 
-    sim_request& application::doRandSimReq(const sim_request& s) {
+    sim_message& application::doRandSimMess(const sim_message& s) {
         if (m_randSimReq.size() == 0)
-            m_randSimReq.resize(MAX_SIM_REQ_TYPE, sim_request());
+            m_randSimReq.resize(MAX_SIM_MESS_TYPE, sim_message());
 
         if (m_isFilled.size() == 0)
-            m_isFilled.resize(MAX_SIM_REQ_TYPE, false);
+            m_isFilled.resize(MAX_SIM_MESS_TYPE, false);
 
-        if (!(s.type < MAX_SIM_REQ_TYPE)) {
+        if (!(s.type < MAX_SIM_MESS_TYPE)) {
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimMess", DEBUG_LOG | ERROR_LOG);
             m_randSimReq[0].clear();
             return m_randSimReq[0];
         }
@@ -285,7 +285,7 @@ namespace P2P_MODEL
 
                 default:
                     //ERROR
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimReq", DEBUG_LOG | ERROR_LOG);
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimMess", DEBUG_LOG | ERROR_LOG);
                     break;
                 }
             }
@@ -297,12 +297,12 @@ namespace P2P_MODEL
         return m_randSimReq[s.type];
     }
 
-    app_request& application::createAppRequest(const sim_request& s) {
-        static app_request res;        
+    app_message& application::createAppMess(const sim_message& s) {
+        static app_message res;        
         res.clear();
 
         res.destination = s.destination;        
-        res.type = simReqType2appReqType(s.type);
+        res.type = simMessType2appMessType(s.type);
         
         res.payload.clear();
         if ((s.type == SIM_SINGLE) || (s.type == SIM_MULTICAST) || (s.type == SIM_BROADCAST)) {
@@ -329,37 +329,37 @@ namespace P2P_MODEL
 
             default:
                 //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppRequest", DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppMess", DEBUG_LOG | ERROR_LOG);
                 break;
             }
         }
         return res;
     }
 
-    sc_time application::findDelayToSendNextReq(const sim_request& message, const bool isFinished) {
-        sc_time t;
-        if (isFinished) {
-            t = message.firstDelay;
-        }
-        else {
-            t = sc_time_stamp() + message.period;
-        }
-        return t;
-    }
+    //sc_time application::findDelayToSendNextReq(const sim_message& message, const bool isFinished) {
+    //    sc_time t;
+    //    if (isFinished) {
+    //        t = message.firstDelay;
+    //    }
+    //    else {
+    //        t = sc_time_stamp() + message.period;
+    //    }
+    //    return t;
+    //}
 
 
 
     void application::generateSingle() {
-        generateReq(SIM_SINGLE);
+        generateMess(SIM_SINGLE);
     }                                        
 
     void application::generateMulticast() {
-        generateReq(SIM_MULTICAST);
+        generateMess(SIM_MULTICAST);
     }
 
 
     void application::generateBroadcast() {
-        generateReq(SIM_BROADCAST);
+        generateMess(SIM_BROADCAST);
     }
 
 
@@ -377,9 +377,9 @@ namespace P2P_MODEL
     }
 
 
-    void application::pushSimulatingReq(const sim_request& req) {        
-        if (req.type < MAX_SIM_REQ_TYPE) {
-            m_reqs.at(req.type).push_back(req);
+    void application::pushSimulatingMess(const sim_message& mess) {
+        if (mess.type < MAX_SIM_MESS_TYPE) {
+            m_reqs.at(mess.type).push_back(mess);
         }
     }
 }

@@ -7,7 +7,7 @@
 namespace P2P_MODEL {
     class trp_network_if : public sc_interface {
     public:        
-        virtual void receive_mess(const message_info& mess) = 0;
+        virtual void receive_mess(const raw_chord_message&) = 0;
     };
 }
 

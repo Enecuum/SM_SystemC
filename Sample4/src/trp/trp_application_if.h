@@ -7,8 +7,8 @@
 namespace P2P_MODEL {
     class trp_application_if : public sc_interface {
     public:
-        virtual void config_req(const app_request& req) = 0;
-        virtual void mess_req(const app_request&   req) = 0;
+        virtual void config_req(const app_message& ) = 0;
+        virtual void mess_req(const app_message&   ) = 0;
     };
 }
 

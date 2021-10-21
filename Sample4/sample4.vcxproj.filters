@@ -69,7 +69,7 @@
     <ClInclude Include="src\trp\transport_plus.h">
       <Filter>src\trp</Filter>
     </ClInclude>
-    <ClInclude Include="src\trp\req_buffer.h">
+    <ClInclude Include="src\trp\message_buffer.h">
       <Filter>src\trp</Filter>
     </ClInclude>
     <ClInclude Include="src\trp\llchord_classes_defs.h">

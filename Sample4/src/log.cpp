@@ -82,11 +82,11 @@ namespace P2P_MODEL
             if (isMatched > 0) {
                 std::stringstream ss;
                 ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_seconds());
-                ss << LOG_SPACER;
+                ss << LOG_TAB;
                 ss << std::setw(m_maxLenMethodName) << std::setiosflags(std::ios::left) << methodName;
-                ss << LOG_SPACER;
-                ss << logRxTx << LOG_SPACER;
-                ss << logInOut << LOG_SPACER;
+                ss << LOG_TAB;
+                ss << logRxTx << LOG_TAB;
+                ss << logInOut << LOG_TAB;
 
                 static std::map<std::string, std::ofstream*> mapFile;
                 ofstream *file;
@@ -121,9 +121,9 @@ namespace P2P_MODEL
         static string tmpCharLog = "";
         tmpCharLog.clear();
         tmpCharLog += logRxTx;
-        tmpCharLog += LOG_SPACER;
+        tmpCharLog += LOG_TAB;
         tmpCharLog += logInOut;
-        tmpCharLog += LOG_SPACER;
+        tmpCharLog += LOG_TAB;
         tmpCharLog += text;
         return tmpCharLog;
     }

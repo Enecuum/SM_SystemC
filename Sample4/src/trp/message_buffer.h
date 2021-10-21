@@ -1,5 +1,5 @@
-#ifndef __REQ_BUFFER_H__
-#define __REQ_BUFFER_H__
+#ifndef __MESS_BUFFER_H__
+#define __MESS_BUFFER_H__
 
 #include "inc.h"
 
@@ -11,12 +11,12 @@ using namespace std;
 
 namespace P2P_MODEL
 {
-    typedef list<chord_request> req_buff_container;
+    typedef list<chord_message> buffer_container;
 
     enum buffer_type {
-        BUFF_CONFIG_REQ = 0,
-        BUFF_TIMER_REQ,
-        BUFF_MESS_REQ,
+        BUFF_CONFIG = 0,
+        BUFF_TIMER,
+        BUFF_APPTXDATA,
         BUFF_RX_MESS,
 
         BUFF_TX_JOIN,
@@ -36,35 +36,35 @@ namespace P2P_MODEL
     };
 
 
-    class req_buffer {
+    class message_buffer {
     private:
-        req_buff_container reqs;
+        buffer_container messages;
         int maxDeep;
         int priority;
         bool immediate;
         int maxSize;
-        int reqsCounter;
+        int messCounter;
         buffer_type type;       
         sc_time lastCallTime;
         
 
     public:
-        req_buffer() {
+        message_buffer() {
             clear();
         }
 
-        ~req_buffer() {            
+        ~message_buffer() {            
         }
 
-        req_buffer(const req_buffer& src) {
+        message_buffer(const message_buffer& src) {
             *this = src;
         }
 
 
 
-        void clearReqs() {
-            reqs.clear();            
-            reqsCounter = 0;
+        void clearMessages() {
+            messages.clear();            
+            messCounter = 0;
             lastCallTime = SC_ZERO_TIME;
         }
 
@@ -76,16 +76,16 @@ namespace P2P_MODEL
             this->maxSize = maxSize;
         }
 
-        bool push(const chord_request& r) {
-            if (reqs.size() < maxSize) {
-                reqs.push_back(r);
+        bool push(const chord_message& r) {
+            if (messages.size() < maxSize) {
+                messages.push_back(r);
                 return true;
             }
             return false;
         }
 
         uint size() {
-            return (uint) reqs.size();
+            return (uint) messages.size();
         }    
         
 
@@ -94,37 +94,37 @@ namespace P2P_MODEL
             return type;
         }
 
-        chord_request& firstReqByImmediate() {
-            static chord_request r;
-            req_buff_container::iterator it = firstReqIteratorByImmediate();
-            if (it == reqs.end())
+        chord_message& firstMessByImmediate() {
+            static chord_message r;
+            buffer_container::iterator it = firstMessIteratorByImmediate();
+            if (it == messages.end())
                 return r;
             return *it;
         }
 
-        chord_request* firstReqPointerByImmediate() {
-            req_buff_container::iterator it = firstReqIteratorByImmediate();
-            if (it == reqs.end())
+        chord_message* firstMessPointerByImmediate() {
+            buffer_container::iterator it = firstMessIteratorByImmediate();
+            if (it == messages.end())
                 return nullptr;
             return &(*it);
         }
 
-        void erase(const req_buff_container::iterator& it) {
-            reqs.erase(it);
+        void erase(const buffer_container::iterator& it) {
+            messages.erase(it);
         }
 
 
-        void eraseFirstReq() {
-            if (reqs.size() > 0)
-                erase(reqs.begin());
+        void eraseFirstMess() {
+            if (messages.size() > 0)
+                erase(messages.begin());
         }
 
-        void clearReqsCounter() {
-            reqsCounter = 0;
+        void clearMessCounter() {
+            messCounter = 0;
         }
 
 
-        bool operator < (const req_buffer& right) const {
+        bool operator < (const message_buffer& right) const {
             //priority "1" and immediate "true"  is the highest priority to service requests
             // ...
             //priority "5" and immediate "false" is the  lowest priority to service requests
@@ -136,16 +136,16 @@ namespace P2P_MODEL
                 return (priority < right.priority);
         }
 
-        req_buffer& operator= (const req_buffer& src) {
+        message_buffer& operator= (const message_buffer& src) {
             if (this == &src)
                 return *this;
             this->type = src.type;
-            this->reqs = src.reqs;
+            this->messages = src.messages;
             this->maxDeep = src.maxDeep;
             this->priority = src.priority;
             this->immediate = src.immediate;
             this->maxSize = src.maxSize;
-            this->reqsCounter = src.reqsCounter;
+            this->messCounter = src.messCounter;
             return *this;
         }
 
@@ -154,9 +154,9 @@ namespace P2P_MODEL
             str.clear();
             string typeStr;
             switch (type) {
-                case BUFF_CONFIG_REQ:              typeStr = "BUFF_CONFIG_REQ"; break;
-                case BUFF_TIMER_REQ:               typeStr = "BUFF_TIMER_REQ"; break;
-                case BUFF_MESS_REQ:                typeStr = "BUFF_MESS_REQ"; break;
+                case BUFF_CONFIG:              typeStr = "BUFF_CONFIG"; break;
+                case BUFF_TIMER:               typeStr = "BUFF_TIMER"; break;
+                case BUFF_APPTXDATA:                typeStr = "BUFF_APPTXDATA"; break;
                 case BUFF_RX_MESS:                 typeStr = "BUFF_RX_MESS"; break;
 
                 case BUFF_TX_JOIN:                 typeStr = "BUFF_TX_JOIN"; break;
@@ -179,35 +179,35 @@ namespace P2P_MODEL
 
     private:
         void clear() {
-            reqs.clear();
+            messages.clear();
             type = BUFF_UNKNOWN;
             maxDeep = 0;
             priority = 0;
             immediate = false;
             maxSize = 0;
-            reqsCounter = 0;
+            messCounter = 0;
             lastCallTime = SC_ZERO_TIME;
         }
 
-        req_buff_container::iterator firstReqIteratorByImmediate() {
-            req_buff_container::iterator it = reqs.end();
+        buffer_container::iterator firstMessIteratorByImmediate() {
+            buffer_container::iterator it = messages.end();
 
-            if (reqs.size() > 0)
+            if (messages.size() > 0)
             {
                 if (sc_time_stamp() != lastCallTime)
-                    reqsCounter = 0;
+                    messCounter = 0;
 
                 if (immediate == true) {
 
-                    it = reqs.begin();
+                    it = messages.begin();
                     lastCallTime = sc_time_stamp();
-                    ++reqsCounter;
+                    ++messCounter;
                 }
                 else {
-                    if ((reqsCounter < maxDeep) && (reqsCounter < maxSize)) {
-                        it = reqs.begin();
+                    if ((messCounter < maxDeep) && (messCounter < maxSize)) {
+                        it = messages.begin();
                         lastCallTime = sc_time_stamp();
-                        ++reqsCounter;
+                        ++messCounter;
                     }
                 }
             }

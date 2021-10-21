@@ -12,13 +12,13 @@ namespace P2P_MODEL
         return out;
     }
 
-    ostream& operator<< (ostream& out, app_request& r) {
+    ostream& operator<< (ostream& out, app_message& r) {
         out << r.toStr();
         return out;
     }
 
 
-    ostream& operator<< (ostream& out, chord_request& r) {
+    ostream& operator<< (ostream& out, chord_message& r) {
         out << r.toStr();
         return out;
     }

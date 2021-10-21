@@ -11,12 +11,12 @@ namespace P2P_MODEL
     transport_plus::~transport_plus() {    }
 
 
-    chord_request& transport_plus::appReq2trpReq(const app_request& req) {
-        static chord_request res;
-        res.destination = req.destination;
-        res.payload     = req.payload;
+    chord_message& transport_plus::appMess2chordMess(const app_message& mess) {
+        static chord_message res;
+        res.destination = mess.destination;
+        res.payload     = mess.payload;
         
-        switch (req.type) {
+        switch (mess.type) {
             case APP_HARD_RESET: res.type = CHORD_HARD_RESET; break;
             case APP_SOFT_RESET: res.type = CHORD_SOFT_RESET; break;
             case APP_FLUSH:      res.type = CHORD_FLUSH;      break;
@@ -26,7 +26,7 @@ namespace P2P_MODEL
             case APP_BROADCAST: res.type = CHORD_BROADCAST;   break;
             default:
                 //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appReq2trpReq", DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appMess2chordMess", DEBUG_LOG | ERROR_LOG);
                 res.clear();
                 return res;
         }
@@ -36,50 +36,32 @@ namespace P2P_MODEL
     }
 
 
-    chord_request& transport_plus::networkReq2trpReq(const chord_request& req) {
-        static chord_request res;
-        //res = const_cast<chord_request>(req);
-        res = req;
-        
-        switch (req.type) {
-        case CHORD_TX_JOIN:                res.type = (uint) CHORD_RX_JOIN;                 break;
-        case CHORD_TX_NOTIFY:              res.type = (uint) CHORD_RX_NOTIFY;               break;
-        case CHORD_TX_ACK:                 res.type = (uint) CHORD_RX_ACK;                  break;
-        case CHORD_TX_REPLY_FIND_SUCESSOR: res.type = (uint) CHORD_RX_REPLY_FIND_SUCCESSOR; break;
-        case CHORD_TX_FIND_SUCCESSOR:      res.type = (uint) CHORD_RX_FIND_SUCCESSOR;       break;
-        case CHORD_TX_FWD_BROADCAST:       res.type = (uint) CHORD_RX_BROADCAST;            break;
-        case CHORD_TX_FWD_MULTICAST:       res.type = (uint) CHORD_RX_MULTICAST;            break;
-        case CHORD_TX_FWD_SINGLE:          res.type = (uint) CHORD_RX_SINGLE;               break;
-        case CHORD_TX_BROADCAST:           res.type = (uint) CHORD_RX_BROADCAST;            break;
-        case CHORD_TX_MULTICAST:           res.type = (uint) CHORD_RX_MULTICAST;            break;
-        case CHORD_TX_SINGLE:              res.type = (uint) CHORD_RX_SINGLE;               break;
-        default:
-            //ERROR
-            msgLog(name(), LOG_RX, LOG_ERROR_INDICATOR, "networkReq2trpReq", DEBUG_LOG | ERROR_LOG);
-            res.clear();
-            return res;
-        }        
+    chord_message& transport_plus::rawChordMess2ChordMess(const raw_chord_message& raw) {
+        static chord_message res;
+        res = raw.info;            
         return res;
     }
 
 
-    void transport_plus::config_req(const app_request& req) {
-        m_llchord.pushNewRequest(appReq2trpReq(req));
+    void transport_plus::config_req(const app_message& mess) {
+        m_llchord.pushNewMessage(appMess2chordMess(mess));
     }
 
 
-    void transport_plus::mess_req(const app_request& req) {
-        m_llchord.pushNewRequest(appReq2trpReq(req));
+    void transport_plus::mess_req(const app_message& mess) {
+        m_llchord.pushNewMessage(appMess2chordMess(mess));
     }
 
 
-    void transport_plus::send_mess(const message_info& mess) {
-        network_port->push_into_network(mess);
+    void transport_plus::send_mess(const chord_message& mess) {
+        raw_chord_message rawMess;
+        rawMess.info = mess;
+        network_port->push_into_network(rawMess);
     }
 
 
-    void transport_plus::receive_mess(const message_info& mess) {  
-        m_llchord.pushNewRequest(networkReq2trpReq(mess.req));
+    void transport_plus::receive_mess(const raw_chord_message& raw) {  
+        m_llchord.pushNewMessage(rawChordMess2ChordMess(raw));
     }
 
 
