@@ -33,8 +33,12 @@ namespace P2P_MODEL
     
 
 
-
-
+    enum chord_action {
+        DO_REPLY = 0,
+        DO_FORWARD,
+        DROP_MESSAGE,
+        ACTION_UNKNOWN
+    };
 
     class low_latency_chord: public sc_module,
                              public log
@@ -49,21 +53,22 @@ namespace P2P_MODEL
         sc_event     m_eventCore;
 
         finite_state       m_state;
-        vector<message_buffer> m_buffer;
+        vector< message_buffer<chord_message> > m_buffer;
         
         uint m_howManyBuffers;
-        int  m_indexLastBufferCall;
+        int  m_indexLastBufferCall;        
 
-        //map<uint, node_address> m_fingersPos;
-        //map<uint, node_address> m_fingersNeg;
+        //map<uint, node_address> m_cwFingers;
+        //map<uint, node_address> m_ccwFingers;
         //map<uint, sc_time>      m_latency;
+        vector<node_address> m_seedAddrs;
         node_address m_precessor;
         node_address m_successor;
-        vector<node_address>  m_fingersPos;
-        vector<node_address>  m_fingersNeg;
-        vector<sc_time>       m_latency;
-        map<uint160, sc_time>       m_isAcked;
+        vector<node_address>  m_cwFingers;  //clock wise fingers
+        vector<node_address>  m_ccwFingers; //counter clock wise fingers
+        vector<sc_time>       m_latency;        
         chord_conf_parameters m_confParams; 
+        map<uint160, sc_time> m_isAcked;
 
         bool m_isSuccessorSet;
         bool m_isPrecessorSet;
@@ -86,6 +91,7 @@ namespace P2P_MODEL
         void setConfParameters(const chord_conf_parameters& params);
         void pushNewMessage(const chord_message& mess);
 
+
     private:
         void preinit();
         void core();
@@ -95,7 +101,7 @@ namespace P2P_MODEL
         void softReset();
         void flush();
 
-        void findSuccessor(const chord_message* mess);
+        chord_action findSuccessor(const chord_message* mess, node_address& existAddr);
 
        
         void goStateLoad(); 
@@ -116,10 +122,15 @@ namespace P2P_MODEL
         int chordMessType2buffIndex(const uint type);
 
 
-        void sendMessage(const chord_message & mess);
+        void sendMessage(const chord_message& byteMess);
 
         string& state2str(const finite_state& state);
        
+        bool isClockWiseDirection(const uint160& id);
+
+        uint160& closestPrecedingNode(const uint160& id);
+
+        uint160& closestPrecedingNodeCwFingers(const uint160& id);
     };
 }
 #endif

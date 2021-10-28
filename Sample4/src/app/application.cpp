@@ -35,6 +35,7 @@ namespace P2P_MODEL
         m_sentReqCounter.resize(MAX_SIM_MESS_TYPE, 0);
         m_isTriggeredReq.resize(MAX_SIM_MESS_TYPE, false);
         m_isPaused = false;
+        initRands();
     }
 
 
@@ -88,7 +89,7 @@ namespace P2P_MODEL
 
                 default:
                     //ERROR
-                    m_logText = "run" + LOG_TAB + r->type2str();
+                    m_logText = "run" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED;
                     msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                     return;
                 }
@@ -104,7 +105,7 @@ namespace P2P_MODEL
         else {             
             if (!(type < m_reqs.size())) {
                 //ERROR
-                m_logText = "generateMess" + LOG_TAB + sim_message().type2str(type);
+                m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + sim_message().type2str(type);
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
@@ -113,7 +114,7 @@ namespace P2P_MODEL
 
             if (currReq->type != type) {
                 //ERROR
-                m_logText = "generateMess" + LOG_TAB + sim_message().type2str(type);
+                m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + sim_message().type2str(type);
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
@@ -136,7 +137,7 @@ namespace P2P_MODEL
 
             default:
                 //ERROR
-                m_logText = "generateMess" + LOG_TAB + currReq->type2str();
+                m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + currReq->type2str();
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 return;
             }
@@ -178,7 +179,7 @@ namespace P2P_MODEL
             case SIM_CONTINUE: m_eventGenerateContinue.notify(nextGenerate); break;
             default:
                 //ERROR        
-                m_logText = "generateMess" + LOG_TAB + currReq->type2str();
+                m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + currReq->type2str();
                 msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                 break;
             }
@@ -211,7 +212,7 @@ namespace P2P_MODEL
         case SIM_CONF:       return APP_CONF;
         default:
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "simMessType2appMessType", DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, string("simMessType2appMessType") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
             return APP_UNKNOWN;
         }
     }
@@ -226,7 +227,7 @@ namespace P2P_MODEL
 
         if (!(s.type < MAX_SIM_MESS_TYPE)) {
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimMess", DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, string("doRandSimMess ") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
             m_randSimReq[0].clear();
             return m_randSimReq[0];
         }
@@ -285,7 +286,7 @@ namespace P2P_MODEL
 
                 default:
                     //ERROR
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "doRandSimMess", DEBUG_LOG | ERROR_LOG);
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, string("doRandSimMess ") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
                     break;
                 }
             }
@@ -329,7 +330,7 @@ namespace P2P_MODEL
 
             default:
                 //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppMess", DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppMess " + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
                 break;
             }
         }

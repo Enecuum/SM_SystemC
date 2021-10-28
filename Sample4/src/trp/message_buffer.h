@@ -11,7 +11,11 @@ using namespace std;
 
 namespace P2P_MODEL
 {
-    typedef list<chord_message> buffer_container;
+    typedef chord_message          buffer_element;
+    typedef chord_message&         buffer_element_reference;
+    typedef chord_message*         buffer_element_pointer;
+    #define BUFFER_CONTAINER(a)    list<a>
+    typedef list<chord_message>    buffer_container;
 
     enum buffer_type {
         BUFF_CONFIG = 0,
@@ -35,10 +39,10 @@ namespace P2P_MODEL
         BUFF_UNKNOWN
     };
 
-
+    template <class T>
     class message_buffer {
     private:
-        buffer_container messages;
+        list<T> messages;
         int maxDeep;
         int priority;
         bool immediate;
@@ -61,7 +65,6 @@ namespace P2P_MODEL
         }
 
 
-
         void clearMessages() {
             messages.clear();            
             messCounter = 0;
@@ -76,7 +79,7 @@ namespace P2P_MODEL
             this->maxSize = maxSize;
         }
 
-        bool push(const chord_message& r) {
+        bool push(const T& r) {
             if (messages.size() < maxSize) {
                 messages.push_back(r);
                 return true;
@@ -84,32 +87,32 @@ namespace P2P_MODEL
             return false;
         }
 
-        uint size() {
+        uint size() const {
             return (uint) messages.size();
         }    
         
 
     public:
-        uint buffType() {
+        uint buffType() const {
             return type;
         }
 
-        chord_message& firstMessByImmediate() {
-            static chord_message r;
-            buffer_container::iterator it = firstMessIteratorByImmediate();
+        T& firstMessByImmediate() {
+            static T r;
+            auto it = firstMessIteratorByImmediate();
             if (it == messages.end())
                 return r;
             return *it;
         }
 
-        chord_message* firstMessPointerByImmediate() {
-            buffer_container::iterator it = firstMessIteratorByImmediate();
+        T* firstMessPointerByImmediate() {
+            auto it = firstMessIteratorByImmediate();
             if (it == messages.end())
                 return nullptr;
             return &(*it);
         }
 
-        void erase(const buffer_container::iterator& it) {
+        void erase(const typename list<T>::iterator& it) {
             messages.erase(it);
         }
 
@@ -139,24 +142,24 @@ namespace P2P_MODEL
         message_buffer& operator= (const message_buffer& src) {
             if (this == &src)
                 return *this;
-            this->type = src.type;
-            this->messages = src.messages;
-            this->maxDeep = src.maxDeep;
-            this->priority = src.priority;
-            this->immediate = src.immediate;
-            this->maxSize = src.maxSize;
+            this->type        = src.type;
+            this->messages    = src.messages;
+            this->maxDeep     = src.maxDeep;
+            this->priority    = src.priority;
+            this->immediate   = src.immediate;
+            this->maxSize     = src.maxSize;
             this->messCounter = src.messCounter;
             return *this;
         }
 
-        string& toStr() {
-            static string str;
+        string toStr() const {
+            string str;
             str.clear();
             string typeStr;
             switch (type) {
-                case BUFF_CONFIG:              typeStr = "BUFF_CONFIG"; break;
-                case BUFF_TIMER:               typeStr = "BUFF_TIMER"; break;
-                case BUFF_APPTXDATA:                typeStr = "BUFF_APPTXDATA"; break;
+                case BUFF_CONFIG:                  typeStr = "BUFF_CONFIG"; break;
+                case BUFF_TIMER:                   typeStr = "BUFF_TIMER"; break;
+                case BUFF_APPTXDATA:               typeStr = "BUFF_APPTXDATA"; break;
                 case BUFF_RX_MESS:                 typeStr = "BUFF_RX_MESS"; break;
 
                 case BUFF_TX_JOIN:                 typeStr = "BUFF_TX_JOIN"; break;
@@ -170,8 +173,7 @@ namespace P2P_MODEL
                 case BUFF_TX_BROADCAST:            typeStr = "BUFF_TX_BROADCAST"; break;
                 case BUFF_TX_MULTICAST:            typeStr = "BUFF_TX_MULTICAST"; break;
                 case BUFF_TX_SINGLE:               typeStr = "BUFF_TX_SINGLE"; break;
-                //case BUFF_TX_MESS:    typeStr = "BUFF_TX_MESS"; break;
-                default:              typeStr = "BUFF_UNKNOWN"; break;
+                default:                           typeStr = "BUFF_UNKNOWN"; break;
             }
             str = typeStr + "\timmediate\t" + string(immediate == true ? "true" : "false") + "\tpri\t" + to_string(priority);
             return str;
@@ -189,8 +191,8 @@ namespace P2P_MODEL
             lastCallTime = SC_ZERO_TIME;
         }
 
-        buffer_container::iterator firstMessIteratorByImmediate() {
-            buffer_container::iterator it = messages.end();
+        typename list<T>::iterator firstMessIteratorByImmediate() {
+            typename list<T>::iterator it = messages.end();
 
             if (messages.size() > 0)
             {

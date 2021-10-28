@@ -1,21 +1,23 @@
 0                   	transport_1.low_latency_chord 	TxRx	< < <	pushNewMessage	HARD_RESET
-0                   	transport_1.low_latency_chord 	TxRx	:::::	c o r e	HARD_RESET
-0                   	transport_1.low_latency_chord 	TxRx	:::::	STATE_LOAD
-0                   	transport_1.low_latency_chord 	TxRx	:::::	STATE_INIT
+0                   	transport_1.low_latency_chord 	TxRx	:::::	core	HARD_RESET
+0                   	transport_1.low_latency_chord 	TxRx	:::::	LOAD
+0                   	transport_1.low_latency_chord 	TxRx	:::::	INIT
 0                   	transport_1.low_latency_chord 	TxRx	:::::	init	NO SEED
-0                   	transport_1.low_latency_chord 	TxRx	:::::	STATE_IDLE
-0.5                 	transport_2.low_latency_chord 	TxRx	< < <	pushNewMessage	HARD_RESET
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	c o r e	HARD_RESET
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	STATE_LOAD
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	STATE_INIT
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	STATE_JOIN
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	goStateJoin	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
-0.5                 	transport_2.low_latency_chord 	TxRx	< < <	pushNewMessage	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
-0.5                 	transport_2.low_latency_chord 	TxRx	< < <	pushNewMessage	TIMER_REPLY_FIND_SUCC_JOIN
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	c o r e	TIMER_REPLY_FIND_SUCC_JOIN
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	STATE_JOIN
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	c o r e	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
-0.5                 	transport_2.low_latency_chord 	TxRx	:::::	STATE_JOIN
-0.5                 	transport_2.low_latency_chord 	Tx  	> > >	STATE_JOIN	sendMessage	TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
-0.57                	transport_1.low_latency_chord 	TxRx	< < <	pushNewMessage	RX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 570 ms nullptr
-0.57                	transport_1.low_latency_chord 	TxRx	:::::	c o r e	RX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 570 ms nullptr
+0                   	transport_1.low_latency_chord 	TxRx	:::::	IDLE
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	pushNewMessage	HARD_RESET
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	core	HARD_RESET
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	LOAD
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	INIT
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	goStateJoin	TX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	pushNewMessage	TX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	pushNewMessage	TIMER_REPLY_FIND_SUCC_JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	core	TIMER_REPLY_FIND_SUCC_JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	JOIN
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	core	TX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	JOIN
+0.001               	transport_2.low_latency_chord 	Tx  	> > >	JOIN	sendMessage	TX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.148               	transport_1.low_latency_chord 	TxRx	< < <	pushNewMessage	RX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.148               	transport_1.low_latency_chord 	TxRx	:::::	core	RX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.148               	transport_1.low_latency_chord 	TxRx	:::::	IDLE
+0.148               	transport_1.low_latency_chord 	TxRx	:::::	SERVICE

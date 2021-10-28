@@ -14,6 +14,8 @@ namespace P2P_MODEL
         SC_METHOD(checkReceive);
         dont_initialize();
         sensitive << m_eventCheckReceive;
+        
+        initRands();
     }
 
 
@@ -22,9 +24,10 @@ namespace P2P_MODEL
     }
 
 
-    void network::push_into_network(const raw_chord_message& networkDataUnit) {
-        auto it          = m_portIndexByNodeID.find(networkDataUnit.info.destNodeID);
-        chord_message& r = const_cast<chord_message&>(networkDataUnit.info);
+    void network::push_into_network(const chord_byte_message& networkDataUnit) {
+        //Needs to parse fields of chord_byte_message into chord_byte_message_fields
+        auto it = m_portIndexByNodeID.find(networkDataUnit.fields->destNodeID.id);
+        chord_byte_message_fields r = *(networkDataUnit.fields);
 
         if (it == m_portIndexByNodeID.end()) {
             //ERROR
@@ -40,9 +43,9 @@ namespace P2P_MODEL
             }
             else { 
                 m_buffMess[portIndex].push_back(networkDataUnit);
-                m_hasNewMess = true;
-                
+                 
                 m_eventCheckReceive.notify(0, SC_NS);
+                m_hasNewMess = true;
 
                 m_logText = "push_into_network" + LOG_TAB + string("out") + to_string(portIndex) + LOG_SPACE + r.toStr();
                 msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);
@@ -59,20 +62,20 @@ namespace P2P_MODEL
                     portIndex = i;
                     auto messIt = m_buffMess[portIndex].begin();
 
-                    auto portIndexIt = m_portIndexByNodeID.find(messIt->info.mediator.id);
+                    auto portIndexIt = m_portIndexByNodeID.find(messIt->fields->srcNodeID.id);
                     if (portIndexIt == m_portIndexByNodeID.end()) {
                         //ERROR
-                        m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND INPORT ") + messIt->info.toStr();
+                        m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND INPORT ") + messIt->fields->toStr();
                         msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                         return;
                     }
                 
                     uint from = portIndexIt->second;
 
-                    portIndexIt = m_portIndexByNodeID.find(messIt->info.destNodeID);
+                    portIndexIt = m_portIndexByNodeID.find(messIt->fields->destNodeID.id);
                     if (portIndexIt == m_portIndexByNodeID.end()) {
                         //ERROR
-                        m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND OUTPORT ") + messIt->info.toStr();
+                        m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND OUTPORT ") + messIt->fields->toStr();
                         msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
                     }
                 
@@ -97,7 +100,7 @@ namespace P2P_MODEL
                     m_wakeUpInfo[portIndex].time = sc_time(sc_time_stamp().to_seconds() + millisec/1000, SC_SEC);
                     m_eventSend[portIndex]->notify(millisec, SC_MS);
                 
-                    m_logText = "checkReceive" + LOG_TAB + "out" + to_string(to) + LOG_SPACE + "in" + to_string(from) + LOG_SPACE + messIt->info.toStr();
+                    m_logText = "checkReceive" + LOG_TAB + "out" + to_string(to) + LOG_SPACE + "in" + to_string(from) + LOG_SPACE + messIt->fields->toStr();
                     msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);                
                 
                     m_eventCheckReceive.notify(0, SC_NS); 
@@ -154,7 +157,7 @@ namespace P2P_MODEL
         for (uint i = 0; i < nodes; ++i)
             createNewEventPort();
         
-        m_buffMess.resize(nodes, list<raw_chord_message>());
+        m_buffMess.resize(nodes, list<chord_byte_message>());
         
         message_wake_up_info w;
         w.bufIndex = CAN_USE;
@@ -166,6 +169,26 @@ namespace P2P_MODEL
         m_latencyTable.resize(nodes, tmp);
         m_randDesperseMillisec.resize(nodes, 0);
         m_hasNewMess = false;
+    }
+
+
+    string& network::latencyTableToStr() {
+        static string str;
+        for (uint i = 0; i < m_latencyTable.size(); ++i) {
+            str += string("in") + to_string(i) + string(" >") + LOG_TAB;
+            for (uint j = 0; j < m_latencyTable[i].size(); ++j) {
+                uint latency = static_cast<uint>(m_latencyTable[i][j].to_seconds()*1000);
+                str += to_string(latency) + string("|") + to_string(m_randDesperseMillisec[i]) + LOG_TAB;
+            }
+            str += "\n";
+        }
+        str += string(" ") + LOG_TAB;
+        for (uint j = 0; j < m_latencyTable[0].size(); ++j)
+            str += "v" + LOG_TAB;
+        str += "\n" + string("out") + LOG_TAB;
+        for (uint j = 0; j < m_latencyTable[0].size(); ++j)
+            str += to_string(j) + LOG_TAB;
+        return str;
     }
 
 
@@ -234,9 +257,9 @@ namespace P2P_MODEL
         for (int i = 0; i < m_wakeUpInfo.size(); ++i) {
             if ((m_wakeUpInfo[i].bufIndex != CAN_USE) && (m_wakeUpInfo[i].time >= sc_time_stamp())) {
                 auto messIt = m_buffMess[i].begin();
-                messIt->info.type = specifyNewMessType(messIt->info.type);
+                messIt->fields->type = specifyNewMessType(messIt->fields->type);
 
-                m_logText = "send" + LOG_TAB + "out" + to_string(i) + LOG_SPACE + messIt->info.toStr();
+                m_logText = "send" + LOG_TAB + "out" + to_string(i) + LOG_SPACE + messIt->fields->toStr();
                 msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | ERROR_LOG);
 
                 (*(trp_ports[i]))->receive_mess(*messIt);

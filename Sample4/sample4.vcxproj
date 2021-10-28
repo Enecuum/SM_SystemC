@@ -157,7 +157,7 @@
     <ClInclude Include="src\net\network_trp_if.h" />
     <ClInclude Include="src\trp\broadcast.h" />
     <ClInclude Include="src\trp\low_latency_chord.h" />
-    <ClInclude Include="src\trp\req_buffer.h" />
+    <ClInclude Include="src\trp\message_buffer.h" />
     <ClInclude Include="src\trp\sha1.hpp" />
     <ClInclude Include="src\trp\llchord_classes_defs.h" />
     <ClInclude Include="src\trp\trp_application_if.h" />

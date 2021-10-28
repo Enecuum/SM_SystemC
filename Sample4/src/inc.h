@@ -9,6 +9,8 @@
 #include <map>
 #include <list>
 #include <string>
+#include <cstdlib> // needs for rand() and srand()
+#include <ctime>   // needs for time()
 
 #include <systemc.h>
 #include "trp/sha1.hpp"
@@ -17,12 +19,20 @@ using namespace std;
 
 namespace P2P_MODEL {
 
+    typedef sc_bigint<161>     int161;
     typedef sc_biguint<160>    uint160;
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
-    typedef vector<char>       data_type;
+    typedef unsigned char      byte;
+    typedef vector<byte>       data_type;
+    typedef vector<byte>       byte_array;
     typedef data_type          data_unit;
+
+    const int NONE = -1;
+    const int PID  = 0x01;    //PROTOCOL IDENTIFIER
+    
+
 
     
     enum payload_type {
@@ -72,18 +82,57 @@ namespace P2P_MODEL {
         APP_UNKNOWN
     };
 
+    enum chord_byte_message_type {
+        MIN_CHORD_BYTE_TYPE = 0,
+        CHORD_BYTE_JOIN,
+        CHORD_BYTE_NOTIFY,
+        CHORD_BYTE_ACK,
+        CHORD_BYTE_REPLY_FIND_SUCCESSOR,
+        CHORD_BYTE_FIND_SUCCESSOR,
+        CHORD_BYTE_BROADCAST,
+        CHORD_BYTE_MULTICAST,
+        CHORD_BYTE_SINGLE,
+        MAX_CHORD_BYTE_TYPE,
+        CHORD_BYTE_UNKNOWN
+    };
+
+    enum base_message_type {
+        BASE_UNKNOWN_TYPE = MAX_CHORD_BYTE_TYPE,
+        CHORD_UNKNOWN,
+        MAX_BASE_TYPE
+    };
     
-    enum chord_message_type {
-        CHORD_HARD_RESET = 0,  
+    enum chord_conf_message_type {
+        MIN_CHORD_CONF_TYPE = MAX_BASE_TYPE,
+        CHORD_HARD_RESET,
         CHORD_SOFT_RESET,
         CHORD_FLUSH,
-
-        CHORD_BROADCAST,
-        CHORD_MULTICAST,
-        CHORD_SINGLE,
-
         CHORD_CONF,
+        MAX_CHORD_CONF_TYPE,
+        CHORD_CONF_UNKNOWN
+    };
 
+    enum chord_timer_message_type {
+        MIN_CHORD_TIMER_TYPE = MAX_CHORD_CONF_TYPE,
+        CHORD_TIMER_ACK,
+        CHORD_TIMER_REPLY_FIND_SUCC,
+        CHORD_TIMER_REPLY_FIND_SUCC_JOIN,
+        CHORD_TIMER_UPDATE,
+        MAX_CHORD_TIMER_TYPE,
+        CHORD_TIMER_UNKNOWN
+    };
+
+    enum chord_apptx_message_type {
+        MIN_CHORD_APPTX_TYPE = MAX_CHORD_TIMER_TYPE,
+        CHORD_SINGLE,
+        CHORD_MULTICAST,
+        CHORD_BROADCAST,
+        MAX_CHORD_APPTX_TYPE,
+        CHORD_APPTX_UNKNOWN
+    };
+
+    enum chord_rx_message_type {
+        MIN_CHORD_RX_TYPE = MAX_CHORD_APPTX_TYPE,
         CHORD_RX_JOIN,
         CHORD_RX_NOTIFY,
         CHORD_RX_ACK,
@@ -92,7 +141,12 @@ namespace P2P_MODEL {
         CHORD_RX_BROADCAST,
         CHORD_RX_MULTICAST,
         CHORD_RX_SINGLE,
+        MAX_CHORD_RX_TYPE,
+        CHORD_RX_UNKNOWN
+    };
 
+    enum chord_tx_message_type {
+        MIN_CHORD_TX_TYPE = MAX_CHORD_RX_TYPE,
         CHORD_TX_JOIN,
         CHORD_TX_NOTIFY,
         CHORD_TX_ACK,
@@ -104,20 +158,19 @@ namespace P2P_MODEL {
         CHORD_TX_BROADCAST,
         CHORD_TX_MULTICAST,
         CHORD_TX_SINGLE,
-
-        CHORD_TIMER_ACK,
-        CHORD_TIMER_REPLY_FIND_SUCC,
-        CHORD_TIMER_REPLY_FIND_SUCC_JOIN,
-        CHORD_TIMER_UPDATE,
-        
-        MAX_CHORD_MESS_TYPE,
-        CHORD_UNKNOWN
+        MAX_CHORD_TX_TYPE,
+        CHORD_TX_UNKNOWN
     };
+
+
 
 
 
          
     class network_address {
+    private:
+        const string m_ipNULL = "-1.-1.-1.-1";
+
     public:
         string ip;
         uint inSocket;
@@ -136,18 +189,15 @@ namespace P2P_MODEL {
             set(ip, inSocket, outSocket);
         };
 
-
         void clear() {
-            ip = "0.0.0.0";
+            ip = m_ipNULL;
             inSocket = 0;
             outSocket = 0;
         }
 
-
         void set(const network_address& src) {
             set(src.ip, src.inSocket, src.outSocket);
         }
-
 
         void set(const string ip, const uint inSocket, const uint outSocket) {
             this->ip = ip;
@@ -165,17 +215,24 @@ namespace P2P_MODEL {
             return *this;
         }
 
-        string& toStr() {
-            static string str;            
+        string toStr() const {
+            string str;            
             str = "" + ip + " " + to_string(inSocket) + " " + to_string(outSocket);
             return str;
         }
 
-        friend ostream& operator<< (ostream& out, network_address& src);
+        bool isNone() {
+            if (ip.compare(m_ipNULL) == 0)   //equaled "-1.-1.-1.-1"
+                return true;
+            return false;
+        }
+
+        friend ostream& operator<< (ostream& out,       network_address& src);
+        friend bool     operator== (const network_address& l, const network_address& r);
     };
 
 
-    class node_address : public network_address {
+    class node_address : virtual public network_address {
     public:
         uint160 id;
 
@@ -234,13 +291,14 @@ namespace P2P_MODEL {
             return *this;
         }
 
-        string& toStr() {
-            static string str;
+        string toStr() const {
+            string str;
             str = network_address::toStr() + " " + id.to_string(SC_HEX_US);
             return str;
         }
 
-        friend ostream& operator<< (ostream& out, node_address& r);
+        friend ostream& operator<< (ostream& out,          node_address& r);
+        friend bool     operator== (const node_address& l, const node_address& r);
 
 
     private:
@@ -327,10 +385,10 @@ namespace P2P_MODEL {
         }
 
 
-        string& type2str(const int& type = -1) {
-            static string res;
+        string type2str(const int& type = NONE) const {
+            string res;
             int t = type;
-            if (type == -1)
+            if (type == NONE)
                 t = this->type;
 
             switch (t) {
@@ -347,8 +405,8 @@ namespace P2P_MODEL {
             }
         }
 
-        string& toStr() {
-            static string str;
+        string toStr() const {
+            string str;
             str = type2str();
             if ((type == SIM_SINGLE) || (type == SIM_MULTICAST) || (type == SIM_BROADCAST))
             //{
@@ -368,10 +426,30 @@ namespace P2P_MODEL {
     };
 
 
-    class app_message {
-    public:
-        vector<network_address> destination;
+    class base_message {
+    public:        
         uint type;
+
+        base_message() {
+            clear();
+        }
+
+        virtual void clear() {
+            type = BASE_UNKNOWN_TYPE;
+        }
+
+        virtual base_message& operator= (const base_message& src) {
+            if (this == &src)
+                return *this;
+            type = src.type;
+            return *this;
+        }
+    };
+
+
+    class app_message: public virtual base_message {
+    public:
+        vector<network_address> destination;        
         data_type payload;
         data_size_type payloadSize;
 
@@ -386,25 +464,26 @@ namespace P2P_MODEL {
         app_message& operator= (const app_message& src) {
             if (this == &src)
                 return *this;
-
-            destination = src.destination;
-            type = src.type;
+            
+            base_message::operator=(src);            
+            destination = src.destination;           
             payload = src.payload;
             payloadSize = src.payloadSize;
             return *this;
         }
 
         void clear() {
-            destination.clear();
+            base_message::clear();
             type = APP_UNKNOWN;
+            destination.clear();            
             payload.clear();
             payloadSize = 0;
         }
 
-        string& type2str(const int& type = -1) {
-            static string res;
+        string type2str(const int& type = NONE) const {
+            string res;
             int t = type;
-            if (type == -1)
+            if (type == NONE)
                 t = this->type;
 
             switch (t) {
@@ -419,8 +498,8 @@ namespace P2P_MODEL {
             }
         }
 
-        string& toStr() {
-            static string str;
+        string toStr() const {
+            string str;
             str = type2str();
             if ((type == APP_SINGLE) || (type == APP_MULTICAST) || (type == APP_BROADCAST))
                 str += " " + to_string(payloadSize/*payload.size()*/);           
@@ -437,189 +516,554 @@ namespace P2P_MODEL {
     };
 
 
-    class chord_message: public app_message {
+    class chord_conf_message : public virtual base_message {
     public:
-        node_address source;
-        node_address mediator;
-        uint160 destNodeID;
-        sc_time  appearanceTime;
-        chord_message* retryMess;
 
-        chord_message(): retryMess(nullptr) {
+        chord_conf_message() {
             clear();
         }
 
-        chord_message(const chord_message& src): retryMess(nullptr) {
+        chord_conf_message(const chord_conf_message& src) {
             *this = src;
         }
 
-        ~chord_message() {
+        chord_conf_message& operator= (const chord_conf_message& src) {
+            if (this == &src)
+                return *this;
+            base_message::operator=(src);
+            //type = src.type;            
+            return *this;
+        }
+
+        void clear() {
+            type = CHORD_CONF_UNKNOWN;
+        }
+
+        string type2str(const int& type = NONE) const {
+            string str;
+            int t = type;
+            if (type == NONE)
+                t = this->type;
+
+            
+            switch (t) {
+            case CHORD_HARD_RESET: return str = app_message().type2str(APP_HARD_RESET);
+            case CHORD_SOFT_RESET: return str = app_message().type2str(APP_SOFT_RESET);
+            case CHORD_FLUSH:      return str = app_message().type2str(APP_FLUSH);
+            case CHORD_CONF:       return str = app_message().type2str(APP_CONF);
+            default:               return str = "CHORD_UNKNOWN";
+            }
+        }
+
+        string toStr() const {
+            string str;
+            switch (type) {
+            case CHORD_HARD_RESET: return str = "HARD_RESET";
+            case CHORD_SOFT_RESET: return str = "SOFT_RESET";
+            case CHORD_FLUSH:      return str = "FLUSH";
+            case CHORD_CONF:       return str = "CONF";
+            default:               return str = "CHORD_UNKOWN";
+            }
+        }
+
+        friend ostream& operator<< (ostream& out, const chord_conf_message& r);
+    };
+
+    
+    class chord_apptx_message: public virtual app_message {
+    public:        
+        //uint160  destNodeID;
+        sc_time  appearanceTime;               
+
+        chord_apptx_message() {
             clear();
         }
 
-        chord_message& operator= (const chord_message& src) {
+        chord_apptx_message(const chord_apptx_message& src) {
+            *this = src;
+        }
+
+        chord_apptx_message& operator= (const chord_apptx_message& src) {
             if (this == &src)
                 return *this;
 
-            destination    = src.destination;
-            type           = src.type;
-            payload        = src.payload;
-            payloadSize    = src.payloadSize;
-            source         = src.source;
-            mediator       = src.mediator;
-
-            destNodeID     = src.destNodeID;
+            app_message::operator=(src);            
             appearanceTime = src.appearanceTime;
-            
-            if (retryMess != nullptr) {
-                delete retryMess;
-                retryMess = nullptr;
-            }
-            if (src.retryMess != nullptr) {
-                retryMess = new chord_message();
-                (*retryMess).destination    = (*(src.retryMess)).destination;
-                (*retryMess).type           = (*(src.retryMess)).type;
-                (*retryMess).payload        = (*(src.retryMess)).payload;
-                (*retryMess).payloadSize    = (*(src.retryMess)).payloadSize;
-                (*retryMess).source         = (*(src.retryMess)).source;
-                (*retryMess).mediator       = (*(src.retryMess)).mediator;
-                (*retryMess).destNodeID     = (*(src.retryMess)).destNodeID;
-                (*retryMess).appearanceTime = (*(src.retryMess)).appearanceTime;;
-            }
-            //cout << toStr() << endl;
             return *this;
         }
 
         void clear() {
             app_message::clear();
-            type = CHORD_UNKNOWN;
-            source.clear();
-            mediator.clear();
-            destNodeID = 0;
-            appearanceTime = SC_ZERO_TIME;            
+            type           = CHORD_APPTX_UNKNOWN;
+            appearanceTime = SC_ZERO_TIME;               
+        }
 
+        string type2str(const int& type = NONE) const {
+            string res;
+            int t = type;
+            if (type == NONE)
+                t = this->type;
+
+            switch (t) {
+                case CHORD_BROADCAST: return res = app_message::type2str(APP_BROADCAST);
+                case CHORD_MULTICAST: return res = app_message::type2str(APP_MULTICAST);
+                case CHORD_SINGLE:    return res = app_message::type2str(APP_SINGLE);
+                default:              return res = "CHORD_UNKNOWN";
+            }
+        }
+
+        string toStr() const {
+            string str;
+            str.clear();
+
+            switch (type) {
+            case CHORD_BROADCAST:
+            case CHORD_MULTICAST:
+            case CHORD_SINGLE:           
+                str = type2str();
+                str += " " + to_string(payloadSize);
+
+                if (destination.size() > 0) {
+                    str += " dest " + destination.at(0).toStr();
+                
+                    for (size_t i = 1; i < destination.size(); ++i) 
+                        str += ", " + destination.at(i).toStr();
+                }
+                //str += " " + destNodeID.to_string(SC_HEX_US);
+                //str += " " + string("src ") + source.toStr();
+                //str += " " + string("init ") + initiator.toStr();
+                str += " when " + appearanceTime.to_string();
+                break;
+
+            default: str = "CHORD_UNKOWN"; break;                
+            }
+            return str;
+        }
+
+        friend ostream& operator<< (ostream& out, const chord_apptx_message& r);
+    };
+
+
+    struct chord_bits_flags {
+        uint bitMessType : 4 ;
+        uint needsACK : 1;
+        uint payloadSize : 32;
+        uint reserve : 3;
+
+        chord_bits_flags() {
+            clear();
+        }
+
+        void clear() {
+            bitMessType = CHORD_BYTE_UNKNOWN;
+            needsACK = 0;
+            payloadSize = 0;
+            reserve = 0;
+        }
+
+        string type2str(const int& type = NONE) const {
+            string str;
+            int t = type;
+            if (type == NONE)
+                t = bitMessType;
+
+            switch (t) {
+            case CHORD_BYTE_JOIN:                 return str = "JOIN";
+            case CHORD_BYTE_NOTIFY:               return str = "NOTIFY";
+            case CHORD_BYTE_ACK:                  return str = "ACK";
+            case CHORD_BYTE_REPLY_FIND_SUCCESSOR: return str = "REPLY_FIND_SUCC";
+            case CHORD_BYTE_FIND_SUCCESSOR:       return str = "FIND_SUCC";
+            case CHORD_BYTE_BROADCAST:            return str = "BROADCAST";
+            case CHORD_BYTE_MULTICAST:            return str = "MULTICAST";
+            case CHORD_BYTE_SINGLE:               return str = "SINGLE";
+            default:                              return str = "CHORD_BYTE_MESSAGE_UNKNOWN";
+            }
+        }
+
+        string toStr() const {
+            string str;
+            str += string("t ") + type2str() + string(" a ") + to_string(needsACK) + string(" ps ") + to_string(payloadSize) + string(" r ") + to_string(reserve);
+            return str;
+        }
+
+        chord_bits_flags& operator= (const chord_bits_flags& src) {
+            if (this == &src)
+                return *this;
+
+            bitMessType = src.bitMessType;
+            needsACK = src.needsACK;
+            payloadSize = src.payloadSize;
+            reserve = src.reserve;
+            return *this;
+        }
+
+        friend ostream& operator<< (ostream& out, const chord_bits_flags& r);
+    };
+
+
+    class chord_byte_message_fields : public virtual base_message {
+    public:
+        node_address destNodeID;
+        node_address srcNodeID;
+        byte         pid;
+        chord_bits_flags   flags;
+        node_address initiatorID;
+        uint160      nodeIDpayload;
+        byte_array   payload;
+
+        chord_byte_message_fields() {
+            clear();
+        }
+
+        chord_byte_message_fields(const chord_byte_message_fields& src) {
+            *this = src;
+        }
+
+        chord_byte_message_fields* clone() {
+            chord_byte_message_fields* p = nullptr;
+            p = new chord_byte_message_fields();
+            *p = *this;
+            return p;
+        }
+
+
+        chord_byte_message_fields& operator= (const chord_byte_message_fields& src) {
+            if (this == &src)
+                return *this;
+
+            base_message::operator=(src);
+            //type = src.type;
+            destNodeID = src.destNodeID;
+            srcNodeID = src.srcNodeID;
+            pid = src.pid;
+            initiatorID = src.initiatorID;
+            flags = src.flags;
+            nodeIDpayload = src.nodeIDpayload;
+            payload = src.payload;
+            return *this;
+        }
+
+        void clear() {
+            type = CHORD_BYTE_UNKNOWN;
+            destNodeID.clear();       //        = 0;
+            srcNodeID.clear();        //        = 0;
+            pid = PID;
+            initiatorID.clear();      //        = 0;
+            flags.bitMessType = CHORD_BYTE_UNKNOWN;
+            flags.needsACK = 0;
+            flags.payloadSize = 0;
+            flags.reserve = 0;
+            nodeIDpayload = 0;
+            payload.clear();
+        }
+
+        string type2str(const int& type = NONE) const {
+            string str;
+            uint t = type;
+            if (type == NONE)
+                t = this->type;
+            
+            switch (t) {
+                case CHORD_RX_JOIN:                return str = "RX_JOIN";
+                case CHORD_RX_NOTIFY:              return str = "RX_NOTIFY";
+                case CHORD_RX_ACK:                 return str = "RX_ACK";
+                case CHORD_RX_FIND_SUCCESSOR:      return str = "RX_FIND_SUCCESSOR";
+                case CHORD_RX_BROADCAST:           return str = "RX_BROADCAST";
+                case CHORD_RX_MULTICAST:           return str = "RX_MULTICAST";
+                case CHORD_RX_SINGLE:              return str = "RX_SINGLE";
+
+                case CHORD_TX_JOIN:                return str = "TX_JOIN";
+                case CHORD_TX_NOTIFY:              return str = "TX_NOTIFY";
+                case CHORD_TX_ACK:                 return str = "TX_ACK";
+                case CHORD_TX_REPLY_FIND_SUCESSOR: return str = "TX_REPLY_FIND_SUCESSOR";
+                case CHORD_TX_FIND_SUCCESSOR:      return str = "TX_FIND_SUCCESSOR";
+                case CHORD_TX_FWD_BROADCAST:       return str = "TX_FWD_BROADCAST";
+                case CHORD_TX_FWD_MULTICAST:       return str = "TX_FWD_MULTICAST";
+                case CHORD_TX_FWD_SINGLE:          return str = "TX_FWD_SINGLE";
+                case CHORD_TX_BROADCAST:           return str = "TX_BROADCAST";
+                case CHORD_TX_MULTICAST:           return str = "TX_MULTICAST";
+                case CHORD_TX_SINGLE:              return str = "TX_SINGLE";
+                default:                           return str = "CHORD_UNKNOWN";
+            }
+        }
+
+
+        string toStr() const {
+            string str;
+            
+            str += type2str() + string(" ");
+            str += string("d ") + destNodeID.toStr() + string(" ");
+            str += string("s ") + srcNodeID.toStr() + string(" ");
+            str += string("pid ") + to_string(pid) + string(" ");
+            str += string("i ") + initiatorID.toStr() + string(" ");
+            str += string("f ") + flags.toStr() + string(" ");
+            str += string("npid ") + nodeIDpayload.to_string(SC_HEX_US) + string(" ");
+            str += string("p ") + to_string(payload.size());
+            return str;
+        }
+
+        friend ostream& operator<< (ostream& out, const chord_byte_message_fields& r);
+    };
+
+
+    class chord_timer_message: public virtual chord_apptx_message {
+    public:
+       
+       chord_byte_message_fields* retryMess;
+
+
+        chord_timer_message(): retryMess(nullptr) {
+            clear();
+        }
+
+        chord_timer_message(const chord_timer_message& src): retryMess(nullptr) {
+            *this = src;
+        }
+
+        ~chord_timer_message() {
+            clear();
+        }
+
+        chord_timer_message& operator= (const chord_timer_message& src) {
+            if (this == &src)
+                return *this;
+
+            chord_apptx_message::operator=(src);
+
+            if (retryMess != nullptr) {
+                delete retryMess;
+                retryMess = nullptr;
+            }
+            if (src.retryMess != nullptr) {
+                retryMess = new chord_byte_message_fields();
+                *retryMess = *(src.retryMess);
+            }
+            return *this;
+        }
+
+        void clear() {           
+            chord_apptx_message::clear();
+            type = CHORD_TIMER_UNKNOWN;
             if (retryMess != nullptr) {
                 delete retryMess;
                 retryMess = nullptr;
             }
         }
 
-        chord_message* clone() {
-            chord_message* p = nullptr;
-            p = new chord_message();
-            *p = *this;
-            return p;
-        }
-
-        string& type2str(const int& type = -1) {
-            static string res;
-            int t = type;
-            if (type == -1)
+        string type2str(const int& type = NONE) const {
+            string str;
+            uint t = type;
+            if (type == NONE)
                 t = this->type;
 
             switch (t) {
-                case CHORD_HARD_RESET:             return res = app_message::type2str(APP_HARD_RESET);
-                case CHORD_SOFT_RESET:             return res = app_message::type2str(APP_SOFT_RESET);
-                case CHORD_FLUSH:                  return res = app_message::type2str(APP_FLUSH);
-                                                   
-                case CHORD_BROADCAST:              return res = app_message::type2str(APP_BROADCAST);
-                case CHORD_MULTICAST:              return res = app_message::type2str(APP_MULTICAST);
-                case CHORD_SINGLE:                 return res = app_message::type2str(APP_SINGLE);
-                                                   
-                case CHORD_CONF:                   return res = app_message::type2str(APP_CONF);
-
-                case CHORD_RX_JOIN:                return res = "RX_JOIN";
-                case CHORD_RX_NOTIFY:              return res = "RX_NOTIFY";
-                case CHORD_RX_ACK:                 return res = "RX_ACK";
-                case CHORD_RX_REPLY_FIND_SUCCESSOR: return res = "RX_REPLY_FIND_SUCC";
-                case CHORD_RX_FIND_SUCCESSOR:      return res = "RX_FIND_SUCC";
-                case CHORD_RX_BROADCAST:           return res = "RX_BROADCAST";
-                case CHORD_RX_MULTICAST:           return res = "RX_MULTICAST";
-                case CHORD_RX_SINGLE:              return res = "RX_SINGLE";
-
-                case CHORD_TX_JOIN:                return res = "TX_JOIN";
-                case CHORD_TX_NOTIFY:              return res = "TX_NOTIFY";
-                case CHORD_TX_ACK:                 return res = "TX_ACK";
-                case CHORD_TX_REPLY_FIND_SUCESSOR: return res = "TX_REPLY_FIND_SUCC";
-                case CHORD_TX_FIND_SUCCESSOR:      return res = "TX_FIND_SUCC";
-                case CHORD_TX_FWD_BROADCAST:       return res = "TX_FWD_BROADCAST";
-                case CHORD_TX_FWD_MULTICAST:       return res = "TX_FWD_MULTICAST";
-                case CHORD_TX_FWD_SINGLE:          return res = "TX_FWD_SINGLE";
-                case CHORD_TX_BROADCAST:           return res = "TX_BROADCAST";
-                case CHORD_TX_MULTICAST:           return res = "TX_MULTICAST";
-                case CHORD_TX_SINGLE:              return res = "TX_SINGLE";     
-                
-                case CHORD_TIMER_ACK:              return res = "TIMER_ACK";
-                case CHORD_TIMER_REPLY_FIND_SUCC:  return res = "TIMER_REPLY_FIND_SUCC";
-                case CHORD_TIMER_REPLY_FIND_SUCC_JOIN:  return res = "TIMER_REPLY_FIND_SUCC_JOIN";
-                case CHORD_TIMER_UPDATE:           return res = "TIMER_UPDATE";
-                default:                           return res = "CHORD_UNKNOWN";
+            case CHORD_TIMER_ACK:                  return str = "TIMER_ACK";
+            case CHORD_TIMER_REPLY_FIND_SUCC:      return str = "TIMER_REPLY_FIND_SUCC";
+            case CHORD_TIMER_REPLY_FIND_SUCC_JOIN: return str = "TIMER_REPLY_FIND_SUCC_JOIN";
+            case CHORD_TIMER_UPDATE:               return str = "TIMER_UPDATE";
+            default:                               return str = "CHORD_UNKNOWN";
             }
         }
 
-        string& toStr() {
-            static string str;
-            str.clear();
-
+        string toStr() const {
+            string str;
             switch (type) {
-            case CHORD_HARD_RESET:
-            case CHORD_SOFT_RESET:
-            case CHORD_FLUSH: str = type2str(); break;
-
-            case CHORD_BROADCAST:
-            case CHORD_MULTICAST:
-            case CHORD_SINGLE:
-
-            case CHORD_RX_JOIN:
-            case CHORD_RX_NOTIFY:
-            case CHORD_RX_ACK:
-            case CHORD_RX_REPLY_FIND_SUCCESSOR:
-            case CHORD_RX_FIND_SUCCESSOR:
-            case CHORD_RX_BROADCAST:
-            case CHORD_RX_MULTICAST:
-            case CHORD_RX_SINGLE:
-
-            case CHORD_TX_JOIN:
-            case CHORD_TX_NOTIFY:
-            case CHORD_TX_ACK:
-            case CHORD_TX_REPLY_FIND_SUCESSOR:
-            case CHORD_TX_FIND_SUCCESSOR:
-            case CHORD_TX_BROADCAST:
-            case CHORD_TX_MULTICAST:
-            case CHORD_TX_SINGLE:
-                str = type2str();
-                str += " " + to_string(payloadSize);
-
-                if (destination.size() > 0) {
-                    str += " dest: " + destination.at(0).toStr();
-                
-                    for (size_t i = 1; i < destination.size(); ++i) 
-                        str += ", " + destination.at(i).toStr();
-                }
-                str += " " + destNodeID.to_string(SC_HEX_US);
-                str += " " + string("src: ") + source.toStr();
-                str += " " + string("med: ") + mediator.toStr();
-                str += " appeared " + appearanceTime.to_string();
-                str += " " + (retryMess == nullptr ? string("nullptr") : string("hasRetry"));
-                break;
-
             case CHORD_TIMER_ACK:
             case CHORD_TIMER_REPLY_FIND_SUCC:
             case CHORD_TIMER_REPLY_FIND_SUCC_JOIN:
-            case CHORD_TIMER_UPDATE:               str = type2str(); break;
-
-            default: str = "CHORD_UNKOWN"; break;
+            case CHORD_TIMER_UPDATE:               return str = type2str(); 
+            default:                               return str = "CHORD_UNKOWN"; 
             }
+        }
+
+        friend ostream& operator<< (ostream& out, const chord_timer_message& r);
+    };
+    
+
+    class chord_message:
+        public virtual chord_conf_message,
+        public virtual chord_timer_message,
+        public virtual chord_apptx_message,       
+        public virtual chord_byte_message_fields {
+    public:    
+        chord_message() {
+            clear();
+        }
+
+        chord_message(const app_message& r) {
+            *this = r;
+        }
+
+        chord_message(const chord_conf_message& r) {
+            *this = r;
+        }
+
+        chord_message(const chord_timer_message& r) {
+            *this = r;
+        }
+
+        chord_message(const chord_apptx_message& r) {
+            *this = r;
+        }
+
+        chord_message(const chord_byte_message_fields& r) {
+            *this = r;
+        }
+
+        chord_message(const chord_message& r) {
+            *this = r;
+        }
+
+        void clear() {           
+            chord_conf_message::clear();
+            chord_timer_message::clear();
+            chord_apptx_message::clear();           
+            chord_byte_message_fields::clear();
+        }
+        
+        ~chord_message() {
+            clear();
+        }
+
+        chord_message& operator= (const app_message& src) {
+            if (this == &src)
+                return *this;
+
+            app_message::operator=(src);
+
+            return *this;
+        }
+
+        chord_message& operator= (const chord_conf_message& src) {
+            if (this == &src)
+                return *this;
+
+            chord_conf_message::operator=(src);
+
+            return *this;
+        }
+
+        chord_message& operator= (const chord_timer_message& src) {
+            if (this == &src)
+                return *this;
+
+            chord_timer_message::operator=(src);
+
+            return *this;
+        }
+
+        chord_message& operator= (const chord_apptx_message& src) {
+            if (this == &src)
+                return *this;
+
+            chord_apptx_message::operator=(src);
+
+            return *this;
+        }
+
+        chord_message& operator= (const chord_byte_message_fields& src) {
+            if (this == &src)
+                return *this;
+
+            chord_byte_message_fields::operator=(src);
+
+            return *this;
+        }
+
+        chord_message& operator= (const chord_message& src) {
+            if (this == &src)
+                return *this;
+            
+            app_message::operator=(src);
+            chord_conf_message::operator=(src);
+            chord_timer_message::operator=(src);
+            chord_apptx_message::operator=(src);           
+            chord_byte_message_fields::operator=(src);            
+            
+            return *this;
+        }
+
+        string toStr() const {
+            if ((type > MIN_CHORD_CONF_TYPE) && (type < MAX_CHORD_CONF_TYPE)) {
+                return chord_conf_message::toStr();
+            }
+            else if ((type > MIN_CHORD_TIMER_TYPE) && (type < MAX_CHORD_TIMER_TYPE)) {
+                return chord_timer_message::toStr();
+            }
+            else if ((type > MIN_CHORD_APPTX_TYPE) && (type < MAX_CHORD_APPTX_TYPE)) {
+                return chord_apptx_message::toStr();
+            }
+            else if ((type > MIN_CHORD_RX_TYPE) && (type < MAX_CHORD_RX_TYPE)) {
+                return chord_byte_message_fields::toStr();
+            }
+            else if ((type > MIN_CHORD_TX_TYPE) && (type < MAX_CHORD_TX_TYPE)) {
+                return chord_byte_message_fields::toStr();
+            }
+            else {                
+                return string("BASE_UNKNOWN_TYPE");
+            }
+
+        }
+    };
+    
+
+    class chord_byte_message {
+    public:
+        byte_array byteArray;
+        uint size;
+        chord_byte_message_fields* fields;
+
+        chord_byte_message(): fields(nullptr) {
+            clear();
+        }
+
+        chord_byte_message(const chord_byte_message& src): fields(nullptr) {
+            *this = src;
+        }
+
+        chord_byte_message& operator= (const chord_byte_message& src) {
+            if (this == &src)
+                return *this;
+            
+            byteArray = src.byteArray;
+            size      = src.size;
+            //fields    = src.fields;
+
+            if (fields != nullptr) {
+                delete fields;
+                fields = nullptr;
+            }
+            if (src.fields != nullptr) {
+                fields = new chord_byte_message_fields;
+                *fields = *(src.fields);
+            }
+
+            return *this;
+        }
+
+        ~chord_byte_message() { 
+            clear(); 
+        }
+
+        void clear() {
+            byteArray.clear();
+            size = 0;            
+            if (fields != nullptr) {                
+                delete fields;
+                fields = nullptr;
+            }
+        }
+
+        string toStr() {
+            string str;
+            str += string("array ") + to_string(byteArray.size()) + string("|") + to_string(size) + string(" ") + (fields == nullptr ? string("") : fields->toStr());
             return str;
         }
 
-        friend ostream& operator<< (ostream& out, const chord_message& r);
+        friend ostream& operator<< (ostream& out, const chord_byte_message& r);
     };
 
 
-    struct raw_chord_message {
-        chord_message info;
-        data_unit rawByteArray;
-    };
+    void initRands();
 }
 #endif

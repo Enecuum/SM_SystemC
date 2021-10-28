@@ -3,7 +3,7 @@
 namespace P2P_MODEL
 {
 
- 
+
 
 
 
@@ -21,10 +21,10 @@ namespace P2P_MODEL
 
     void low_latency_chord::preinit() {
         m_state = STATE_OFF;
-        m_nodeAddr.clear();                        //ÀÄÐÅÑ, ÈÑÏÎËÜÇÓÅÌÛÉ ÄËß ÈÄÅÍÒÈÔÈÊÀÖÈÈ ÓÇËÀ ÍÀ Transport+ ÓÐÎÂÍÅ ïî ID, âû÷èñëÿåìîì, êàê SHA-1
+        m_nodeAddr.clear();                        //ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Transport+ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ID, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ SHA-1
         m_confParams.setDefaultTimersCountersFingersSize();
         hardReset();
-                
+
         //Create buffers
         // 
         //Set priority
@@ -33,27 +33,27 @@ namespace P2P_MODEL
         uint priority = 1;
         m_indexLastBufferCall = 0;
         m_howManyBuffers = MAX_BUFF_TYPE;
-        m_buffer.resize(m_howManyBuffers, message_buffer());
+        m_buffer.resize(m_howManyBuffers, message_buffer<chord_message>());
         m_buffer[BUFF_CONFIG].set(BUFF_CONFIG, MAX_DEEP_BUFF_CONFIG, MAX_SIZE_BUFF_CONFIG, true, priority++);
-        m_buffer[BUFF_TIMER] .set(BUFF_TIMER,  MAX_DEEP_BUFF_TIMER, MAX_SIZE_BUFF_TIMER, true, priority++);
+        m_buffer[BUFF_TIMER].set(BUFF_TIMER, MAX_DEEP_BUFF_TIMER, MAX_SIZE_BUFF_TIMER, true, priority++);
 
-        m_buffer[BUFF_TX_JOIN]   .set(BUFF_TX_JOIN,   MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_NOTIFY] .set(BUFF_TX_NOTIFY, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_ACK]    .set(BUFF_TX_ACK,    MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_JOIN].set(BUFF_TX_JOIN, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_NOTIFY].set(BUFF_TX_NOTIFY, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_ACK].set(BUFF_TX_ACK, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
         m_buffer[BUFF_TX_REPLY_FIND_SUCCESSOR].set(BUFF_TX_REPLY_FIND_SUCCESSOR, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
         m_buffer[BUFF_TX_FIND_SUCCESSOR].set(BUFF_TX_FIND_SUCCESSOR, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_FWD_BROADCAST] .set(BUFF_TX_FWD_BROADCAST,  MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_FWD_MULTICAST] .set(BUFF_TX_FWD_MULTICAST,  MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_FWD_SINGLE].set(BUFF_TX_FWD_SINGLE,  MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_BROADCAST] .set(BUFF_TX_BROADCAST,   MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_MULTICAST] .set(BUFF_TX_MULTICAST,   MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_TX_SINGLE]    .set(BUFF_TX_SINGLE,      MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);        
+        m_buffer[BUFF_TX_FWD_BROADCAST].set(BUFF_TX_FWD_BROADCAST, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_FWD_MULTICAST].set(BUFF_TX_FWD_MULTICAST, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_FWD_SINGLE].set(BUFF_TX_FWD_SINGLE, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_BROADCAST].set(BUFF_TX_BROADCAST, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_MULTICAST].set(BUFF_TX_MULTICAST, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
+        m_buffer[BUFF_TX_SINGLE].set(BUFF_TX_SINGLE, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
         m_buffer[BUFF_APPTXDATA].set(BUFF_APPTXDATA, MAX_DEEP_BUFF_APPTXDATA, MAX_SIZE_BUFF_APPTXDATA, false, priority++);
-        m_buffer[BUFF_RX_MESS] .set(BUFF_RX_MESS,  MAX_DEEP_BUFF_RX_MESS,  MAX_SIZE_BUFF_RX_MESS,  false, priority++);
-        
+        m_buffer[BUFF_RX_MESS].set(BUFF_RX_MESS, MAX_DEEP_BUFF_RX_MESS, MAX_SIZE_BUFF_RX_MESS, false, priority++);
+
         //Sort buffers by priority and immediate fields of message_buffer class, comparison's operator for sorting is defined in message_buffer class
-        std::sort(m_buffer.begin(), m_buffer.end());       
-        
+        std::sort(m_buffer.begin(), m_buffer.end());
+
         //Print info about buffers (priority...)
         for (int i = 0; i < m_buffer.size(); ++i)
             cout << m_buffer[i].toStr() << endl;
@@ -76,11 +76,11 @@ namespace P2P_MODEL
 
 
     void low_latency_chord::setSeedNodes(const vector<network_address>& seed) {
-        m_confParams.seed.clear();
+        m_seedAddrs.resize(seed.size(), node_address());
+        m_confParams.seed.resize(seed.size(), network_address());
         for (uint i = 0; i < seed.size(); ++i) {
-            node_address addr; 
-            addr.set(seed[i]);
-            m_confParams.seed.push_back( addr );
+            m_confParams.seed[i] = seed[i];
+            m_seedAddrs[i].set(seed[i]);
         }
     }
 
@@ -92,37 +92,44 @@ namespace P2P_MODEL
 
 
     void low_latency_chord::pushNewMessage(const chord_message& mess) {
-        //chord_message& r = const_cast<chord_message&>(mess);
-        chord_message r = const_cast<chord_message&>(mess);        
+        chord_message& r = const_cast<chord_message&>(mess);
         r.appearanceTime = sc_time_stamp();
 
+        m_logText = "pushNewMessage" + LOG_TAB + r.toStr();
+        msgLog(name(), LOG_TXRX, LOG_IN, m_logText, DEBUG_LOG | EXTERNAL_LOG);
+
+        //Find buffer index
         int i = chordMessType2buffIndex(r.type);
         if ((i == ERROR) || (i >= MAX_BUFF_TYPE)) {
             //ERROR
-            m_logText = "pushNewMessage" + LOG_TAB + r.toStr();
+            m_logText = "pushNewMessage" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED;
             msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+            return;
         }
-        else {
-            
-            if (m_buffer[i].push(r) == false) {
-                //OVERFLOW BUFFER
-                m_logText = "pushNewMessage" + LOG_TAB + r.toStr() + LOG_TAB + LOG_ERROR_OVERFLOW;
-                msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
-            }
-            else {
-                m_logText = "pushNewMessage" + LOG_TAB + r.toStr();                
-                msgLog(name(), LOG_TXRX, LOG_IN, m_logText, DEBUG_LOG | EXTERNAL_LOG);
-            
-                m_eventCore.notify(0, SC_NS);
-            }
+
+        //Drop rx message, if addr is zero
+        if ((r.destNodeID.isNone()) && (r.type > MIN_CHORD_RX_TYPE) && (r.type < MAX_CHORD_RX_TYPE)) {
+            m_logText = "pushNewMessage" + LOG_TAB + LOG_ERROR_NO_ADDR;
+            msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | ERROR_LOG);
+            return;
+        }           
+
+        //Push message into buffer
+        if (m_buffer[i].push(r) == false) {
+            //OVERFLOW BUFFER
+            m_logText = "pushNewMessage" + LOG_TAB + LOG_ERROR_OVERFLOW;
+            msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+            return;
         }
+            
+        m_eventCore.notify(0, SC_NS);
     }
 
 
     chord_message* low_latency_chord::firstMessByPriority() {                
         //m_buffer consists of array of sub-buffers as named "message_buffer".
-        //message_buffers into m_buffer have already sorted by priority (service) order.
-        //message_buffer in 0-position has the highest priority to service a message.
+        //message_buffers have already sorted by priority (service) order.
+        //message_buffer in 0-position in m_buffer has the highest priority to service a message.
         //method "firstMessPointerByImmediate" will return mess with accordance immediate-priority
         
         bool buffersEmpty = false;
@@ -161,12 +168,21 @@ namespace P2P_MODEL
 
 
     void low_latency_chord::core() {
+        if ((m_nodeAddr.isNone()) && (m_state != STATE_LOAD)) {
+            //ERROR
+            m_logText = "core" + LOG_TAB + LOG_ERROR_NO_ADDR;
+            msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+            m_eventCore.cancel();
+            return;
+        }
+
+
         string currTime = sc_time_stamp().to_string();
         chord_message* p = firstMessByPriority();
         if (p == nullptr)
-            return;
+            return;                                  //Nothing to do
                     
-        m_logText = "c o r e" + LOG_TAB + p->toStr();
+        m_logText = "core" + LOG_TAB + p->toStr();
         msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | INTERNAL_LOG);
 
         switch (m_state)
@@ -192,110 +208,26 @@ namespace P2P_MODEL
             break;                
             
         case STATE_IDLE:
-            switch (p->type) {
-            case CHORD_HARD_RESET:  eraseFirstMess(); hardReset();  goStateLoad(); break;
-            case CHORD_SOFT_RESET:  eraseFirstMess(); softReset();  goStateInit(); break;
-            case CHORD_FLUSH:       eraseFirstMess(); flush();      goStateIdle(); break;
-
-            case CHORD_TX_FIND_SUCCESSOR:            eraseFirstMess();  break;
-
-            case CHORD_RX_JOIN:                      findSuccessor(p); eraseFirstMess(); break;
-                        
-            case CHORD_RX_REPLY_FIND_SUCCESSOR:
-            case CHORD_RX_ACK:                    eraseFirstMess(); break;
-
-            default:                eraseFirstMess(); break;
-            } break;
+            goStateIdle(p);
+            eraseFirstMess();
+            break;
             
+        case STATE_INDATA:  goStateIndata(p); eraseFirstMess(); break;
             
+        case STATE_SERVICE: goStateService(p); eraseFirstMess(); break;
             
-            
-        case STATE_INDATA: eraseFirstMess(); break;
-            
-        case STATE_SERVICE: eraseFirstMess(); break;
-            
-        case STATE_UPDATE: eraseFirstMess(); break;
+        case STATE_UPDATE:  eraseFirstMess(); break;
             
         case STATE_APPREQUEST: eraseFirstMess(); break;
 
         default:
             eraseFirstMess();
             //ERROR
-            m_logText = "core" + LOG_TAB + state2str(m_state);
-            msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | ERROR_LOG);
+            m_logText = "core" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + state2str(m_state);
+            msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
             return;
         }
             
-        /* {
-        case CHORD_HARD_RESET:
-                
-            break;
-            
-        case CHORD_SOFT_RESET:
-            if (m_state != STATE_OFF) {
-                eraseFirstMess();
-                soft_reset();
-                init();
-            } break;
-        case CHORD_FLUSH:
-            if (m_state != STATE_OFF) {
-                eraseFirstMess();
-                flush();
-                init();
-            } break;
-
-        case CHORD_BROADCAST:
-        case CHORD_MULTICAST:
-        case CHORD_SINGLE:
-            if (m_state != STATE_OFF) {
-                ;
-            } break;
-
-        case CHORD_CONF: 
-            if (m_state != STATE_OFF) {
-                eraseFirstMess();
-                flush();
-                init();
-            } break;
-
-
-        case CHORD_RX_JOIN:
-        case CHORD_RX_NOTIFY:
-        case CHORD_RX_ACK:
-        case CHORD_RX_REPLY_FIND_SUCCESSOR:
-        case CHORD_RX_FIND_SUCCESSOR:
-        case CHORD_RX_BROADCAST:
-        case CHORD_RX_MULTICAST:
-        case CHORD_RX_SINGLE:
-
-
-        case CHORD_TX_JOIN:
-            if (m_state == STATE_JOIN) {
-            } break;
-
-        case CHORD_TX_FIND_SUCCESSOR: 
-            if ((m_state == STATE_JOIN) || (m_state == STATE_SERVICE) || (m_state == STATE_UPDATE)) {
-            } break;
-
-        case CHORD_TX_NOTIFY:
-        case CHORD_TX_ACK:
-
-
-        case CHORD_TX_REPLY_FIND_SUCESSOR:
-            
-        case CHORD_TX_BROADCAST:
-        case CHORD_TX_MULTICAST:
-        case CHORD_TX_SINGLE:
-            break;
-
-        default:
-            //ERROR
-            m_logText = "core" + LOG_TAB + p->toStr();
-            msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, ALL_LOG);
-            break;
-        }*/
-            
-                       
         m_eventCore.notify(0, SC_NS);
     }
 
@@ -323,16 +255,20 @@ namespace P2P_MODEL
             m_logText = "init" + LOG_TAB + string("NO SEED");
             msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, ALL_LOG);
             
-            m_fingersNeg.clear();
-            m_fingersPos.clear();
-            m_precessor.clear();
-            m_successor.clear();
+            //m_ccwFingers.clear();
+            //m_cwFingers.clear();
+            //m_precessor.clear();
+            //m_successor.clear();
+            m_ccwFingers.resize(m_confParams.fingersSize, m_nodeAddr);
+            m_cwFingers.resize(m_confParams.fingersSize, m_nodeAddr);
+            m_precessor = m_nodeAddr;
+            m_successor = m_nodeAddr;
             m_isAcked.clear();
             goStateIdle();
         }
         else {
-            m_fingersNeg.resize(m_confParams.fingersSize, m_confParams.seed.front());
-            m_fingersPos.resize(m_confParams.fingersSize, m_confParams.seed.front());
+            m_ccwFingers.resize(m_confParams.fingersSize, m_confParams.seed.front());
+            m_cwFingers.resize(m_confParams.fingersSize, m_confParams.seed.front());
             m_precessor = m_confParams.seed.front();
             m_successor = m_confParams.seed.front();            
             m_isAcked.clear();
@@ -341,7 +277,7 @@ namespace P2P_MODEL
     }
 
     bool low_latency_chord::isMessValid(const chord_message* mess) {        
-        if (mess->destNodeID == m_nodeAddr.id)
+        if (mess->destNodeID.id == m_nodeAddr.id)
             return true;
         return false;
     }
@@ -358,11 +294,12 @@ namespace P2P_MODEL
             chord_message newMess;
             if (m_isSuccessorSet == false) {
                 newMess.destination.push_back(m_confParams.seed.front());
-                newMess.destNodeID     = node_address(newMess.destination[0]).id;
-                newMess.source         = m_nodeAddr;
-                newMess.mediator       = m_nodeAddr;
+                newMess.destNodeID     = node_address(newMess.destination[0]);
+                newMess.initiatorID    = m_nodeAddr;
+                newMess.srcNodeID      = m_nodeAddr;
                 newMess.type           = CHORD_TX_JOIN;
                 newMess.appearanceTime = sc_time_stamp();
+                newMess.flags.bitMessType = CHORD_BYTE_JOIN;
             
                 if (m_counterJoin <= m_confParams.CtxJoin) {
                     m_logText = "goStateJoin" + LOG_TAB + newMess.toStr();
@@ -378,20 +315,26 @@ namespace P2P_MODEL
                 }
             }
         }
-        else {            
+        else {    
+        
+            //DEBUG
+            if (mess->type == CHORD_RX_JOIN)
+                (const_cast<chord_message*>(mess))->type = CHORD_RX_FIND_SUCCESSOR;
+            //DEBUG
+            
+
             if ((mess->type == CHORD_TX_JOIN) || (mess->type == CHORD_TX_FIND_SUCCESSOR)) {
                 sendMessage(*mess);
             }            
             else if (mess->type == CHORD_RX_REPLY_FIND_SUCCESSOR) {
-                if (isMessValid(mess) == true) {
-                    ;
+                if ((mess->destNodeID == m_nodeAddr) && (mess->initiatorID == m_nodeAddr))  {
+                    cout << "HELLO";
                 }
             }
-            else
-            ;
+            else {
+                ;
+            }
         }
-
-        
     }
 
     bool low_latency_chord::doResetFlushIfMess(const chord_message* mess) {
@@ -420,6 +363,23 @@ namespace P2P_MODEL
     void low_latency_chord::goStateIdle(const chord_message* mess) {
         m_state = STATE_IDLE;
         msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state), DEBUG_LOG | INTERNAL_LOG);
+
+        if (doResetFlushIfMess(mess) == true)
+            return;
+
+        if (mess == nullptr) {
+            //Timer update was expired
+            
+        }
+        else {
+            //Got message from network: TCP/UDP over IP network
+            if (mess->type == CHORD_RX_JOIN) {
+                goStateService(mess);
+            }
+            else {
+                 ;
+            }
+        }
     }
 
 
@@ -432,6 +392,23 @@ namespace P2P_MODEL
     void low_latency_chord::goStateService(const chord_message* mess) {
         m_state = STATE_SERVICE;
         msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state), DEBUG_LOG | INTERNAL_LOG);
+
+        if (doResetFlushIfMess(mess) == true)
+            return;
+
+        if (mess == nullptr) {
+            ; //Resume actions of Service State, fingers are good now
+        }
+        else {
+            //Got message from network: TCP/UDP over IP network
+            if (mess->type == CHORD_RX_JOIN) {
+                node_address forward;
+                chord_action a = findSuccessor(mess, forward);
+
+            }
+            else
+                ;
+        }
     }
 
 
@@ -489,7 +466,7 @@ namespace P2P_MODEL
 
         default:
             //ERROR
-            msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, "chordMessType2buffIndex", DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, string("chordMessType2buffIndex ") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
             return ERROR;
         }
 
@@ -524,8 +501,8 @@ namespace P2P_MODEL
         m_eventCore.cancel();
         //Messages, timers are stored
         //Fingers, latency, precessor, successor are resetted
-        m_fingersPos.clear();
-        m_fingersNeg.clear();
+        m_cwFingers.clear();
+        m_ccwFingers.clear();
         m_latency.clear();
         m_isAcked.clear();
         m_successor.clear();
@@ -548,7 +525,13 @@ namespace P2P_MODEL
     }
 
 
-    void low_latency_chord::sendMessage(const chord_message& mess) {    
+    void low_latency_chord::sendMessage(const chord_message& mess) {
+        if (mess.destNodeID.id.iszero()) {
+            //ERROR
+            m_logText = "sendMessage" + LOG_TAB + LOG_ERROR_NO_ADDR;
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+        }
+
         m_logText = state2str(m_state) + LOG_TAB + string("sendMessage") + LOG_TAB + const_cast<chord_message&>(mess).toStr();
         msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | INTERNAL_LOG);
 
@@ -556,37 +539,102 @@ namespace P2P_MODEL
     }
 
 
-    void low_latency_chord::findSuccessor(const chord_message* mess) {
-        if (mess->destNodeID == m_nodeAddr.id) {
+    bool low_latency_chord::isClockWiseDirection(const uint160& id) {
+        
+        uint160 first, last;
+        if (m_ccwFingers.size() == 0)
+            return true;
+        if (m_cwFingers.size() == 0)
+            return false;
+        
+        if (id >= m_nodeAddr.id) {
+            if (m_cwFingers.at(0).id <= id) //Is situation: 7(id) > 5 AND 0 < 7(id)    values on line: {5, id, 0, ...} 
+                return true;
 
+            for (uint i = 0; i < m_cwFingers.size(); ++i) {
+                if (m_cwFingers[i].id >= id) //Is situation: 6 > 5(id) ?
+                    return true;
+                else if (i >= 1) {
+                    if ((m_cwFingers[i].id < id) && (id > m_cwFingers[i-1].id)) //Is situation: 0 < 5(id) AND 5(id) > 4  values on line: {4, id, 0, ...}
+                        return true;
+                }         
+            }
+
+            if ((m_cwFingers.back().id() < id) && (id < m_ccwFingers.back().id)) //Is situation: 6 < 7(id) AND 7(id) < 8  values on line: {..., 6} id {8, ...} 
+                return true;
+        }
+        return false;
+    }
+
+    uint160& low_latency_chord::closestPrecedingNode(const uint160& id) {
+        uint160 found;
+        
+        if (isClockWiseDirection(id)) {
+            for (uint i = m_cwFingers.size()-1; i >= 0; ++i) {
+                ;
+            }   
+        }
+        return found;
+    }
+
+
+    chord_action low_latency_chord::findSuccessor(const uint160& id, node_address& found) {
+        found.clear();
+
+        if ((m_nodeAddr.isNone() == true)) {
+            //ERROR
+            m_logText = "findSuccessor " + LOG_TAB + LOG_ERROR_NO_ADDR;
+            msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+            return DROP_MESSAGE;
         }
 
-        if (mess->destNodeID == m_precessor.id) {
+        //My node is first node in p2p network
+        //if ((m_cwFingers.size() < 1) && (m_ccwFingers.size() < 1)) {
+        //    found = m_nodeAddr;
+        //    return DO_REPLY;
+        //}
 
+        //Comparising with addrs of seed nodes        
+        for (uint i = 0; i < m_seedAddrs.size(); ++i) {
+            if (m_seedAddrs[i].isNone() == false) {
+                if (id == m_seedAddrs[i].id) {
+                    found = m_seedAddrs[i];
+                    return DO_REPLY;
+                }
+            }
         }
 
-        if (mess->destNodeID == m_successor.id) {
-
+        //Chord: Comparising with successor, Chord
+        if ((m_precessor.isNone()) && (id > m_precessor.id) && (id <= m_nodeAddr.id)) {
+            found = m_nodeAddr;
+            return DO_REPLY;
         }
-
-        for (int i = 0; i < m_fingersPos.size(); ++i)
-            ;
+        else if ((id > m_nodeAddr.id ) && (id <= m_successor.id)) {
+            found = m_successor;     
+            return DO_REPLY;
+        }
+        else {
+            found = closestPrecedingNode(id);
+            if (!found.isNone())
+                return DO_FORWARD;
+                return DROP_MESSAGE;
+        }
     }
 
 
     string& low_latency_chord::state2str(const finite_state& state) {
         static string res;
         switch (state) {
-        case STATE_LOAD:       return res = "STATE_LOAD";
-        case STATE_INIT:       return res = "STATE_INIT";
-        case STATE_JOIN:       return res = "STATE_JOIN";
-        case STATE_IDLE:       return res = "STATE_IDLE";
-        case STATE_INDATA:     return res = "STATE_INDATA";
-        case STATE_SERVICE:    return res = "STATE_SERVICE";
-        case STATE_UPDATE:     return res = "STATE_UPDATE";
-        case STATE_APPREQUEST: return res = "STATE_APPREQUEST";
-        case STATE_OFF:        return res = "STATE_OFF";
-        default:               return res = "STATE_UNKNOWN";
+        case STATE_LOAD:       return res = /*"STATE_*/"LOAD";
+        case STATE_INIT:       return res = /*"STATE_*/"INIT";
+        case STATE_JOIN:       return res = /*"STATE_*/"JOIN";
+        case STATE_IDLE:       return res = /*"STATE_*/"IDLE";
+        case STATE_INDATA:     return res = /*"STATE_*/"INDATA";
+        case STATE_SERVICE:    return res = /*"STATE_*/"SERVICE";
+        case STATE_UPDATE:     return res = /*"STATE_*/"UPDATE";
+        case STATE_APPREQUEST: return res = /*"STATE_*/"APPREQUEST";
+        case STATE_OFF:        return res = /*"STATE_*/"OFF";
+        default:               return res = /*"STATE_*/"UNKNOWN";
         }
     }
 }

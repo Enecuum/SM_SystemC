@@ -36,16 +36,19 @@ namespace P2P_MODEL
         transport_plus(sc_module_name name);
         ~transport_plus();
 
-        void config_req(const app_message&);
-        void mess_req(const app_message&);
-        void send_mess(const chord_message &);
-        void receive_mess(const raw_chord_message&);
+        void config_req(const app_message& mess);
+        void mess_req(const app_message& mess);
+        void send_mess(const chord_byte_message_fields& mess);
+        void receive_mess(const chord_byte_message& mess);
 
         void setNetworkAddress(const network_address& addr);
         network_address& getNetworkAddress();
 
-        chord_message& appMess2chordMess(const app_message& );
-        chord_message& rawChordMess2ChordMess(const raw_chord_message&);
+        //chord_conf_message&        appMess2chordConfMess(const app_message& mess);
+        //chord_byte_message_fields& chordByteMess2ChordByteMessFields(const chord_byte_message& mess);
+        chord_message& appMess2chordMess(const app_message& mess);
+        chord_message& chordByteMess2ChordMess(const chord_byte_message& mess);
+        
 
 
         void setPathLog(const string& pathLog);

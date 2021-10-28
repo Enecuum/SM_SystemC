@@ -6,17 +6,22 @@
 
 namespace P2P_MODEL
 {
-    const string LOG_SPACE             = string(" ");
-    const string LOG_TAB               = string("\t");
-    const string LOG_TX                = string("Tx  ");
-    const string LOG_RX                = string("  Rx");
-    const string LOG_TXRX              = string("TxRx");
-    const string LOG_IN                = string("< < <");
-    const string LOG_OUT               = string("> > >");
-    const string LOG_INFO              = string(":::::");
-    const string LOG_WARNING_INDICATOR = string("!!!!!");
-    const string LOG_ERROR_INDICATOR   = LOG_WARNING_INDICATOR;
-    const string LOG_ERROR_OVERFLOW    = string("OVERFLOW BUFFER");
+    const string LOG_SPACE                = string(" ");
+    const string LOG_TAB                  = string("\t");
+    const string LOG_TX                   = string("Tx  ");
+    const string LOG_RX                   = string("  Rx");
+    const string LOG_TXRX                 = string("TxRx");
+    const string LOG_IN                   = string("< < <");
+    const string LOG_OUT                  = string("> > >");
+    const string LOG_INFO                 = string(":::::");
+    const string LOG_WARNING_INDICATOR    = string("!!!!!");
+    const string LOG_ERROR_INDICATOR      = LOG_WARNING_INDICATOR;
+    const string LOG_ERROR_OVERFLOW       = string("OVERFLOW BUFFER");
+    const string LOG_ERROR_NO_ADDR        = string("NO ADDR");
+    const string LOG_ERROR_NULLPTR        = string("NULLPTR");
+    const string LOG_ERROR_NOT_RECOGNIZED = string("UNKNOWN, NOT RECOGNIZED");
+
+    #define LOG_ERROR_MESS(m)  string("m");
 
     const int MAX_LEN_METHOD_NAME = 30;
     const int MAX_LEN_TIME = 20;

@@ -24,7 +24,7 @@ namespace P2P_MODEL
         vector< sc_event* > m_eventSend;
         sc_event m_eventCheckReceive;
 
-        vector< list <raw_chord_message> > m_buffMess;        
+        vector< list <chord_byte_message> > m_buffMess;        
         map<uint160, uint> m_portIndexByNodeID;
 
         vector< vector<sc_time> > m_latencyTable;
@@ -49,10 +49,11 @@ namespace P2P_MODEL
         network(sc_module_name name, const uint nodes = 2);
         ~network();
 
-        void push_into_network(const raw_chord_message& mess);
+        void push_into_network(const chord_byte_message& mess);
 
         void setNodeAddressList(const vector<network_address>& addrs);
         void setRandomLatencyTable(const uint millisecFrom, const uint millisecTo, const uint millisecDesperse);
+        string& latencyTableToStr();
                 
 
     private:        

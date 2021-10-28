@@ -1,3 +1,8 @@
-0.5                 	network                       	  Rx	< < <	push_into_network	out0 TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
-0.5                 	network                       	  Rx	< < <	checkReceive	out0 in1 TX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
-0.57                	network                       	Tx  	> > >	send	out0 RX_JOIN 0 dest: 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 src: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 med: 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 appeared 500 ms nullptr
+0                   	network                       	TxRx	:::::	latencies, ms: 
+in0 >	211|0	134|0	
+in1 >	147|0	128|0	
+ 	v	v	
+out	0	1	
+0.001               	network                       	  Rx	< < <	push_into_network	out0 TX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.001               	network                       	  Rx	< < <	checkReceive	out0 in1 TX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0
+0.148               	network                       	Tx  	> > >	send	out0 RX_JOIN d 192.168.0.1 4444 1111 0xus26ed8bbabb59013846d35b8c695ded7aa6efe712 s 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 pid 1 i 192.168.0.2 4444 1111 0xusa75f6e9b8906e2cb8bc522a53dc45782d97881e3 f t JOIN a 0 ps 0 r 0 npid 0xus0000000000000000000000000000000000000000 p 0

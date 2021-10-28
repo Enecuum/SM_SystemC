@@ -11,57 +11,60 @@ namespace P2P_MODEL
     transport_plus::~transport_plus() {    }
 
 
+
+
+
     chord_message& transport_plus::appMess2chordMess(const app_message& mess) {
         static chord_message res;
-        res.destination = mess.destination;
-        res.payload     = mess.payload;
-        
-        switch (mess.type) {
-            case APP_HARD_RESET: res.type = CHORD_HARD_RESET; break;
-            case APP_SOFT_RESET: res.type = CHORD_SOFT_RESET; break;
-            case APP_FLUSH:      res.type = CHORD_FLUSH;      break;
+        res.clear();
+        res = mess;
 
-            case APP_SINGLE:    res.type = CHORD_SINGLE;      break;
-            case APP_MULTICAST: res.type = CHORD_MULTICAST;   break;
-            case APP_BROADCAST: res.type = CHORD_BROADCAST;   break;
-            default:
-                //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appMess2chordMess", DEBUG_LOG | ERROR_LOG);
-                res.clear();
-                return res;
+        switch (mess.type) {    
+        case APP_HARD_RESET: res.type = CHORD_HARD_RESET; break;
+        case APP_SOFT_RESET: res.type = CHORD_SOFT_RESET; break;
+        case APP_FLUSH:      res.type = CHORD_FLUSH;      break;
+        case APP_SINGLE:    res.type = CHORD_SINGLE;      break;
+        case APP_MULTICAST: res.type = CHORD_MULTICAST;   break;
+        case APP_BROADCAST: res.type = CHORD_BROADCAST;   break;
+        default:
+            //ERROR
+            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appMess2chordMess", DEBUG_LOG | ERROR_LOG);
+            res.clear();
         }
-
-        res.source = getNetworkAddress();
         return res;
     }
 
 
-    chord_message& transport_plus::rawChordMess2ChordMess(const raw_chord_message& raw) {
+    chord_message& transport_plus::chordByteMess2ChordMess(const chord_byte_message& mess) {
         static chord_message res;
-        res = raw.info;            
+        res.clear();
+        res = *(mess.fields);
         return res;
     }
 
 
     void transport_plus::config_req(const app_message& mess) {
-        m_llchord.pushNewMessage(appMess2chordMess(mess));
+        m_llchord.pushNewMessage( appMess2chordMess(mess) );
     }
 
 
     void transport_plus::mess_req(const app_message& mess) {
-        m_llchord.pushNewMessage(appMess2chordMess(mess));
+      
+        m_llchord.pushNewMessage( appMess2chordMess(mess) );
     }
 
 
-    void transport_plus::send_mess(const chord_message& mess) {
-        raw_chord_message rawMess;
-        rawMess.info = mess;
-        network_port->push_into_network(rawMess);
+    void transport_plus::send_mess(const chord_byte_message_fields& mess) {        
+        chord_byte_message raw;
+        raw.clear();
+        raw.fields = const_cast<chord_byte_message_fields&>(mess).clone();
+                
+        network_port->push_into_network(raw);
     }
 
 
-    void transport_plus::receive_mess(const raw_chord_message& raw) {  
-        m_llchord.pushNewMessage(rawChordMess2ChordMess(raw));
+    void transport_plus::receive_mess(const chord_byte_message& raw) {
+        m_llchord.pushNewMessage( chordByteMess2ChordMess(raw) );
     }
 
 

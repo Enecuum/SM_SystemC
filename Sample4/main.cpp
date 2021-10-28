@@ -11,92 +11,7 @@
 using namespace P2P_MODEL;
 using namespace std;
 
-//Rdma_Project::trafgen trafgen1("trafgen1");
-//Rdma_Project::trafgen trafgen2("trafgen2");
-//Rdma_Project::rdma rdma1("rdma1");
-//Rdma_Project::rdma rdma2("rdma2");
-//basicchannel channel12("channel_12");
-//basicchannel channel21("channel_21");
 
-//void init_configuration() {
-//    trafgen1.rdma_port.bind(*(rdma1.UpDataWrap));
-//    rdma1.UpDataWrap->up_data_wrap_sap_port.bind(trafgen1);
-//    rdma1.LowDataWrap->low_data_wrap_basicchannel_port.bind(channel12);
-//
-//    trafgen2.rdma_port.bind(*(rdma2.UpDataWrap));
-//    rdma2.UpDataWrap->up_data_wrap_sap_port.bind(trafgen2);
-//    rdma2.LowDataWrap->low_data_wrap_basicchannel_port.bind(channel21);
-//
-//    channel12.wrappertx_port.bind(*(rdma1.LowDataWrap));
-//    channel12.wrapperrx_port.bind(*(rdma2.LowDataWrap));
-//
-//    channel21.wrappertx_port.bind(*(rdma2.LowDataWrap));
-//    channel21.wrapperrx_port.bind(*(rdma1.LowDataWrap));
-//
-//    trafgen1.setEnabled(true);
-//    trafgen1.setLogMode(ALL_LOG);
-//    trafgen1.setLogAddress(std::vector<uint>(1, 32));
-//    trafgen1.setDataLogLimit(2);
-//    trafgen1.setMaxLengthMethodAndTimeLog(30, 12);
-//
-//    trafgen2.setEnabled(true);
-//    trafgen2.setLogMode(ALL_LOG);
-//    trafgen2.setLogAddress(std::vector<uint>(1, 33));
-//    trafgen2.setDataLogLimit(2);
-//    trafgen2.setMaxLengthMethodAndTimeLog(30, 10);
-//
-//    rdma1.setEnabledLog(true);
-//    rdma1.setLogMode(ALL_LOG);
-//    rdma1.setDataLogLimit(2);
-//    rdma1.setMaxLengthMethodAndTimeLog(44, 10);
-//
-//    rdma2.setEnabledLog(true);
-//    rdma2.setLogMode(ALL_LOG);
-//    rdma2.setDataLogLimit(2);
-//    rdma2.setMaxLengthMethodAndTimeLog(44, 10);
-//
-//}
-//
-//void init_speed_buffers(double gbps, int maxPackets, int maxSize, unsigned int maxAppMemSize) {
-//    channel12.setSpeed(gbps);
-//    channel21.setSpeed(gbps);
-//
-//    rdma1.setBufferSizeInBytes(maxPackets*maxSize, maxPackets*maxSize);
-//    rdma1.setBufferSizeInPackets(maxPackets, maxPackets);
-//
-//    rdma2.setBufferSizeInBytes(maxPackets*maxSize, maxPackets*maxSize);
-//    rdma2.setBufferSizeInPackets(maxPackets, maxPackets);
-//
-//    trafgen1.setInnerMemmorySize(maxAppMemSize);
-//    trafgen2.setInnerMemmorySize(maxAppMemSize);
-//}
-//
-//void init_message_transmission_parameters(message_type type, int amount, int paylodLength,  bool verify, bool reply, bool increment, double periodMS) {
-//    message_type messageType = type;
-//    unsigned int destLogicalAddress = 33;
-//    unsigned int identificationNumber = 0;
-//    unsigned int destApplicationID = 33;
-//    unsigned int sourceApplicationID = 32;
-//    unsigned int sourceLogicalAddress = 32;
-//    int key = 0;
-//    bool replyFlag = reply;
-//    unsigned int memoryAddress = 1000;
-//    bool incrementMemmory = increment;
-//    bool verifyData = verify;
-//    unsigned int dataLength = paylodLength;
-//    unsigned int amountMessages = amount;
-//    sc_time packetPeriod = SimTime(periodMS, SC_MS);
-//    sc_time sendingDelay = SimTime(0, SC_MS);
-//
-//    message_generation_parameters message(messageType, destLogicalAddress, identificationNumber,
-//        destApplicationID, sourceApplicationID, sourceLogicalAddress, key, replyFlag, memoryAddress,
-//        incrementMemmory, verifyData, dataLength, amountMessages, packetPeriod, sendingDelay);
-//
-//    messages_config messagesConfig;
-//    messagesConfig.message.push_back(message);
-//    messagesConfig.type.push_back(message.messageType);
-//    trafgen1.setMessageGenerationParameters(messagesConfig);  //НАСТРОЙКА trafgen   
-//}
 
 int main(int argc, char* argv[])
 {
@@ -198,7 +113,7 @@ int main(int argc, char* argv[])
     mess.clear();
     mess.type = SIM_HARD_RESET;
     mess.amount = 1;
-    mess.firstDelay = sc_time(500, SC_MS);
+    mess.firstDelay = sc_time(1, SC_MS);
     application2.pushSimulatingMess(mess);
 
     //mess.clear();
@@ -236,7 +151,9 @@ int main(int argc, char* argv[])
     addrs.push_back( params2.netwAddr );
 
     network1.setNodeAddressList(addrs);
-    network1.setRandomLatencyTable(70, 70, 0);
+    network1.setRandomLatencyTable(100, 150, 0);
+    network1.msgLog(network1.name(), LOG_TXRX, LOG_INFO, string("latencies, ms: \n") + network1.latencyTableToStr(), ALL_LOG);
+
 
 
     //LOG
