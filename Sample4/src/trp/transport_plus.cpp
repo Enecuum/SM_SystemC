@@ -54,11 +54,7 @@ namespace P2P_MODEL
     }
 
 
-    void transport_plus::send_mess(const chord_byte_message_fields& mess) {        
-        chord_byte_message raw;
-        raw.clear();
-        raw.fields = const_cast<chord_byte_message_fields&>(mess).clone();
-                
+    void transport_plus::send_mess(const chord_byte_message& raw) {                
         network_port->push_into_network(raw);
     }
 

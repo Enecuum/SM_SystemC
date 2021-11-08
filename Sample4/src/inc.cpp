@@ -13,6 +13,7 @@ namespace P2P_MODEL
         return false;
     }
 
+
     ostream& operator<< (ostream& out, node_address& r) {
         out << r.toStr();
         return out;
@@ -20,11 +21,25 @@ namespace P2P_MODEL
 
     bool operator== (const node_address& l, const node_address& r) {
         if (operator==(static_cast<const network_address&>(l), static_cast<const network_address&>(r)) == true) 
-            if ((l.id == r.id))
+            if (l.id == r.id)
                 return true;
         return false;
     }
 
+
+    ostream& operator<< (ostream& out, node_address_latency& r) {
+        out << r.toStr();
+        return out;
+    }
+
+    bool operator== (const node_address_latency& l, const node_address_latency& r) {
+        if (operator==(static_cast<const node_address&>(l), static_cast<const node_address&>(r)) == true)
+            if (l.latency == r.latency)
+                return true;
+        return false;
+    }
+    
+    
     ostream& operator<< (ostream& out, app_message& r) {
         out << r.toStr();
         return out;
@@ -61,11 +76,14 @@ namespace P2P_MODEL
         return out;
     }
 
-    void initRands() {
-        static bool flag = false;
-        if (flag == false) {
+
+    uint genRand(uint Min, uint Max)
+    {
+        static bool first = false;
+        if (first == false) {
             srand(static_cast<unsigned int>(time(0)));
-            flag = true;
+            first = true;
         }
+        return ((uint)(rand() * (Max + 1 - Min) / RAND_MAX + Min));
     }
 }

@@ -50,19 +50,19 @@ int main(int argc, char* argv[])
     //Set initial settings of layers: Application, Transport+ and Network model
     application1.setEnabledLog();
     application1.setLogMode(ALL_LOG);
-    application1.setPathLog("./log/app.txt");
+    application1.setPathLog("./log/app1.txt");
 
     transport1.setEnabledLog();
     transport1.setLogMode(ALL_LOG);
-    transport1.setPathLog("./log/trp.txt");
+    transport1.setPathLog("./log/trp1.txt");
 
     application2.setEnabledLog();
     application2.setLogMode(ALL_LOG);
-    application2.setPathLog("./log/app.txt");
+    application2.setPathLog("./log/app2.txt");
 
     transport2.setEnabledLog();
     transport2.setLogMode(ALL_LOG);
-    transport2.setPathLog("./log/trp.txt");
+    transport2.setPathLog("./log/trp2.txt");
 
     network1.setEnabledLog();
     network1.setLogMode(ALL_LOG);
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
 
     //mess.clear();
-    //mess.destination;
+    //mess.destNetwAddrs;
     //mess.type = SIM_SINGLE;
     //mess.payloadType = DATA;  
     //mess.amount = 1;
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     //application2.pushSimulatingMess(mess);
 
     //mess.clear();
-    //mess.destination;
+    //mess.destNetwAddrs;
     //mess.type = SIM_MULTICAST;
     //mess.payloadType = DATA;
     //mess.amount = 4;
@@ -133,8 +133,8 @@ int main(int argc, char* argv[])
 
     //Set configuration parameters of Transport+ layer
     chord_conf_parameters params1, params2;    
-    params1.netwAddr.set("192.168.0.1", 4444, 1111);
-    params2.netwAddr.set("192.168.0.2", 4444, 1111);
+    params1.netwAddr.set("C0.A8.0.1", 0x115C, 0x0457);
+    params2.netwAddr.set("C0.A8.0.2", 0x115C, 0x0457);
     
     params1.setDefaultTimersCountersFingersSize();
 
@@ -172,6 +172,6 @@ int main(int argc, char* argv[])
     cout << endl << "Read results" << endl;
 
 
-    cout << endl << "*** Press Eneter to exit ***"; getchar();
+    cout << endl << "*** Press Enter to exit ***"; getchar();
     return 0;
 }

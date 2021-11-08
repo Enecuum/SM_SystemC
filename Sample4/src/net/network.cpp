@@ -14,8 +14,6 @@ namespace P2P_MODEL
         SC_METHOD(checkReceive);
         dont_initialize();
         sensitive << m_eventCheckReceive;
-        
-        initRands();
     }
 
 
@@ -26,7 +24,7 @@ namespace P2P_MODEL
 
     void network::push_into_network(const chord_byte_message& networkDataUnit) {
         //Needs to parse fields of chord_byte_message into chord_byte_message_fields
-        auto it = m_portIndexByNodeID.find(networkDataUnit.fields->destNodeID.id);
+        auto it = m_portIndexByNodeID.find(networkDataUnit.fields->destNodeIDwithSocket.id);
         chord_byte_message_fields r = *(networkDataUnit.fields);
 
         if (it == m_portIndexByNodeID.end()) {
@@ -54,15 +52,16 @@ namespace P2P_MODEL
     }
 
 
-    void network::checkReceive() {        
+    void network::checkReceive() {  
         int portIndex = CAN_USE;
-        if (m_hasNewMess == true) {
+        //if (m_hasNewMess == true)
+        {
             for (uint i = 0; i < m_buffMess.size(); ++i) {
                 if ((m_buffMess[i].size() > 0) && (m_wakeUpInfo[i].bufIndex == CAN_USE)) {
                     portIndex = i;
                     auto messIt = m_buffMess[portIndex].begin();
 
-                    auto portIndexIt = m_portIndexByNodeID.find(messIt->fields->srcNodeID.id);
+                    auto portIndexIt = m_portIndexByNodeID.find(messIt->fields->srcNodeIDwithSocket.id);
                     if (portIndexIt == m_portIndexByNodeID.end()) {
                         //ERROR
                         m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND INPORT ") + messIt->fields->toStr();
@@ -72,7 +71,7 @@ namespace P2P_MODEL
                 
                     uint from = portIndexIt->second;
 
-                    portIndexIt = m_portIndexByNodeID.find(messIt->fields->destNodeID.id);
+                    portIndexIt = m_portIndexByNodeID.find(messIt->fields->destNodeIDwithSocket.id);
                     if (portIndexIt == m_portIndexByNodeID.end()) {
                         //ERROR
                         m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND OUTPORT ") + messIt->fields->toStr();
@@ -85,9 +84,9 @@ namespace P2P_MODEL
                 
                     uint randValue  = 0;
                     if (m_randDesperseMillisec[i] != 0)
-                        randValue = rand() % m_randDesperseMillisec[i];
+                        randValue = genRand(1, m_randDesperseMillisec[i]);
 
-                    uint sign  = rand() % 1;                
+                    uint sign  = genRand(0, 1);
                     if (sign == 0)
                         millisec += randValue;
                     else {
@@ -103,12 +102,12 @@ namespace P2P_MODEL
                     m_logText = "checkReceive" + LOG_TAB + "out" + to_string(to) + LOG_SPACE + "in" + to_string(from) + LOG_SPACE + messIt->fields->toStr();
                     msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);                
                 
-                    m_eventCheckReceive.notify(0, SC_NS); 
+                    //m_eventCheckReceive.notify(0, SC_NS); 
                 }
             }
 
-            if (portIndex == CAN_USE)
-                m_hasNewMess = false;
+            //if (portIndex == CAN_USE)
+            //    m_hasNewMess = false;
         }
     }
 
@@ -140,14 +139,14 @@ namespace P2P_MODEL
             if (millisecDesperse == 0)   
                 m_randDesperseMillisec[i] = 0;
             else {
-                m_randDesperseMillisec[i] = 1 + rand()% millisecDesperse;
+                m_randDesperseMillisec[i] = genRand(1, millisecDesperse);
             }
 
             for (int j = 0; j < m_latencyTable[i].size(); ++j) {
                 if (millisecFrom == millisecTo)
                     m_latencyTable[i][j] = sc_time(millisecFrom, SC_MS);
                 else
-                    m_latencyTable[i][j] = sc_time(millisecFrom + rand()% millisecTo, SC_MS);                                 
+                    m_latencyTable[i][j] = sc_time(genRand(millisecFrom, millisecTo), SC_MS);
             }
         }
     }
@@ -237,7 +236,7 @@ namespace P2P_MODEL
         case CHORD_TX_JOIN:                res = CHORD_RX_JOIN;                 break;
         case CHORD_TX_NOTIFY:              res = CHORD_RX_NOTIFY;               break;
         case CHORD_TX_ACK:                 res = CHORD_RX_ACK;                  break;
-        case CHORD_TX_REPLY_FIND_SUCESSOR: res = CHORD_RX_REPLY_FIND_SUCCESSOR; break;
+        case CHORD_TX_SUCCESSOR:           res = CHORD_RX_SUCCESSOR;            break;
         case CHORD_TX_FIND_SUCCESSOR:      res = CHORD_RX_FIND_SUCCESSOR;       break;
         case CHORD_TX_FWD_BROADCAST:       res = CHORD_RX_BROADCAST;            break;
         case CHORD_TX_FWD_MULTICAST:       res = CHORD_RX_MULTICAST;            break;
@@ -267,7 +266,7 @@ namespace P2P_MODEL
 
                 m_wakeUpInfo[i].bufIndex = CAN_USE;                
                 m_eventCheckReceive.notify(0, SC_NS);
-                break;
+                //break;
             }                            
         }
     }

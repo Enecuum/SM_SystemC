@@ -20,6 +20,9 @@ namespace P2P_MODEL
     const string LOG_ERROR_NO_ADDR        = string("NO ADDR");
     const string LOG_ERROR_NULLPTR        = string("NULLPTR");
     const string LOG_ERROR_NOT_RECOGNIZED = string("UNKNOWN, NOT RECOGNIZED");
+    const string LOG_ERROR_INVALID_ADDR   = string("DROP MESS, UNKNOWN ADDR");
+    const string LOG_ERROR_INVALID_MESS_ID = string("DROP MESS, UNKNOWN MESS ID");    
+
 
     #define LOG_ERROR_MESS(m)  string("m");
 

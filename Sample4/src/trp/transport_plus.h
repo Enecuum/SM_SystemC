@@ -38,7 +38,7 @@ namespace P2P_MODEL
 
         void config_req(const app_message& mess);
         void mess_req(const app_message& mess);
-        void send_mess(const chord_byte_message_fields& mess);
+        void send_mess(const chord_byte_message& mess);
         void receive_mess(const chord_byte_message& mess);
 
         void setNetworkAddress(const network_address& addr);

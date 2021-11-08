@@ -11,11 +11,12 @@ using namespace std;
 
 namespace P2P_MODEL
 {
-    typedef chord_message          buffer_element;
-    typedef chord_message&         buffer_element_reference;
-    typedef chord_message*         buffer_element_pointer;
-    #define BUFFER_CONTAINER(a)    list<a>
-    typedef list<chord_message>    buffer_container;
+    typedef chord_message              buffer_element;
+    typedef chord_message&             buffer_element_reference;
+    typedef chord_message*             buffer_element_pointer;
+    #define t_container                list 
+    #define t_buffer_container(a)      t_container<a>
+    typedef t_container<chord_message> buffer_container;
 
     enum buffer_type {
         BUFF_CONFIG = 0,
@@ -26,7 +27,7 @@ namespace P2P_MODEL
         BUFF_TX_JOIN,
         BUFF_TX_NOTIFY,
         BUFF_TX_ACK,
-        BUFF_TX_REPLY_FIND_SUCCESSOR,
+        BUFF_TX_SUCCESSOR,
         BUFF_TX_FIND_SUCCESSOR,
         BUFF_TX_FWD_BROADCAST,
         BUFF_TX_FWD_MULTICAST,
@@ -97,6 +98,15 @@ namespace P2P_MODEL
             return type;
         }
 
+        T* mess(const size_t index) {
+            auto it = messages.begin();
+            if (index < messages.size()) {
+                advance(it, index);
+                return &(*it);
+            }
+            return nullptr;
+        }
+
         T& firstMessByImmediate() {
             static T r;
             auto it = firstMessIteratorByImmediate();
@@ -112,15 +122,63 @@ namespace P2P_MODEL
             return &(*it);
         }
 
-        void erase(const typename list<T>::iterator& it) {
+        void eraseMess(const typename t_buffer_container(T)::iterator& it) {
             messages.erase(it);
         }
 
-
         void eraseFirstMess() {
             if (messages.size() > 0)
-                erase(messages.begin());
+                eraseMess(messages.begin());
         }
+
+        void eraseMess(const uint messType, const uint retryMessType, const uint retryMessID) {
+            bool exist;
+            typename t_buffer_container(T)::iterator it = find1Mess(exist, messType, retryMessType, retryMessID);
+            if (exist == true)
+                eraseMess(it);
+        }
+
+        void eraseMess(const uint messType) {
+            bool exist;
+            typename t_buffer_container(T)::iterator it = find1Mess(exist, messType);
+            if (exist == true)
+                erase(it);
+        }
+
+        typename t_buffer_container(T)::iterator find1Mess(bool& exist, const uint messType, const uint retryMessType, const uint retryMessID) {
+            vector<uint> retryMessTypes(1, retryMessType);
+            return find1Mess(exist, messType, retryMessTypes, retryMessID);
+        }
+
+        typename t_buffer_container(T)::iterator find1Mess(bool& exist, uint messType) {
+            vector<uint> retryMessTypes;
+            return find1Mess(exist, messType, retryMessTypes, retryMessID);
+        }
+
+        typename t_buffer_container(T)::iterator find1Mess(bool& exist, const uint messType, const vector<uint>& retryMessTypes, const uint retryMessID) {
+            for (auto it = messages.begin(); it != messages.end(); ++it) {
+                chord_message& m = (*it);
+                if (m.type == messType) {
+                    if (retryMessTypes.size() == 0) {
+                        exist = true;
+                        return it;
+                    }
+                    else {
+                        if (m.retryMess != nullptr) {
+                            for (uint i = 0; i < retryMessTypes.size(); ++i) {
+                                if ((m.retryMess->type == retryMessTypes[i]) && (m.retryMess->messageID == retryMessID)) {
+                                    exist = true;
+                                    return it;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            exist = false;
+            return messages.end();
+        }
+
 
         void clearMessCounter() {
             messCounter = 0;
@@ -128,14 +186,14 @@ namespace P2P_MODEL
 
 
         bool operator < (const message_buffer& right) const {
-            //priority "1" and immediate "true"  is the highest priority to service requests
+            //priority "1" is the highest priority to service requests
             // ...
-            //priority "5" and immediate "false" is the  lowest priority to service requests
-            if (immediate != right.immediate) {
-                if (!(right.immediate == true)) return true;
-                else return false;
-            }
-            else
+            //priority "5" is the  lowest priority to service requests
+            //if (immediate != right.immediate) {
+            //    if (!(right.immediate == true)) return true;
+            //    else return false;
+            //}
+            //else
                 return (priority < right.priority);
         }
 
@@ -165,7 +223,7 @@ namespace P2P_MODEL
                 case BUFF_TX_JOIN:                 typeStr = "BUFF_TX_JOIN"; break;
                 case BUFF_TX_NOTIFY:               typeStr = "BUFF_TX_NOTIFY"; break;
                 case BUFF_TX_ACK:                  typeStr = "BUFF_TX_ACK"; break;
-                case BUFF_TX_REPLY_FIND_SUCCESSOR: typeStr = "BUFF_TX_REPLY_FIND_SUCCESSOR"; break;
+                case BUFF_TX_SUCCESSOR:            typeStr = "BUFF_TX_SUCCESSOR"; break;
                 case BUFF_TX_FIND_SUCCESSOR:       typeStr = "BUFF_TX_FIND_SUCCESSOR"; break;
                 case BUFF_TX_FWD_BROADCAST:        typeStr = "BUFF_TX_FWD_BROADCAST"; break;
                 case BUFF_TX_FWD_MULTICAST:        typeStr = "BUFF_TX_FWD_MULTICAST"; break;
@@ -191,8 +249,8 @@ namespace P2P_MODEL
             lastCallTime = SC_ZERO_TIME;
         }
 
-        typename list<T>::iterator firstMessIteratorByImmediate() {
-            typename list<T>::iterator it = messages.end();
+        typename t_buffer_container(T)::iterator firstMessIteratorByImmediate() {
+            typename t_buffer_container(T)::iterator it = messages.end();
 
             if (messages.size() > 0)
             {
@@ -200,7 +258,6 @@ namespace P2P_MODEL
                     messCounter = 0;
 
                 if (immediate == true) {
-
                     it = messages.begin();
                     lastCallTime = sc_time_stamp();
                     ++messCounter;

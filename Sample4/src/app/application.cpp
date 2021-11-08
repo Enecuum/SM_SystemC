@@ -34,8 +34,7 @@ namespace P2P_MODEL
         m_reqs.resize(MAX_SIM_MESS_TYPE, vector<sim_message>());
         m_sentReqCounter.resize(MAX_SIM_MESS_TYPE, 0);
         m_isTriggeredReq.resize(MAX_SIM_MESS_TYPE, false);
-        m_isPaused = false;
-        initRands();
+        m_isPaused = false;        
     }
 
 
@@ -240,27 +239,27 @@ namespace P2P_MODEL
                 switch (i) {
                 case RAND_PERIOD: 
                     if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false))
-                        m_randSimReq[s.type].period = sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                        m_randSimReq[s.type].period = sc_time(genRand(s.randFrom[i], s.randTo[i]), s.timeUnit);
                     break;
             
                 case RAND_FIRST_DELAY:
                     if (m_isFilled[s.type] == false)
-                        m_randSimReq[s.type].firstDelay = sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                        m_randSimReq[s.type].firstDelay = sc_time(genRand(s.randFrom[i], s.randTo[i]), s.timeUnit);
                     break;
 
                 case RAND_PERIOD_TAIL: 
                     if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false)) {
-                        int sign = rand() % 1;
+                        int sign = genRand(0, 1);
                         if (sign == 1)
-                            m_randSimReq[s.type].period += sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                            m_randSimReq[s.type].period += sc_time(genRand(s.randFrom[i], s.randTo[i]), s.timeUnit);
                         else
-                            m_randSimReq[s.type].period -= sc_time(s.randFrom[i] + rand() % s.randTo[i], s.timeUnit);
+                            m_randSimReq[s.type].period -= sc_time(genRand(s.randFrom[i], s.randTo[i]), s.timeUnit);
                     } break;
 
                 case RAND_DATA_SIZE:
                     if ((s.randNeedRecalc[i] == true) || (m_isFilled[s.type] == false)) {
                         if ((s.type == SIM_SINGLE) || (s.type == SIM_MULTICAST) || (s.type == SIM_BROADCAST))
-                            m_randSimReq[s.type].dataSize = s.randFrom[i] + rand() % s.randTo[i];
+                            m_randSimReq[s.type].dataSize = genRand(s.randFrom[i], s.randTo[i]);
                         else 
                             m_randSimReq[s.type].dataSize = 0;
                     } break;
@@ -271,16 +270,16 @@ namespace P2P_MODEL
                         if ((s.type == SIM_BROADCAST) || (s.type == SIM_MULTICAST))
                             amount = s.randAmount[i];
                     
-                        m_randSimReq[s.type].destination.clear();
+                        m_randSimReq[s.type].destNetwAddrs.clear();
                         for (int j = 0; j < amount; ++j) {
                             network_address tmp;
-                            tmp.ip  = to_string(s.randFrom[i] + rand() % s.randTo[i]); tmp.ip += ".";
-                            tmp.ip += to_string(s.randFrom[i] + rand() % s.randTo[i]); tmp.ip += ".";
-                            tmp.ip += to_string(s.randFrom[i] + rand() % s.randTo[i]); tmp.ip += ".";
-                            tmp.ip += to_string(s.randFrom[i] + rand() % s.randTo[i]);
-                            tmp.inSocket = s.randFrom[i] + rand() % s.randTo[i];
-                            tmp.outSocket = s.randFrom[i] + rand() % s.randTo[i];
-                            m_randSimReq[s.type].destination.push_back(tmp);
+                            tmp.ip  = to_string(genRand(s.randFrom[i], s.randTo[i])); tmp.ip += ".";
+                            tmp.ip += to_string(genRand(s.randFrom[i], s.randTo[i])); tmp.ip += ".";
+                            tmp.ip += to_string(genRand(s.randFrom[i], s.randTo[i])); tmp.ip += ".";
+                            tmp.ip += to_string(genRand(s.randFrom[i], s.randTo[i]));
+                            tmp.inSocket  = genRand(s.randFrom[i], s.randTo[i]);
+                            tmp.outSocket = genRand(s.randFrom[i], s.randTo[i]);
+                            m_randSimReq[s.type].destNetwAddrs.push_back(tmp);
                         }    
                     } break;
 
@@ -302,7 +301,7 @@ namespace P2P_MODEL
         static app_message res;        
         res.clear();
 
-        res.destination = s.destination;        
+        res.destNetwAddrs = s.destNetwAddrs;        
         res.type = simMessType2appMessType(s.type);
         
         res.payload.clear();

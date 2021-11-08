@@ -30,7 +30,13 @@ namespace P2P_MODEL {
     typedef data_type          data_unit;
 
     const int NONE = -1;
-    const int PID  = 0x01;    //PROTOCOL IDENTIFIER
+    const uint PID  = 0x01;    //PROTOCOL IDENTIFIER
+    const uint IP_4_VERSION = 0; 
+    const uint IP_5_VERSION = 1;
+    const uint NO_ACK = 0;
+    const uint NEEDS_ACK = 1;
+    const sc_time DEFAULT_LATENCY = sc_time(1, SC_SEC);
+    const uint MAX_UINT = 0xffffffff;
     
 
 
@@ -87,7 +93,7 @@ namespace P2P_MODEL {
         CHORD_BYTE_JOIN,
         CHORD_BYTE_NOTIFY,
         CHORD_BYTE_ACK,
-        CHORD_BYTE_REPLY_FIND_SUCCESSOR,
+        CHORD_BYTE_SUCCESSOR,
         CHORD_BYTE_FIND_SUCCESSOR,
         CHORD_BYTE_BROADCAST,
         CHORD_BYTE_MULTICAST,
@@ -97,7 +103,8 @@ namespace P2P_MODEL {
     };
 
     enum base_message_type {
-        BASE_UNKNOWN_TYPE = MAX_CHORD_BYTE_TYPE,
+        MIN_BASE_TYPE = MAX_CHORD_BYTE_TYPE,
+        BASE_UNKNOWN_TYPE,
         CHORD_UNKNOWN,
         MAX_BASE_TYPE
     };
@@ -114,9 +121,9 @@ namespace P2P_MODEL {
 
     enum chord_timer_message_type {
         MIN_CHORD_TIMER_TYPE = MAX_CHORD_CONF_TYPE,
-        CHORD_TIMER_ACK,
-        CHORD_TIMER_REPLY_FIND_SUCC,
-        CHORD_TIMER_REPLY_FIND_SUCC_JOIN,
+        CHORD_TIMER_RX_ACK,
+        CHORD_TIMER_RX_SUCCESSOR,
+        CHORD_TIMER_RX_SUCCESSOR_ON_JOIN,
         CHORD_TIMER_UPDATE,
         MAX_CHORD_TIMER_TYPE,
         CHORD_TIMER_UNKNOWN
@@ -136,7 +143,7 @@ namespace P2P_MODEL {
         CHORD_RX_JOIN,
         CHORD_RX_NOTIFY,
         CHORD_RX_ACK,
-        CHORD_RX_REPLY_FIND_SUCCESSOR,
+        CHORD_RX_SUCCESSOR,
         CHORD_RX_FIND_SUCCESSOR,
         CHORD_RX_BROADCAST,
         CHORD_RX_MULTICAST,
@@ -150,7 +157,7 @@ namespace P2P_MODEL {
         CHORD_TX_JOIN,
         CHORD_TX_NOTIFY,
         CHORD_TX_ACK,
-        CHORD_TX_REPLY_FIND_SUCESSOR,
+        CHORD_TX_SUCCESSOR,
         CHORD_TX_FIND_SUCCESSOR,
         CHORD_TX_FWD_BROADCAST,
         CHORD_TX_FWD_MULTICAST,
@@ -184,8 +191,7 @@ namespace P2P_MODEL {
             set(src);
         };
 
-
-        network_address(const string& ip, const uint inSocket, const uint outSocket) {
+        network_address(const string& ip, const uint inSocket, const uint outSocket = 0) {
             set(ip, inSocket, outSocket);
         };
 
@@ -216,12 +222,12 @@ namespace P2P_MODEL {
         }
 
         string toStr() const {
-            string str;            
-            str = "" + ip + " " + to_string(inSocket) + " " + to_string(outSocket);
-            return str;
+            stringstream ss;
+            ss << ip << " " << hex << inSocket << " " << outSocket;
+            return ss.str();
         }
 
-        bool isNone() {
+        bool isNone() const {
             if (ip.compare(m_ipNULL) == 0)   //equaled "-1.-1.-1.-1"
                 return true;
             return false;
@@ -240,37 +246,30 @@ namespace P2P_MODEL {
             clear();
         };
 
-
         node_address(const node_address& src) {
             set(src);
         }
-
 
         node_address(const network_address& src) {
             set(src);
         }
 
-
         node_address(const string& ip, uint inSocket, uint outSocket) {
             set(ip, inSocket, outSocket);
         }
-
 
         void clear() {
             network_address::clear();
             id = 0;
         }
 
-
         void set(const node_address& src) {
             set(src.ip, src.inSocket, src.outSocket);
         }
 
-
         void set(const network_address& src) {
             set(src.ip, src.inSocket, src.outSocket);
         }
-
 
         void set(const string& ip, const uint inSocket, const uint outSocket) {
             network_address::set(ip, inSocket, outSocket);
@@ -280,7 +279,6 @@ namespace P2P_MODEL {
             //onlyNumbers.append(to_string(network_address::inSocket));
             id = sha1(onlyNumbers);
         }
-
 
         node_address& operator= (const node_address& src) {
             if (this == &src)
@@ -293,13 +291,14 @@ namespace P2P_MODEL {
 
         string toStr() const {
             string str;
-            str = network_address::toStr() + " " + id.to_string(SC_HEX_US);
+            str = network_address::toStr() + " ";
+            string hex = id.to_string(SC_HEX_US);
+            hex.erase(0, 4);
             return str;
         }
 
         friend ostream& operator<< (ostream& out,          node_address& r);
         friend bool     operator== (const node_address& l, const node_address& r);
-
 
     private:
         uint160 sha1(const string& str) {
@@ -312,13 +311,61 @@ namespace P2P_MODEL {
         }
     };
 
+    
+    class node_address_latency: virtual public node_address {
+    public:
+        sc_time latency;
 
+        node_address_latency() {
+            clear();
+        };
 
+        node_address_latency(const node_address_latency& src) {
+            set(src);
+        }
+
+        node_address_latency(const node_address& src) {
+            clear();
+            node_address::set(src);
+        }
+
+        node_address_latency(const network_address& src) {
+            clear();
+            network_address::set(src);
+        }
+
+        void clear() {
+            node_address::clear();
+            latency = DEFAULT_LATENCY;
+        }
+
+        void set(const node_address_latency& src) {
+            node_address::set(src.ip, src.inSocket, src.outSocket);
+            latency = src.latency;
+        }
+
+        node_address_latency& operator= (const node_address_latency& src) {
+            if (this == &src)
+                return *this;
+
+            node_address::operator=(src);
+            this->latency = src.latency;
+            return *this;
+        }
+
+        string toStr() const {
+            string str = node_address::toStr() + string(" ") + latency.to_string();
+            return str;
+        }
+
+        friend ostream& operator<< (ostream& out, node_address_latency& r);
+        friend bool     operator== (const node_address_latency& l, const node_address_latency& r);
+    };
 
 
     class sim_message {
     public:
-        vector<network_address> destination;
+        vector<network_address> destNetwAddrs;
         sim_message_type type;
         payload_type payloadType;
         uint amount;                    
@@ -344,7 +391,7 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            destination = src.destination;
+            destNetwAddrs = src.destNetwAddrs;
             type = src.type;
             payloadType = src.payloadType;
             amount = src.amount;
@@ -365,7 +412,7 @@ namespace P2P_MODEL {
         }
 
         void clear() {
-            destination.clear();
+            destNetwAddrs.clear();
             type = SIM_UNKNOWN;
             payloadType = PAYLOAD_UNKNOWN;
             amount = 0;
@@ -412,13 +459,13 @@ namespace P2P_MODEL {
             //{
                 str += " " + to_string(dataSize);
 
-                if (destination.size() > 0) {
+                if (destNetwAddrs.size() > 0) {
                     str += " dest: ";
-                    str += destination.at(0).toStr();
+                    str += destNetwAddrs.at(0).toStr();
                 }
-                for (size_t i = 1; i < destination.size(); ++i) {
+                for (size_t i = 1; i < destNetwAddrs.size(); ++i) {
                     str += ", ";
-                    str += destination.at(i).toStr();
+                    str += destNetwAddrs.at(i).toStr();
                 }
             //}
             return str;
@@ -449,7 +496,7 @@ namespace P2P_MODEL {
 
     class app_message: public virtual base_message {
     public:
-        vector<network_address> destination;        
+        vector<network_address> destNetwAddrs;        
         data_type payload;
         data_size_type payloadSize;
 
@@ -466,7 +513,7 @@ namespace P2P_MODEL {
                 return *this;
             
             base_message::operator=(src);            
-            destination = src.destination;           
+            destNetwAddrs = src.destNetwAddrs;           
             payload = src.payload;
             payloadSize = src.payloadSize;
             return *this;
@@ -475,7 +522,7 @@ namespace P2P_MODEL {
         void clear() {
             base_message::clear();
             type = APP_UNKNOWN;
-            destination.clear();            
+            destNetwAddrs.clear();            
             payload.clear();
             payloadSize = 0;
         }
@@ -504,10 +551,10 @@ namespace P2P_MODEL {
             if ((type == APP_SINGLE) || (type == APP_MULTICAST) || (type == APP_BROADCAST))
                 str += " " + to_string(payloadSize/*payload.size()*/);           
 
-            if (destination.size() > 0) {
-                str += " dest: " + destination.at(0).toStr();                
-                for (size_t i = 1; i < destination.size(); ++i) 
-                    str += ", " + destination.at(i).toStr();
+            if (destNetwAddrs.size() > 0) {
+                str += " dest: " + destNetwAddrs.at(0).toStr();                
+                for (size_t i = 1; i < destNetwAddrs.size(); ++i) 
+                    str += ", " + destNetwAddrs.at(i).toStr();
             }
             return str;
         }
@@ -572,8 +619,7 @@ namespace P2P_MODEL {
     
     class chord_apptx_message: public virtual app_message {
     public:        
-        //uint160  destNodeID;
-        sc_time  appearanceTime;               
+        sc_time  creatingTime;               
 
         chord_apptx_message() {
             clear();
@@ -588,14 +634,14 @@ namespace P2P_MODEL {
                 return *this;
 
             app_message::operator=(src);            
-            appearanceTime = src.appearanceTime;
+            creatingTime = src.creatingTime;
             return *this;
         }
 
         void clear() {
             app_message::clear();
             type           = CHORD_APPTX_UNKNOWN;
-            appearanceTime = SC_ZERO_TIME;               
+            creatingTime = SC_ZERO_TIME;               
         }
 
         string type2str(const int& type = NONE) const {
@@ -623,16 +669,16 @@ namespace P2P_MODEL {
                 str = type2str();
                 str += " " + to_string(payloadSize);
 
-                if (destination.size() > 0) {
-                    str += " dest " + destination.at(0).toStr();
+                if (destNetwAddrs.size() > 0) {
+                    str += " dest " + destNetwAddrs.at(0).toStr();
                 
-                    for (size_t i = 1; i < destination.size(); ++i) 
-                        str += ", " + destination.at(i).toStr();
+                    for (size_t i = 1; i < destNetwAddrs.size(); ++i) 
+                        str += ", " + destNetwAddrs.at(i).toStr();
                 }
-                //str += " " + destNodeID.to_string(SC_HEX_US);
+                //str += " " + destNodeIDwithSocket.to_string(SC_HEX_US);
                 //str += " " + string("src ") + source.toStr();
                 //str += " " + string("init ") + initiator.toStr();
-                str += " when " + appearanceTime.to_string();
+                str += " when " + creatingTime.to_string();
                 break;
 
             default: str = "CHORD_UNKOWN"; break;                
@@ -645,10 +691,13 @@ namespace P2P_MODEL {
 
 
     struct chord_bits_flags {
-        uint bitMessType : 4 ;
-        uint needsACK : 1;
+        uint bitMessType : 4;
+        uint needsACK  : 1;       
+        uint destIPversion: 1;
+        uint srcIPversion : 1;
+        uint initiatorIPversion : 1;
         uint payloadSize : 32;
-        uint reserve : 3;
+        uint reserve : 16;
 
         chord_bits_flags() {
             clear();
@@ -656,7 +705,10 @@ namespace P2P_MODEL {
 
         void clear() {
             bitMessType = CHORD_BYTE_UNKNOWN;
-            needsACK = 0;
+            needsACK = NO_ACK;
+            destIPversion = IP_4_VERSION;
+            srcIPversion = IP_4_VERSION;
+            initiatorIPversion = IP_4_VERSION;
             payloadSize = 0;
             reserve = 0;
         }
@@ -671,8 +723,8 @@ namespace P2P_MODEL {
             case CHORD_BYTE_JOIN:                 return str = "JOIN";
             case CHORD_BYTE_NOTIFY:               return str = "NOTIFY";
             case CHORD_BYTE_ACK:                  return str = "ACK";
-            case CHORD_BYTE_REPLY_FIND_SUCCESSOR: return str = "REPLY_FIND_SUCC";
-            case CHORD_BYTE_FIND_SUCCESSOR:       return str = "FIND_SUCC";
+            case CHORD_BYTE_SUCCESSOR:            return str = "SUCCESSOR";
+            case CHORD_BYTE_FIND_SUCCESSOR:       return str = "FIND_SUCCESSOR";
             case CHORD_BYTE_BROADCAST:            return str = "BROADCAST";
             case CHORD_BYTE_MULTICAST:            return str = "MULTICAST";
             case CHORD_BYTE_SINGLE:               return str = "SINGLE";
@@ -692,6 +744,9 @@ namespace P2P_MODEL {
 
             bitMessType = src.bitMessType;
             needsACK = src.needsACK;
+            destIPversion = src.destIPversion;
+            srcIPversion = src.srcIPversion;
+            initiatorIPversion = src.initiatorIPversion;
             payloadSize = src.payloadSize;
             reserve = src.reserve;
             return *this;
@@ -700,16 +755,18 @@ namespace P2P_MODEL {
         friend ostream& operator<< (ostream& out, const chord_bits_flags& r);
     };
 
-
+    //Uses for store info about received message from network (type of buffer is BUFF_RX_MESS) or planned for transmiting message into network (buffers types are >= BUFF_TX_JOIN and others <= BUFF_TX_SINGLE)
     class chord_byte_message_fields : public virtual base_message {
     public:
-        node_address destNodeID;
-        node_address srcNodeID;
-        byte         pid;
-        chord_bits_flags   flags;
-        node_address initiatorID;
-        uint160      nodeIDpayload;
+        byte             pid;
+        chord_bits_flags flags;
+        node_address destNodeIDwithSocket;
+        node_address srcNodeIDwithSocket;                
+        node_address initiatorNodeIDwithSocket;   
+        uint messageID;       
         byte_array   payload;
+        node_address searchedNodeIDwithSocket; //this should be into payload byte-array field        
+        
 
         chord_byte_message_fields() {
             clear();
@@ -719,7 +776,7 @@ namespace P2P_MODEL {
             *this = src;
         }
 
-        chord_byte_message_fields* clone() {
+        chord_byte_message_fields* clone() const {
             chord_byte_message_fields* p = nullptr;
             p = new chord_byte_message_fields();
             *p = *this;
@@ -732,29 +789,27 @@ namespace P2P_MODEL {
                 return *this;
 
             base_message::operator=(src);
-            //type = src.type;
-            destNodeID = src.destNodeID;
-            srcNodeID = src.srcNodeID;
             pid = src.pid;
-            initiatorID = src.initiatorID;
             flags = src.flags;
-            nodeIDpayload = src.nodeIDpayload;
+            destNodeIDwithSocket = src.destNodeIDwithSocket;
+            srcNodeIDwithSocket = src.srcNodeIDwithSocket;            
+            initiatorNodeIDwithSocket = src.initiatorNodeIDwithSocket;
+            messageID = src.messageID;
             payload = src.payload;
+            searchedNodeIDwithSocket = src.searchedNodeIDwithSocket;
             return *this;
         }
 
         void clear() {
-            type = CHORD_BYTE_UNKNOWN;
-            destNodeID.clear();       //        = 0;
-            srcNodeID.clear();        //        = 0;
+            type = CHORD_UNKNOWN;
             pid = PID;
-            initiatorID.clear();      //        = 0;
-            flags.bitMessType = CHORD_BYTE_UNKNOWN;
-            flags.needsACK = 0;
-            flags.payloadSize = 0;
-            flags.reserve = 0;
-            nodeIDpayload = 0;
+            flags.clear();
+            destNodeIDwithSocket.clear();       
+            srcNodeIDwithSocket.clear();            
+            initiatorNodeIDwithSocket.clear();  
+            messageID = 0; 
             payload.clear();
+            searchedNodeIDwithSocket.clear();
         }
 
         string type2str(const int& type = NONE) const {
@@ -767,6 +822,7 @@ namespace P2P_MODEL {
                 case CHORD_RX_JOIN:                return str = "RX_JOIN";
                 case CHORD_RX_NOTIFY:              return str = "RX_NOTIFY";
                 case CHORD_RX_ACK:                 return str = "RX_ACK";
+                case CHORD_RX_SUCCESSOR:           return str = "RX_SUCCESSOR";
                 case CHORD_RX_FIND_SUCCESSOR:      return str = "RX_FIND_SUCCESSOR";
                 case CHORD_RX_BROADCAST:           return str = "RX_BROADCAST";
                 case CHORD_RX_MULTICAST:           return str = "RX_MULTICAST";
@@ -775,7 +831,7 @@ namespace P2P_MODEL {
                 case CHORD_TX_JOIN:                return str = "TX_JOIN";
                 case CHORD_TX_NOTIFY:              return str = "TX_NOTIFY";
                 case CHORD_TX_ACK:                 return str = "TX_ACK";
-                case CHORD_TX_REPLY_FIND_SUCESSOR: return str = "TX_REPLY_FIND_SUCESSOR";
+                case CHORD_TX_SUCCESSOR:           return str = "TX_SUCCESSOR";
                 case CHORD_TX_FIND_SUCCESSOR:      return str = "TX_FIND_SUCCESSOR";
                 case CHORD_TX_FWD_BROADCAST:       return str = "TX_FWD_BROADCAST";
                 case CHORD_TX_FWD_MULTICAST:       return str = "TX_FWD_MULTICAST";
@@ -789,16 +845,17 @@ namespace P2P_MODEL {
 
 
         string toStr() const {
-            string str;
-            
+            string str;            
             str += type2str() + string(" ");
-            str += string("d ") + destNodeID.toStr() + string(" ");
-            str += string("s ") + srcNodeID.toStr() + string(" ");
             str += string("pid ") + to_string(pid) + string(" ");
-            str += string("i ") + initiatorID.toStr() + string(" ");
             str += string("f ") + flags.toStr() + string(" ");
-            str += string("npid ") + nodeIDpayload.to_string(SC_HEX_US) + string(" ");
-            str += string("p ") + to_string(payload.size());
+            str += string("d ") + destNodeIDwithSocket.toStr() + string(" ");
+            str += string("s ") + srcNodeIDwithSocket.toStr() + string(" ");            
+            str += string("i ") + initiatorNodeIDwithSocket.toStr() + string(" ");
+            str += string("mID ") + to_string(messageID) + string(" ");
+            //string hex = searchedNodeIDwithSocket.to_string(SC_HEX_US); hex.erase(0, 4);
+            str += string("sID") + searchedNodeIDwithSocket.toStr() + string(" ");
+            str += string("pS ") + to_string(payload.size());
             return str;
         }
 
@@ -810,6 +867,8 @@ namespace P2P_MODEL {
     public:
        
        chord_byte_message_fields* retryMess;
+       sc_time checkTime;
+       uint retryMessSequenceNumber;
 
 
         chord_timer_message(): retryMess(nullptr) {
@@ -838,16 +897,20 @@ namespace P2P_MODEL {
                 retryMess = new chord_byte_message_fields();
                 *retryMess = *(src.retryMess);
             }
+            checkTime = src.checkTime;
+            retryMessSequenceNumber = src.retryMessSequenceNumber;
             return *this;
         }
 
         void clear() {           
-            chord_apptx_message::clear();
+            chord_apptx_message::clear();            
             type = CHORD_TIMER_UNKNOWN;
             if (retryMess != nullptr) {
                 delete retryMess;
                 retryMess = nullptr;
             }
+            checkTime = SC_ZERO_TIME;
+            retryMessSequenceNumber = 0;
         }
 
         string type2str(const int& type = NONE) const {
@@ -857,9 +920,9 @@ namespace P2P_MODEL {
                 t = this->type;
 
             switch (t) {
-            case CHORD_TIMER_ACK:                  return str = "TIMER_ACK";
-            case CHORD_TIMER_REPLY_FIND_SUCC:      return str = "TIMER_REPLY_FIND_SUCC";
-            case CHORD_TIMER_REPLY_FIND_SUCC_JOIN: return str = "TIMER_REPLY_FIND_SUCC_JOIN";
+            case CHORD_TIMER_RX_ACK:               return str = "TIMER_ACK";
+            case CHORD_TIMER_RX_SUCCESSOR:         return str = "TIMER_SUCCESSOR";
+            case CHORD_TIMER_RX_SUCCESSOR_ON_JOIN: return str = "TIMER_SUCCESSOR_JOIN";
             case CHORD_TIMER_UPDATE:               return str = "TIMER_UPDATE";
             default:                               return str = "CHORD_UNKNOWN";
             }
@@ -868,10 +931,10 @@ namespace P2P_MODEL {
         string toStr() const {
             string str;
             switch (type) {
-            case CHORD_TIMER_ACK:
-            case CHORD_TIMER_REPLY_FIND_SUCC:
-            case CHORD_TIMER_REPLY_FIND_SUCC_JOIN:
-            case CHORD_TIMER_UPDATE:               return str = type2str(); 
+            case CHORD_TIMER_RX_ACK:
+            case CHORD_TIMER_RX_SUCCESSOR:
+            case CHORD_TIMER_RX_SUCCESSOR_ON_JOIN:
+            case CHORD_TIMER_UPDATE:               return str = type2str() + (retryMess == nullptr ? string("") : string(" mID ") + to_string(retryMess->messageID));
             default:                               return str = "CHORD_UNKOWN"; 
             }
         }
@@ -999,10 +1062,9 @@ namespace P2P_MODEL {
             else if ((type > MIN_CHORD_TX_TYPE) && (type < MAX_CHORD_TX_TYPE)) {
                 return chord_byte_message_fields::toStr();
             }
-            else {                
+            else {                 
                 return string("BASE_UNKNOWN_TYPE");
             }
-
         }
     };
     
@@ -1027,8 +1089,8 @@ namespace P2P_MODEL {
             
             byteArray = src.byteArray;
             size      = src.size;
-            //fields    = src.fields;
 
+            //fields    = src.fields;
             if (fields != nullptr) {
                 delete fields;
                 fields = nullptr;
@@ -1064,6 +1126,6 @@ namespace P2P_MODEL {
     };
 
 
-    void initRands();
+    uint genRand(uint Min, uint Max);
 }
 #endif
