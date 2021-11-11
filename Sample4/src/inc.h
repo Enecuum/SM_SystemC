@@ -38,7 +38,8 @@ namespace P2P_MODEL {
     const sc_time DEFAULT_LATENCY = sc_time(1, SC_SEC);
     const uint MAX_UINT = 0xffffffff;
     
-
+    uint genRand(uint Min, uint Max);
+    string decToHex(const uint dec);
 
     
     enum payload_type {
@@ -95,6 +96,8 @@ namespace P2P_MODEL {
         CHORD_BYTE_ACK,
         CHORD_BYTE_SUCCESSOR,
         CHORD_BYTE_FIND_SUCCESSOR,
+        CHORD_BYTE_PREDECESSOR,
+        CHORD_BYTE_FIND_PREDECESSOR,
         CHORD_BYTE_BROADCAST,
         CHORD_BYTE_MULTICAST,
         CHORD_BYTE_SINGLE,
@@ -124,6 +127,7 @@ namespace P2P_MODEL {
         CHORD_TIMER_RX_ACK,
         CHORD_TIMER_RX_SUCCESSOR,
         CHORD_TIMER_RX_SUCCESSOR_ON_JOIN,
+        CHORD_TIMER_RX_PREDECESSOR,
         CHORD_TIMER_UPDATE,
         MAX_CHORD_TIMER_TYPE,
         CHORD_TIMER_UNKNOWN
@@ -145,6 +149,8 @@ namespace P2P_MODEL {
         CHORD_RX_ACK,
         CHORD_RX_SUCCESSOR,
         CHORD_RX_FIND_SUCCESSOR,
+        CHORD_RX_PREDECESSOR,
+        CHORD_RX_FIND_PREDECESSOR,
         CHORD_RX_BROADCAST,
         CHORD_RX_MULTICAST,
         CHORD_RX_SINGLE,
@@ -159,6 +165,8 @@ namespace P2P_MODEL {
         CHORD_TX_ACK,
         CHORD_TX_SUCCESSOR,
         CHORD_TX_FIND_SUCCESSOR,
+        CHORD_TX_PREDECESSOR,
+        CHORD_TX_FIND_PREDECESSOR,
         CHORD_TX_FWD_BROADCAST,
         CHORD_TX_FWD_MULTICAST,
         CHORD_TX_FWD_SINGLE,
@@ -170,7 +178,19 @@ namespace P2P_MODEL {
     };
 
 
-
+    enum finite_state {
+        STATE_LOAD = 0,
+        STATE_INIT,
+        STATE_JOIN,
+        STATE_IDLE,
+        STATE_INDATA,
+        STATE_SERVICE,
+        STATE_UPDATE,
+        STATE_APPREQUEST,
+        MAX_FINITE_STATE,
+        STATE_OFF,
+        STATE_UNKNOWN
+    };
 
 
          
@@ -293,7 +313,7 @@ namespace P2P_MODEL {
             string str;
             str = network_address::toStr() + " ";
             string hex = id.to_string(SC_HEX_US);
-            hex.erase(0, 4);
+            str +=  hex.erase(0, 4);
             return str;
         }
 
@@ -833,6 +853,8 @@ namespace P2P_MODEL {
                 case CHORD_TX_ACK:                 return str = "TX_ACK";
                 case CHORD_TX_SUCCESSOR:           return str = "TX_SUCCESSOR";
                 case CHORD_TX_FIND_SUCCESSOR:      return str = "TX_FIND_SUCCESSOR";
+                case CHORD_TX_PREDECESSOR:         return str = "TX_PREDECESSOR";
+                case CHORD_TX_FIND_PREDECESSOR:    return str = "TX_FIND_PREDECESSOR";
                 case CHORD_TX_FWD_BROADCAST:       return str = "TX_FWD_BROADCAST";
                 case CHORD_TX_FWD_MULTICAST:       return str = "TX_FWD_MULTICAST";
                 case CHORD_TX_FWD_SINGLE:          return str = "TX_FWD_SINGLE";
@@ -868,7 +890,9 @@ namespace P2P_MODEL {
        
        chord_byte_message_fields* retryMess;
        sc_time checkTime;
-       uint retryMessSequenceNumber;
+       uint retryCounter;
+       finite_state issuedState;
+       bool isWait;
 
 
         chord_timer_message(): retryMess(nullptr) {
@@ -898,7 +922,9 @@ namespace P2P_MODEL {
                 *retryMess = *(src.retryMess);
             }
             checkTime = src.checkTime;
-            retryMessSequenceNumber = src.retryMessSequenceNumber;
+            retryCounter = src.retryCounter;
+            issuedState = src.issuedState;
+            isWait = false;
             return *this;
         }
 
@@ -910,7 +936,9 @@ namespace P2P_MODEL {
                 retryMess = nullptr;
             }
             checkTime = SC_ZERO_TIME;
-            retryMessSequenceNumber = 0;
+            retryCounter = 0;
+            issuedState = STATE_UNKNOWN;
+            isWait = false;
         }
 
         string type2str(const int& type = NONE) const {
@@ -923,6 +951,7 @@ namespace P2P_MODEL {
             case CHORD_TIMER_RX_ACK:               return str = "TIMER_ACK";
             case CHORD_TIMER_RX_SUCCESSOR:         return str = "TIMER_SUCCESSOR";
             case CHORD_TIMER_RX_SUCCESSOR_ON_JOIN: return str = "TIMER_SUCCESSOR_JOIN";
+            case CHORD_TIMER_RX_PREDECESSOR:       return str = "TIMER_PREDECESSOR";
             case CHORD_TIMER_UPDATE:               return str = "TIMER_UPDATE";
             default:                               return str = "CHORD_UNKNOWN";
             }
@@ -934,6 +963,7 @@ namespace P2P_MODEL {
             case CHORD_TIMER_RX_ACK:
             case CHORD_TIMER_RX_SUCCESSOR:
             case CHORD_TIMER_RX_SUCCESSOR_ON_JOIN:
+            case CHORD_TIMER_RX_PREDECESSOR:       
             case CHORD_TIMER_UPDATE:               return str = type2str() + (retryMess == nullptr ? string("") : string(" mID ") + to_string(retryMess->messageID));
             default:                               return str = "CHORD_UNKOWN"; 
             }
@@ -1126,6 +1156,6 @@ namespace P2P_MODEL {
     };
 
 
-    uint genRand(uint Min, uint Max);
+
 }
 #endif

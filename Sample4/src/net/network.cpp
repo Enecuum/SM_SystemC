@@ -54,60 +54,56 @@ namespace P2P_MODEL
 
     void network::checkReceive() {  
         int portIndex = CAN_USE;
-        //if (m_hasNewMess == true)
-        {
-            for (uint i = 0; i < m_buffMess.size(); ++i) {
-                if ((m_buffMess[i].size() > 0) && (m_wakeUpInfo[i].bufIndex == CAN_USE)) {
-                    portIndex = i;
-                    auto messIt = m_buffMess[portIndex].begin();
 
-                    auto portIndexIt = m_portIndexByNodeID.find(messIt->fields->srcNodeIDwithSocket.id);
-                    if (portIndexIt == m_portIndexByNodeID.end()) {
-                        //ERROR
-                        m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND INPORT ") + messIt->fields->toStr();
-                        msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
-                        return;
-                    }
-                
-                    uint from = portIndexIt->second;
+        for (uint i = 0; i < m_buffMess.size(); ++i) {
+            if ((m_buffMess[i].size() > 0) && (m_wakeUpInfo[i].bufIndex == CAN_USE)) {
+                portIndex = i;
+                auto messIt = m_buffMess[portIndex].begin();
 
-                    portIndexIt = m_portIndexByNodeID.find(messIt->fields->destNodeIDwithSocket.id);
-                    if (portIndexIt == m_portIndexByNodeID.end()) {
-                        //ERROR
-                        m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND OUTPORT ") + messIt->fields->toStr();
-                        msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
-                    }
-                
-                    uint to = portIndexIt->second;
-                
-                    double millisec = m_latencyTable[from][to].to_seconds() * 1000;
-                
-                    uint randValue  = 0;
-                    if (m_randDesperseMillisec[i] != 0)
-                        randValue = genRand(1, m_randDesperseMillisec[i]);
-
-                    uint sign  = genRand(0, 1);
-                    if (sign == 0)
-                        millisec += randValue;
-                    else {
-                        if (randValue >= millisec)
-                            millisec = 1;
-                        else
-                            millisec -= randValue;
-                    }
-                    m_wakeUpInfo[portIndex].bufIndex = i;
-                    m_wakeUpInfo[portIndex].time = sc_time(sc_time_stamp().to_seconds() + millisec/1000, SC_SEC);
-                    m_eventSend[portIndex]->notify(millisec, SC_MS);
-                
-                    m_logText = "checkReceive" + LOG_TAB + "out" + to_string(to) + LOG_SPACE + "in" + to_string(from) + LOG_SPACE + messIt->fields->toStr();
-                    msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);                
-                
-                    //m_eventCheckReceive.notify(0, SC_NS); 
+                auto portIndexIt = m_portIndexByNodeID.find(messIt->fields->srcNodeIDwithSocket.id);
+                if (portIndexIt == m_portIndexByNodeID.end()) {
+                    //ERROR
+                    m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND INPORT ") + messIt->fields->toStr();
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                    return;
                 }
-            }
+                
+                uint from = portIndexIt->second;
 
-            //if (portIndex == CAN_USE)
-            //    m_hasNewMess = false;
+                portIndexIt = m_portIndexByNodeID.find(messIt->fields->destNodeIDwithSocket.id);
+                if (portIndexIt == m_portIndexByNodeID.end()) {
+                    //ERROR
+                    m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND OUTPORT ") + messIt->fields->toStr();
+                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                }
+                
+                uint to = portIndexIt->second;
+                
+                double millisec = m_latencyTable[from][to].to_seconds() * 1000;
+                
+                uint randValue  = 0;
+                if (m_randDesperseMillisec[i] != 0)
+                    randValue = genRand(1, m_randDesperseMillisec[i]);
+
+                uint sign  = genRand(0, 1);
+                if (sign == 0)
+                    millisec += randValue;
+                else {
+                    if (randValue >= millisec)
+                        millisec = 1;
+                    else
+                        millisec -= randValue;
+                }
+                m_wakeUpInfo[portIndex].bufIndex = i;
+                sc_time delay = sc_time(millisec, SC_MS);
+                m_wakeUpInfo[portIndex].time = sc_time_stamp() + delay;
+                m_eventSend[portIndex]->notify(delay);
+                
+                m_logText = "checkReceive" + LOG_TAB + to_string(from) + string("->") + to_string(to) + LOG_SPACE + messIt->fields->toStr();
+                msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);                
+                
+                //m_eventCheckReceive.notify(0, SC_NS); 
+            }
         }
     }
 
@@ -182,10 +178,10 @@ namespace P2P_MODEL
             str += "\n";
         }
         str += string(" ") + LOG_TAB;
-        for (uint j = 0; j < m_latencyTable[0].size(); ++j)
+        for (uint j = 0; j < m_latencyTable.at(0).size(); ++j)
             str += "v" + LOG_TAB;
         str += "\n" + string("out") + LOG_TAB;
-        for (uint j = 0; j < m_latencyTable[0].size(); ++j)
+        for (uint j = 0; j < m_latencyTable.at(0).size(); ++j)
             str += to_string(j) + LOG_TAB;
         return str;
     }
@@ -238,6 +234,8 @@ namespace P2P_MODEL
         case CHORD_TX_ACK:                 res = CHORD_RX_ACK;                  break;
         case CHORD_TX_SUCCESSOR:           res = CHORD_RX_SUCCESSOR;            break;
         case CHORD_TX_FIND_SUCCESSOR:      res = CHORD_RX_FIND_SUCCESSOR;       break;
+        case CHORD_TX_PREDECESSOR:         res = CHORD_RX_SUCCESSOR;            break;
+        case CHORD_TX_FIND_PREDECESSOR:    res = CHORD_RX_FIND_SUCCESSOR;       break;
         case CHORD_TX_FWD_BROADCAST:       res = CHORD_RX_BROADCAST;            break;
         case CHORD_TX_FWD_MULTICAST:       res = CHORD_RX_MULTICAST;            break;
         case CHORD_TX_FWD_SINGLE:          res = CHORD_RX_SINGLE;               break;
@@ -253,21 +251,27 @@ namespace P2P_MODEL
 
 
     void network::send() {
-        for (int i = 0; i < m_wakeUpInfo.size(); ++i) {
-            if ((m_wakeUpInfo[i].bufIndex != CAN_USE) && (m_wakeUpInfo[i].time >= sc_time_stamp())) {
+        for (uint i = 0; i < m_wakeUpInfo.size(); ++i) {
+            if ((m_wakeUpInfo[i].bufIndex != CAN_USE) && (m_wakeUpInfo[i].time <= sc_time_stamp())) {
                 auto messIt = m_buffMess[i].begin();
                 messIt->fields->type = specifyNewMessType(messIt->fields->type);
 
-                m_logText = "send" + LOG_TAB + "out" + to_string(i) + LOG_SPACE + messIt->fields->toStr();
+                m_logText = "send" + LOG_TAB + "->" + to_string(i) + LOG_SPACE + messIt->fields->toStr();
                 msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | ERROR_LOG);
 
                 (*(trp_ports[i]))->receive_mess(*messIt);
                 m_buffMess[i].erase(messIt);
 
                 m_wakeUpInfo[i].bufIndex = CAN_USE;                
-                m_eventCheckReceive.notify(0, SC_NS);
-                //break;
-            }                            
+                m_eventCheckReceive.notify(0, SC_NS);                
+            }  
+            else if (m_wakeUpInfo[i].bufIndex != CAN_USE) {
+                m_eventSend[i]->notify(m_wakeUpInfo[i].time - sc_time_stamp());
+
+                m_logText = to_string(sc_time_stamp().to_double()) + LOG_SPACE + to_string(m_wakeUpInfo[i].time.to_double());
+                msgLog(name(), LOG_TX, LOG_WARNING_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
+                cout << m_logText << endl;
+            }
         }
     }
 }

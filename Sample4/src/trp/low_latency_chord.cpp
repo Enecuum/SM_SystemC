@@ -32,25 +32,28 @@ namespace P2P_MODEL
         //priority "1" is the highest priority
         //priority "15"  is the lowest priority
         //flag "immediate" allows to handle all messages into buffer without consider max deep limit
-        uint priority = 1;
+        uint priority = 0;
         m_indexLastBufferCall = 0;
-        m_howManyBuffers = MAX_BUFF_TYPE;
+        m_howManyBuffers = 14;
         m_buffer.resize(m_howManyBuffers, message_buffer<chord_message>());
-        m_buffer[BUFF_CONFIG].set(BUFF_CONFIG, MAX_DEEP_BUFF_CONFIG, MAX_SIZE_BUFF_CONFIG, true, priority++);        
-        m_buffer[BUFF_RX_MESS].set(BUFF_RX_MESS, MAX_DEEP_BUFF_RX_MESS, MAX_SIZE_BUFF_RX_MESS, false, priority++);
-        m_buffer[BUFF_TX_JOIN].set(BUFF_TX_JOIN, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_NOTIFY].set(BUFF_TX_NOTIFY, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_ACK].set(BUFF_TX_ACK, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_SUCCESSOR].set(BUFF_TX_SUCCESSOR, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_FIND_SUCCESSOR].set(BUFF_TX_FIND_SUCCESSOR, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_FWD_BROADCAST].set(BUFF_TX_FWD_BROADCAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_FWD_MULTICAST].set(BUFF_TX_FWD_MULTICAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_FWD_SINGLE].set(BUFF_TX_FWD_SINGLE, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_BROADCAST].set(BUFF_TX_BROADCAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_MULTICAST].set(BUFF_TX_MULTICAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_TX_SINGLE].set(BUFF_TX_SINGLE, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
-        m_buffer[BUFF_APPTXDATA].set(BUFF_APPTXDATA, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);        
-        m_buffer[BUFF_TIMER].set(BUFF_TIMER, MAX_DEEP_BUFF_TIMER, MAX_SIZE_BUFF_TIMER, true, priority++);
+        uint buffI = 0;
+        m_buffer[buffI++].set(BUFF_CONFIG, MAX_DEEP_BUFF_CONFIG, MAX_SIZE_BUFF_CONFIG, true, priority++);
+        m_buffer[buffI++].set(BUFF_RX_MESS, MAX_DEEP_BUFF_RX_MESS, MAX_SIZE_BUFF_RX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_JOIN, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_NOTIFY, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_ACK, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_SUCCESSOR, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_FIND_SUCCESSOR, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_PREDECESSOR, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_FIND_PREDECESSOR, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        //m_buffer[buffI++].set(BUFF_TX_FWD_BROADCAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        //m_buffer[buffI++].set(BUFF_TX_FWD_MULTICAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        //m_buffer[buffI++].set(BUFF_TX_FWD_SINGLE, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_BROADCAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_MULTICAST, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_TX_SINGLE, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);
+        m_buffer[buffI++].set(BUFF_APPTXDATA, MAX_DEEP_BUFF_TX_MESS, MAX_SIZE_BUFF_TX_MESS, false, priority++);        
+        m_buffer[buffI++].set(BUFF_TIMER, MAX_DEEP_BUFF_TIMER, MAX_SIZE_BUFF_TIMER, true, priority++);
 
         //Sort buffers by priority and immediate fields of message_buffer class, comparison's operator for sorting is defined in message_buffer class
         std::sort(m_buffer.begin(), m_buffer.end());
@@ -357,7 +360,7 @@ namespace P2P_MODEL
         vector<uint> retryMessTypes;
         bool exist;
         if (mess.type == CHORD_RX_ACK) {
-            retryMessTypes = {CHORD_TX_JOIN, CHORD_TX_NOTIFY, CHORD_TX_FIND_SUCCESSOR, CHORD_TX_BROADCAST, CHORD_TX_MULTICAST, CHORD_TX_SINGLE, CHORD_TX_FWD_BROADCAST, CHORD_TX_FWD_MULTICAST, CHORD_TX_FWD_SINGLE};            
+            retryMessTypes = {CHORD_TX_JOIN, CHORD_TX_NOTIFY, CHORD_TX_FIND_SUCCESSOR, CHORD_TX_BROADCAST, CHORD_TX_MULTICAST, CHORD_TX_SINGLE, CHORD_TX_FWD_BROADCAST, CHORD_TX_FWD_MULTICAST, CHORD_TX_FWD_SINGLE};
             it = findMessageOnTimersWithRetryParams(exist, CHORD_TIMER_RX_ACK, retryMessTypes, mess.messageID);
             return exist;
         }
@@ -488,13 +491,13 @@ namespace P2P_MODEL
                 if (m_isSuccessorSet == false) {
                     removeTimer(CHORD_TIMER_RX_SUCCESSOR_ON_JOIN, CHORD_TX_JOIN, mess->retryMess->messageID);
 
-                    if (mess->retryMessSequenceNumber < m_confParams.CtxAck) {
+                    if (mess->retryCounter < m_confParams.CtxAck) {
                         pushNewMessage(*(mess->retryMess));
 
                         if (m_confParams.TrxSuccOnJoin != NO_TIMEOUT)
-                            pushNewTimer(CHORD_TIMER_RX_SUCCESSOR_ON_JOIN, mess->retryMessSequenceNumber + 1, mess->retryMess->clone());
+                            pushNewTimer(CHORD_TIMER_RX_SUCCESSOR_ON_JOIN, mess->retryCounter + 1, mess->retryMess->clone());
                         if (m_confParams.needsACK == NEEDS_ACK)
-                            pushNewTimer(CHORD_TIMER_RX_ACK, mess->retryMessSequenceNumber + 1, mess->retryMess->clone());
+                            pushNewTimer(CHORD_TIMER_RX_ACK, mess->retryCounter + 1, mess->retryMess->clone());
                     }
                     else {
                         m_currSeed = (m_currSeed + 1) % m_confParams.seed.size();
@@ -510,13 +513,13 @@ namespace P2P_MODEL
                 }
                 else {
                     removeTimer(CHORD_TIMER_RX_SUCCESSOR, CHORD_TX_FIND_SUCCESSOR, mess->retryMess->messageID);
-                    if (mess->retryMessSequenceNumber < m_confParams.CtxAck) {
+                    if (mess->retryCounter < m_confParams.CtxAck) {
                         pushNewMessage(*(mess->retryMess));
 
                         if (m_confParams.TrxAck != NO_TIMEOUT)
-                            pushNewTimer(CHORD_TIMER_RX_SUCCESSOR, mess->retryMessSequenceNumber+1, mess->retryMess->clone());
+                            pushNewTimer(CHORD_TIMER_RX_SUCCESSOR, mess->retryCounter+1, mess->retryMess->clone());
                         if (m_confParams.needsACK == NEEDS_ACK)
-                            pushNewTimer(CHORD_TIMER_RX_ACK, mess->retryMessSequenceNumber+1, mess->retryMess->clone());                                                
+                            pushNewTimer(CHORD_TIMER_RX_ACK, mess->retryCounter+1, mess->retryMess->clone());                                                
                     }
                 }
                 m_eventCore.notify(0, SC_NS);
@@ -604,11 +607,10 @@ namespace P2P_MODEL
 
         if (doResetFlushIfMess(mess) == true)
             return;
-
-        //
+        
         eraseFirstMess();
         return;
-
+        
         switch (eventType(mess)) {
         case CALLED_BY_ANOTHER_STATE: {
            
@@ -706,6 +708,8 @@ namespace P2P_MODEL
         case CHORD_TX_ACK:       buffType = BUFF_TX_ACK;    break;
         case CHORD_TX_SUCCESSOR: buffType = BUFF_TX_SUCCESSOR; break;
         case CHORD_TX_FIND_SUCCESSOR: buffType = BUFF_TX_FIND_SUCCESSOR; break;
+        case CHORD_TX_PREDECESSOR:    buffType = BUFF_TX_PREDECESSOR; break;
+        case CHORD_TX_FIND_PREDECESSOR: buffType = BUFF_TX_FIND_PREDECESSOR; break;
         case CHORD_TX_FWD_BROADCAST:  buffType = BUFF_TX_FWD_BROADCAST;  break;
         case CHORD_TX_FWD_MULTICAST:  buffType = BUFF_TX_FWD_MULTICAST;  break;
         case CHORD_TX_FWD_SINGLE:     buffType = BUFF_TX_FWD_SINGLE;     break;
@@ -963,10 +967,10 @@ namespace P2P_MODEL
         }
     }
 
-    void low_latency_chord::pushNewTimer(const uint type, const uint retryMessSequenceNumber, const chord_byte_message_fields* retryMess) {        
+    void low_latency_chord::pushNewTimer(const uint type, const uint retryCounter, const chord_byte_message_fields* retryMess) {        
         chord_message timer;
         timer.type = type;
-        timer.retryMessSequenceNumber = retryMessSequenceNumber;
+        timer.retryCounter = retryCounter;
 
         switch (type)
         {

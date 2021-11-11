@@ -86,4 +86,10 @@ namespace P2P_MODEL
         }
         return ((uint)(rand() * (Max + 1 - Min) / RAND_MAX + Min));
     }
+
+    string decToHex(const uint dec) {
+        char buff[100];
+        _itoa_s(dec, buff, 100, 16);
+        return string(buff);
+    }
 }

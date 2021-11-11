@@ -29,6 +29,8 @@ namespace P2P_MODEL
         BUFF_TX_ACK,
         BUFF_TX_SUCCESSOR,
         BUFF_TX_FIND_SUCCESSOR,
+        BUFF_TX_PREDECESSOR,
+        BUFF_TX_FIND_PREDECESSOR,
         BUFF_TX_FWD_BROADCAST,
         BUFF_TX_FWD_MULTICAST,
         BUFF_TX_FWD_SINGLE,
@@ -85,7 +87,12 @@ namespace P2P_MODEL
                 messages.push_back(r);
                 return true;
             }
-            return false;
+            else {
+                cout << "BUFFER OVERFLOW" << toStr() << std::endl;
+                messages.erase(messages.begin());
+                messages.push_back(r);
+                return false;
+            }            
         }
 
         uint size() const {
@@ -225,6 +232,8 @@ namespace P2P_MODEL
                 case BUFF_TX_ACK:                  typeStr = "BUFF_TX_ACK"; break;
                 case BUFF_TX_SUCCESSOR:            typeStr = "BUFF_TX_SUCCESSOR"; break;
                 case BUFF_TX_FIND_SUCCESSOR:       typeStr = "BUFF_TX_FIND_SUCCESSOR"; break;
+                case BUFF_TX_PREDECESSOR:          typeStr = "BUFF_TX_PREDECESSOR"; break;
+                case BUFF_TX_FIND_PREDECESSOR:     typeStr = "BUFF_TX_FIND_PREDECESSOR"; break;
                 case BUFF_TX_FWD_BROADCAST:        typeStr = "BUFF_TX_FWD_BROADCAST"; break;
                 case BUFF_TX_FWD_MULTICAST:        typeStr = "BUFF_TX_FWD_MULTICAST"; break;
                 case BUFF_TX_FWD_SINGLE:           typeStr = "BUFF_TX_FWD_SINGLE"; break;
@@ -260,7 +269,7 @@ namespace P2P_MODEL
                 if (immediate == true) {
                     it = messages.begin();
                     lastCallTime = sc_time_stamp();
-                    ++messCounter;
+                    //++messCounter;
                 }
                 else {
                     if ((messCounter < maxDeep) && (messCounter < maxSize)) {

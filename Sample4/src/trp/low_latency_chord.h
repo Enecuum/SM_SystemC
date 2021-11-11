@@ -16,19 +16,7 @@ namespace P2P_MODEL
 {
     
 
-    enum finite_state {
-        STATE_LOAD = 0,
-        STATE_INIT,
-        STATE_JOIN,
-        STATE_IDLE,
-        STATE_INDATA,
-        STATE_SERVICE,
-        STATE_UPDATE,
-        STATE_APPREQUEST,
-        MAX_FINITE_STATE,
-        STATE_OFF,
-        STATE_UNKNOWN
-    };
+
 
     enum chord_action {
         DO_REPLY = 0,
@@ -132,7 +120,7 @@ namespace P2P_MODEL
         int chordMessType2buffIndex(const uint type);
         chord_message* firstMessByPriority();
         void eraseFirstMess();
-        void pushNewTimer(const uint type, const uint retryMessSequenceNumber, const chord_byte_message_fields* retryMess = nullptr);
+        void pushNewTimer(const uint type, const uint retryCounter, const chord_byte_message_fields* retryMess = nullptr);
         void removeTimer(const uint timerType, const uint retryMessType, const uint retryMessID);
         void removeTimer(buffer_container::iterator timerIt);
         buffer_container::iterator findMessageOnTimersWithRetryParams(bool& exist, const uint timerType, const vector<uint>& retryMessType, const uint messageID);

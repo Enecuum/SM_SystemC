@@ -22,10 +22,11 @@ namespace P2P_MODEL {
     const int MAX_DEEP_BUFF_TX_MESS = MAX_DEEP_BUFF_APPTXDATA + MAX_DEEP_BUFF_RX_MESS + 1;
     
     //Default constants to init timers of low_latency_chord
-    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(15, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR = sc_time(5, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(14, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN/2;
+    const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN/3;
     const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(3000, SC_SEC);       //300 ms
+    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(500, SC_MS);       //300 ms
     const sc_time DEFAULT_TIMEOUT_RX_DUPLE = sc_time(2 * DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN.to_seconds(), SC_SEC);
 
     //Default constants to init retry counters of low_latency_chord
