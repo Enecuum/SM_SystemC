@@ -46,8 +46,8 @@ namespace P2P_MODEL
 
         //chord_conf_message&        appMess2chordConfMess(const app_message& mess);
         //chord_byte_message_fields& chordByteMess2ChordByteMessFields(const chord_byte_message& mess);
-        chord_message& appMess2chordMess(const app_message& mess);
-        chord_message& chordByteMess2ChordMess(const chord_byte_message& mess);
+        chord_message appMess2chordMess(const app_message& mess);
+        chord_message chordByteMess2ChordMess(const chord_byte_message& mess);
         
 
 

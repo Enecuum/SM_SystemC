@@ -56,7 +56,7 @@ namespace P2P_MODEL
         
         log();
         ~log();
-
+        
         void setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen);
         void setPathLog(const string& pathLog);
         void setLogMode(const log_mode& logMode);
@@ -75,7 +75,7 @@ namespace P2P_MODEL
                         const log_mode &secondary, const string& logRxTx, const string& logInOut,
                         const string& text = "");
 
-        const string& logText(const char logRxTx[]
+        string logText(const char logRxTx[]
                                 , const char logInOut[]
                                 , const string& text);
     };

@@ -67,7 +67,7 @@ namespace P2P_MODEL
         
         void pushSimulatingMess(const sim_message& mess);
 
-        app_message& createAppMess(const sim_message& s);
+        app_message createAppMess(const sim_message& s);
 
         sim_message& doRandSimMess(const sim_message& s);
 

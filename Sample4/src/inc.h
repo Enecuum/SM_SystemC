@@ -9,6 +9,7 @@
 #include <map>
 #include <list>
 #include <string>
+#include <xstring>
 #include <cstdlib> // needs for rand() and srand()
 #include <ctime>   // needs for time()
 

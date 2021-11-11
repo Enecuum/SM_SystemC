@@ -116,9 +116,9 @@ namespace P2P_MODEL
 
    
 
-    const string &log::logText(const char logRxTx[], const char logInOut[], const string &text)
+    string log::logText(const char logRxTx[], const char logInOut[], const string &text)
     {
-        static string tmpCharLog = "";
+        string tmpCharLog = "";
         tmpCharLog.clear();
         tmpCharLog += logRxTx;
         tmpCharLog += LOG_TAB;

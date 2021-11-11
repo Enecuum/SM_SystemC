@@ -297,8 +297,8 @@ namespace P2P_MODEL
         return m_randSimReq[s.type];
     }
 
-    app_message& application::createAppMess(const sim_message& s) {
-        static app_message res;        
+    app_message application::createAppMess(const sim_message& s) {
+        app_message res;        
         res.clear();
 
         res.destNetwAddrs = s.destNetwAddrs;        

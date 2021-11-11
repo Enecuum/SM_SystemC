@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
     //Run simulation
     cout << endl << "Run simulation" << endl;
 
-    sc_start(60*10, SC_SEC);
+    sc_start(60*100, SC_SEC);
     cout << endl << "Read results" << endl;
 
 

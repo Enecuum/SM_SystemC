@@ -118,7 +118,7 @@ namespace P2P_MODEL
         int checkMessage(const chord_message& mess, buffer_container::iterator& it, const string& errCode);
 
         int chordMessType2buffIndex(const uint type);
-        chord_message* firstMessByPriority();
+        chord_message firstMessByPriority(bool& exist);
         void eraseFirstMess();
         void pushNewTimer(const uint type, const uint retryCounter, const chord_byte_message_fields* retryMess = nullptr);
         void removeTimer(const uint timerType, const uint retryMessType, const uint retryMessID);
@@ -127,22 +127,22 @@ namespace P2P_MODEL
         
         void sendMessage(const chord_message& mess);
 
-        string& state2str(const finite_state& state);
+        string state2str(const finite_state& state) const;
 
         chord_action findSuccessor(const uint160& id, node_address& found);
         bool isClockWiseDirection(const uint160& id);
         node_address& closestPrecedingNode(const uint160& id);
         bool isInRange(const uint160& id, const uint160& A, const bool includeA, const uint160& B, const bool includeB);
 
-        chord_message& createMessage(const chord_message& params);
+        chord_message createMessage(const chord_message& params);
 
 
-        chord_message& createJoinMessage(const node_address& dest);
-        chord_message& createNotifyMessage(const node_address& dest);
-        chord_message& createAckMessage(const node_address& dest, const uint messageID);
-        chord_message& createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID);
-        chord_message& createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
-        chord_message& createSingleMessage(const node_address& addr);
+        chord_message createJoinMessage(const node_address& dest);
+        chord_message createNotifyMessage(const node_address& dest);
+        chord_message createAckMessage(const node_address& dest, const uint messageID);
+        chord_message createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID);
+        chord_message createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
+        chord_message createSingleMessage(const node_address& addr);
         
         event_type eventType(const chord_message* mess = nullptr);
 

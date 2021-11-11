@@ -141,7 +141,7 @@ namespace P2P_MODEL
     }
 
 
-    chord_message* low_latency_chord::firstMessByPriority() {                
+    chord_message low_latency_chord::firstMessByPriority(bool& exist) {                
         //m_buffer consists of array of sub-buffers as named "message_buffer".
         //message_buffers have already sorted by priority (service) order.
         //message_buffer in 0-position in m_buffer has the highest priority to service a message.
@@ -156,7 +156,8 @@ namespace P2P_MODEL
                     p = m_buffer[i].firstMessPointerByImmediate();
                     if (p != nullptr) {                                          
                         m_indexLastBufferCall = i;
-                        return p;
+                        exist = true;
+                        return *p;
                     }                    
                 }
             }
@@ -197,7 +198,8 @@ namespace P2P_MODEL
                 string currTime = sc_time_stamp().to_string();
                 if (sc_time_stamp() >= whenTriggered) {
                     m_indexLastBufferCall = m_timerBufferIndex;
-                    return p;
+                    exist = true;
+                    return *p;
                 }
                 else {
                     sc_time delay = whenTriggered - sc_time_stamp();
@@ -211,7 +213,9 @@ namespace P2P_MODEL
 
         if (hasTimer)
             m_eventCore.notify(minTimerDelay);
-        return nullptr;
+
+        exist = false;
+        return chord_message();
     }
 
 
@@ -234,10 +238,15 @@ namespace P2P_MODEL
 
         string strName = name();
         string currTime = sc_time_stamp().to_string();
-        chord_message* p = firstMessByPriority();
-        if (p == nullptr)
+        
+        bool exist;
+        chord_message mess = firstMessByPriority(exist);
+        
+        if (exist == false)
             return;                                  //Nothing to do
-                    
+        
+        chord_message* p = &mess;
+
         m_logText = "core" + LOG_TAB + p->toStr();
         msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | INTERNAL_LOG);
 
@@ -608,8 +617,6 @@ namespace P2P_MODEL
         if (doResetFlushIfMess(mess) == true)
             return;
         
-        eraseFirstMess();
-        return;
         
         switch (eventType(mess)) {
         case CALLED_BY_ANOTHER_STATE: {
@@ -951,8 +958,8 @@ namespace P2P_MODEL
     }
 
 
-    string& low_latency_chord::state2str(const finite_state& state) {
-        static string res;
+    string low_latency_chord::state2str(const finite_state& state) const {
+        string res;
         switch (state) {
         case STATE_LOAD:       return res = /*"STATE_*/"LOAD";
         case STATE_INIT:       return res = /*"STATE_*/"INIT";
@@ -996,8 +1003,8 @@ namespace P2P_MODEL
         pushNewMessage(timer);
     }
 
-    chord_message& low_latency_chord::createMessage(const chord_message& params) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createMessage(const chord_message& params) {
+        chord_message newMess;
         newMess.clear();
 
         //switch (params)
@@ -1024,8 +1031,8 @@ namespace P2P_MODEL
         m_buffer[m_timerBufferIndex].eraseMess(timerType, retryMessType, retryMessID);
     }
 
-    chord_message& low_latency_chord::createJoinMessage(const node_address& dest) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createJoinMessage(const node_address& dest) {
+        chord_message newMess;
         newMess.clear();
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
@@ -1039,13 +1046,13 @@ namespace P2P_MODEL
         return newMess;
     }
 
-    chord_message& low_latency_chord::createNotifyMessage(const node_address& dest) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createNotifyMessage(const node_address& dest) {
+        chord_message newMess;
         return newMess;
     }
 
-    chord_message& low_latency_chord::createAckMessage(const node_address& dest, const uint messageID) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createAckMessage(const node_address& dest, const uint messageID) {
+        chord_message newMess;
         newMess.clear();
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
@@ -1057,8 +1064,8 @@ namespace P2P_MODEL
         return newMess;
     }
 
-    chord_message& low_latency_chord::createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID) {
+        chord_message newMess;
         newMess.clear();
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
@@ -1073,8 +1080,8 @@ namespace P2P_MODEL
         return newMess;
     }
 
-    chord_message& low_latency_chord::createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& fingerAddr) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& fingerAddr) {
+        chord_message newMess;
         newMess.clear();
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
@@ -1087,8 +1094,8 @@ namespace P2P_MODEL
         return newMess;
     }
 
-    chord_message& low_latency_chord::createSingleMessage(const node_address& dest) {
-        static chord_message newMess;
+    chord_message low_latency_chord::createSingleMessage(const node_address& dest) {
+        chord_message newMess;
         m_messageID = nextUniqueMessageID();
         return newMess;
     }

@@ -53,7 +53,7 @@ namespace P2P_MODEL
 
         void setNodeAddressList(const vector<network_address>& addrs);
         void setRandomLatencyTable(const uint millisecFrom, const uint millisecTo, const uint millisecDesperse);
-        string& latencyTableToStr();
+        string latencyTableToStr();
                 
 
     private:        

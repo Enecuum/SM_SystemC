@@ -114,8 +114,8 @@ namespace P2P_MODEL
             return nullptr;
         }
 
-        T& firstMessByImmediate() {
-            static T r;
+        T firstMessByImmediate() {
+            T r;
             auto it = firstMessIteratorByImmediate();
             if (it == messages.end())
                 return r;

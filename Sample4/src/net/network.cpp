@@ -167,8 +167,8 @@ namespace P2P_MODEL
     }
 
 
-    string& network::latencyTableToStr() {
-        static string str;
+    string network::latencyTableToStr() {
+        string str;
         for (uint i = 0; i < m_latencyTable.size(); ++i) {
             str += string("in") + to_string(i) + string(" >") + LOG_TAB;
             for (uint j = 0; j < m_latencyTable[i].size(); ++j) {

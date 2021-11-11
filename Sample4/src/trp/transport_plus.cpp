@@ -14,8 +14,8 @@ namespace P2P_MODEL
 
 
 
-    chord_message& transport_plus::appMess2chordMess(const app_message& mess) {
-        static chord_message res;
+    chord_message transport_plus::appMess2chordMess(const app_message& mess) {
+        chord_message res;
         res.clear();
         res = mess;
 
@@ -35,8 +35,8 @@ namespace P2P_MODEL
     }
 
 
-    chord_message& transport_plus::chordByteMess2ChordMess(const chord_byte_message& mess) {
-        static chord_message res;
+    chord_message transport_plus::chordByteMess2ChordMess(const chord_byte_message& mess) {
+        chord_message res;
         res.clear();
         res = *(mess.fields);
         return res;
