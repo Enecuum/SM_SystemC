@@ -12,6 +12,7 @@ namespace P2P_MODEL
     struct message_wake_up_info {
         int     bufIndex;
         sc_time time;
+        sc_time creatingTime;
     };
 
 

@@ -31,6 +31,7 @@ namespace P2P_MODEL
         RX_MESS_RECEIVED,
         TX_MESS_SHOULD_SEND,
         TIMER_EXPIRED,
+        APPTXREQUEST,
         MAX_EVENT_TYPE,
         EVENT_TYPE_UNKNOWN
     };
@@ -53,30 +54,36 @@ namespace P2P_MODEL
         
         uint m_howManyBuffers;
         int  m_indexLastBufferCall;        
+        int m_timerBufferIndex;
+        int m_txMessBufferIndex;
+        buffer_container::iterator m_timerItForRemove;
 
         //map<uint, node_address> m_cwFingers;
         //map<uint, node_address> m_ccwFingers;
         //map<uint, sc_time>      m_latency;
         vector<node_address> m_seedAddrs;
-        node_address m_predecessor;
-        node_address m_successor;
+        node_address_latency m_predecessor;
+        node_address_latency m_successor;
         vector<node_address_latency>  m_cwFingers;  //clock wise fingers
         vector<node_address_latency>  m_ccwFingers; //counter clock wise fingers
         map<uint, sc_time>    m_latency;        
         chord_conf_parameters m_confParams; 
         map<uint160, sc_time> m_isAcked;
 
-        bool m_isSuccessorSet;
-        bool m_isPrecessorSet;
+        bool m_isFirstTimeSetSuccessor;
+        bool m_isPredecessorSet;
         
         vector<uint160> m_fingerMask;
+        bool m_isCwFingerUpdating;
         uint m_currCwFinger;
+        uint m_currCcwFinger;
         uint m_counterJoin;
         uint m_messageID;
-        int m_timerBufferIndex;
+
         int m_repeatCounter;
 
         string m_errCode;
+        
         
 
     public:
@@ -91,7 +98,7 @@ namespace P2P_MODEL
 
         void setSeedNodes(const vector<network_address>& seed);
         void setConfParameters(const chord_conf_parameters& params);
-        void pushNewMessage(const chord_message& mess);
+        void pushNewMessage(const chord_message& mess, const bool toBack = true);   
 
     private:
         void preinit();
@@ -100,30 +107,33 @@ namespace P2P_MODEL
         void hardReset();
         void softReset();
         void flush();
-        bool doResetFlushIfMess(const chord_message* mess);        
+        bool doResetFlushIfMess(const chord_message& mess, const bool existMess); 
 
         void goStateLoad(); 
-        void goStateInit(const chord_message* mess = nullptr);
-        void goStateJoin(const chord_message* mess = nullptr);
-        void goStateIdle(const chord_message* mess = nullptr);
-        void goStateIndata(const chord_message* mess = nullptr);
-        void goStateService(const chord_message* mess = nullptr);
-        void goStateUpdate(const chord_message* mess = nullptr);
-        void goStateApprequest(const chord_message* mess = nullptr);
+        void goStateInit(const chord_message& mess, const bool existMess = true);
+        void goStateJoin(const chord_message& mess, const bool existMess = true);
+        void goStateIdle(const chord_message& mess, const bool existMess = true);
+        void goStateIndata(const chord_message& mess, const bool existMess = true);
+        void goStateService(const chord_message& mess, const bool existMess = true);
+        void goStateUpdate(const chord_message& mess , const bool existMess = true);
+        void goStateApprequest(const chord_message& mess, const bool existMess = true);
 
         
 
         bool isAddrValid(const chord_message& mess);
         bool isMessageIDvalid(const chord_message& mess, buffer_container::iterator& it);
-        int checkMessage(const chord_message& mess, buffer_container::iterator& it, const string& errCode);
+        int  checkMessage(const chord_message& mess, buffer_container::iterator& it, const string& errCode);
+        int  checkMessage(const chord_message& mess, chord_timer_message& timer, const string& errCode);
 
-        int chordMessType2buffIndex(const uint type);
+        int  chordMessType2buffIndex(const uint type);
         chord_message firstMessByPriority(bool& exist);
         void eraseFirstMess();
-        void pushNewTimer(const uint type, const uint retryCounter, const chord_byte_message_fields* retryMess = nullptr);
-        void removeTimer(const uint timerType, const uint retryMessType, const uint retryMessID);
+        void eraseTxMess(const chord_tx_message_type type);
+        void pushNewTimer(const chord_timer_message_type type, const uint retryCounter, const uint requestCounter, const chord_byte_message_fields& retryMess);
+        void removeTimer(const chord_timer_message_type timerType, const chord_tx_message_type retryMessType, const uint retryMessID);
         void removeTimer(buffer_container::iterator timerIt);
-        buffer_container::iterator findMessageOnTimersWithRetryParams(bool& exist, const uint timerType, const vector<uint>& retryMessType, const uint messageID);
+        void removeTimers(const vector<chord_timer_message_type>& timerType, const vector<chord_tx_message_type>& retryMessTypes, const uint retryMessID);
+        buffer_container::iterator findMessageOnTimersWithRetryParams(bool& exist, const chord_timer_message_type timerType, const vector<chord_tx_message_type>& retryMessType, const uint messageID);
         
         void sendMessage(const chord_message& mess);
 
@@ -144,9 +154,23 @@ namespace P2P_MODEL
         chord_message createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
         chord_message createSingleMessage(const node_address& addr);
         
-        event_type eventType(const chord_message* mess = nullptr);
+        event_type eventType(const chord_message& mess, const bool existMess);
 
         uint nextUniqueMessageID();
+
+        //void issueJoinMessageWithRetryParams();
+      
+        
+        bool setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
+        void setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
+
+        bool issueMessagePushTimers(const chord_tx_message_type& type, const bool isRetry, const uint requestCounter, const chord_byte_message_fields& rxMess, const chord_timer_message& expiredTimer);
+
+        void setNextState(const finite_state& state);
+
+        void setCopyPreviousFinger();
+
+        bool repeatMessage(const chord_tx_message_type& type,/* const bool isRetry, */const chord_byte_message_fields& rxMess, const chord_timer_message& expiredTimer);
     };
 }
 #endif

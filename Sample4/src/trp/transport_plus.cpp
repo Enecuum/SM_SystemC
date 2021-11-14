@@ -28,7 +28,7 @@ namespace P2P_MODEL
         case APP_BROADCAST: res.type = CHORD_BROADCAST;   break;
         default:
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "appMess2chordMess", DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR, "appMess2chordMess", ALL_LOG);
             res.clear();
         }
         return res;
@@ -37,8 +37,7 @@ namespace P2P_MODEL
 
     chord_message transport_plus::chordByteMess2ChordMess(const chord_byte_message& mess) {
         chord_message res;
-        res.clear();
-        res = *(mess.fields);
+        res = mess.fields;
         return res;
     }
 

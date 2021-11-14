@@ -67,7 +67,6 @@ namespace P2P_MODEL
             *this = src;
         }
 
-
         void clearMessages() {
             messages.clear();            
             messCounter = 0;
@@ -82,17 +81,18 @@ namespace P2P_MODEL
             this->maxSize = maxSize;
         }
 
-        bool push(const T& r) {
-            if (messages.size() < maxSize) {
-                messages.push_back(r);
-                return true;
-            }
-            else {
-                cout << "BUFFER OVERFLOW" << toStr() << std::endl;
+        bool push(const T& r, const bool toBack = true) {
+            bool pushWithoutErase = true;
+            if (messages.size() >= maxSize) {
+                pushWithoutErase = false;
                 messages.erase(messages.begin());
+            }
+                        
+            if (toBack)
                 messages.push_back(r);
-                return false;
-            }            
+            else
+                messages.push_front(r);
+            return pushWithoutErase;
         }
 
         uint size() const {
@@ -104,33 +104,42 @@ namespace P2P_MODEL
         uint buffType() const {
             return type;
         }
-
-        T* mess(const size_t index) {
-            auto it = messages.begin();
-            if (index < messages.size()) {
-                advance(it, index);
+        
+        T mess(const size_t index) {
+            auto it = messIterator(index) 
+            if (it != messages.end())
+                return T();
+            return *it;
+        }                
+        
+        T* messPointer(const size_t index) {
+            auto it = messIterator(index);                 
+            if (it != messages.end())                
                 return &(*it);
-            }
             return nullptr;
         }
 
+        typename t_buffer_container(T)::iterator messIterator(const size_t index) {
+            auto it = messages.begin();
+            if (index < messages.size()) {
+                advance(it, index);
+                return it;
+            }
+            return messages.end();
+        }
+
         T firstMessByImmediate() {
-            T r;
             auto it = firstMessIteratorByImmediate();
-            if (it == messages.end())
-                return r;
-            return *it;
+            if (it != messages.end())
+                return *it;
+            return T();
         }
 
         T* firstMessPointerByImmediate() {
             auto it = firstMessIteratorByImmediate();
-            if (it == messages.end())
-                return nullptr;
-            return &(*it);
-        }
-
-        void eraseMess(const typename t_buffer_container(T)::iterator& it) {
-            messages.erase(it);
+            if (it != messages.end())
+                return &(*it);
+            return nullptr;
         }
 
         void eraseFirstMess() {
@@ -138,52 +147,92 @@ namespace P2P_MODEL
                 eraseMess(messages.begin());
         }
 
-        void eraseMess(const uint messType, const uint retryMessType, const uint retryMessID) {
-            bool exist;
-            typename t_buffer_container(T)::iterator it = find1Mess(exist, messType, retryMessType, retryMessID);
-            if (exist == true)
-                eraseMess(it);
+        void eraseMess(const typename t_buffer_container(T)::iterator& it) {
+            messages.erase(it);
         }
 
         void eraseMess(const uint messType) {
             bool exist;
-            typename t_buffer_container(T)::iterator it = find1Mess(exist, messType);
-            if (exist == true)
-                erase(it);
-        }
-
-        typename t_buffer_container(T)::iterator find1Mess(bool& exist, const uint messType, const uint retryMessType, const uint retryMessID) {
-            vector<uint> retryMessTypes(1, retryMessType);
-            return find1Mess(exist, messType, retryMessTypes, retryMessID);
-        }
-
-        typename t_buffer_container(T)::iterator find1Mess(bool& exist, uint messType) {
             vector<uint> retryMessTypes;
-            return find1Mess(exist, messType, retryMessTypes, retryMessID);
+            typename t_buffer_container(T)::iterator it = find1Mess(exist, messType, retryMessTypes, 0);
+            if (exist == true)
+                eraseMess(it);
+        }
+
+
+        void eraseMess(const uint messType, const uint retryMessType, const uint retryMessID) {
+            bool exist;
+            vector<uint> retryMessTypes(1, retryMessType);
+            typename t_buffer_container(T)::iterator it = find1Mess(exist, messType, retryMessTypes, retryMessID);
+            if (exist == true)
+                eraseMess(it);
+        }
+
+        void eraseAllMess(const vector<uint>& messTypes, const vector<uint>& retryMessTypes, const vector<uint>& retryMessIDs) {
+            bool exist;            
+            vector<typename t_buffer_container(T)::iterator> all = findAllMess(exist, messTypes, retryMessTypes, retryMessIDs);
+            if (exist == true) {
+                for (uint i = 0; i < all.size(); ++i) {
+                    eraseMess(all[i]);
+                }
+            }
+        }
+
+
+        typename t_buffer_container(T)::iterator find1Mess(bool& exist, const uint messType) {
+            vector<uint> retryMessTypes;
+            vector<uint> messTypes(1, messType);    
+            vector<typename t_buffer_container(T)::iterator> all = findAllMess(exist, messTypes, vector<uint>(),0);            
+            if (all.size() > 0)
+                return *(all.begin());
+            return (typename t_buffer_container(T)::iterator());
         }
 
         typename t_buffer_container(T)::iterator find1Mess(bool& exist, const uint messType, const vector<uint>& retryMessTypes, const uint retryMessID) {
+            vector<uint> messTypes(1, messType);
+            vector<uint> retryMessIDs(1, retryMessID);
+            vector<typename t_buffer_container(T)::iterator> all = findAllMess(exist, messTypes, retryMessTypes, retryMessIDs);
+            if (all.size() > 0)
+                return *(all.begin());
+
+            return (typename t_buffer_container(T)::iterator());
+        }
+
+
+
+        vector<typename t_buffer_container(T)::iterator> findAllMess(bool& exist, const vector<uint>& messTypes, const vector<uint>& retryMessTypes, const vector<uint>& retryMessIDs) {
+            exist = false;
+            vector<t_buffer_container(T)::iterator> resIt;
             for (auto it = messages.begin(); it != messages.end(); ++it) {
-                chord_message& m = (*it);
-                if (m.type == messType) {
-                    if (retryMessTypes.size() == 0) {
-                        exist = true;
-                        return it;
-                    }
-                    else {
-                        if (m.retryMess != nullptr) {
-                            for (uint i = 0; i < retryMessTypes.size(); ++i) {
-                                if ((m.retryMess->type == retryMessTypes[i]) && (m.retryMess->messageID == retryMessID)) {
-                                    exist = true;
-                                    return it;
+                chord_message& currMess = (*it);
+                for (uint i1 = 0; i1 < messTypes.size(); ++i1) {
+                    if (currMess.type == messTypes[i1]) {
+                        if (retryMessTypes.size() == 0) {
+                            exist = true;
+                            resIt.push_back(it);                            
+                        }
+                        else {
+                            for (uint i2 = 0; i2 < retryMessTypes.size(); ++i2) {
+                                if (currMess.retryMess.type == retryMessTypes[i2]) {
+                                    if (retryMessIDs.size() == 0) {
+                                        exist = true;
+                                        resIt.push_back(it);
+                                    }
+                                    else {
+                                        for (uint i3 = 0; i3 < retryMessIDs.size(); ++i3) {
+                                            if (currMess.retryMess.messageID == retryMessIDs[i3]) {
+                                                exist = true;
+                                                resIt.push_back(it);                                        
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            exist = false;
-            return messages.end();
+            return resIt;
         }
 
 

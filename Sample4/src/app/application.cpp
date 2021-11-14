@@ -89,7 +89,7 @@ namespace P2P_MODEL
                 default:
                     //ERROR
                     m_logText = "run" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED;
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                    msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
                     return;
                 }
             }
@@ -105,7 +105,7 @@ namespace P2P_MODEL
             if (!(type < m_reqs.size())) {
                 //ERROR
                 m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + sim_message().type2str(type);
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
                 return;
             }
 
@@ -114,7 +114,7 @@ namespace P2P_MODEL
             if (currReq->type != type) {
                 //ERROR
                 m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + sim_message().type2str(type);
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
                 return;
             }
 
@@ -137,7 +137,7 @@ namespace P2P_MODEL
             default:
                 //ERROR
                 m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + currReq->type2str();
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
                 return;
             }
             m_sentReqCounter[type]++;
@@ -179,7 +179,7 @@ namespace P2P_MODEL
             default:
                 //ERROR        
                 m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + currReq->type2str();
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
                 break;
             }
         }
@@ -211,7 +211,7 @@ namespace P2P_MODEL
         case SIM_CONF:       return APP_CONF;
         default:
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, string("simMessType2appMessType") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR, string("simMessType2appMessType") + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
             return APP_UNKNOWN;
         }
     }
@@ -226,7 +226,7 @@ namespace P2P_MODEL
 
         if (!(s.type < MAX_SIM_MESS_TYPE)) {
             //ERROR
-            msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, string("doRandSimMess ") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_TX, LOG_ERROR, string("doRandSimMess ") + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
             m_randSimReq[0].clear();
             return m_randSimReq[0];
         }
@@ -285,7 +285,7 @@ namespace P2P_MODEL
 
                 default:
                     //ERROR
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, string("doRandSimMess ") + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
+                    msgLog(name(), LOG_TX, LOG_ERROR, string("doRandSimMess ") + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
                     break;
                 }
             }
@@ -329,7 +329,7 @@ namespace P2P_MODEL
 
             default:
                 //ERROR
-                msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, "createAppMess " + LOG_ERROR_NOT_RECOGNIZED, DEBUG_LOG | ERROR_LOG);
+                msgLog(name(), LOG_TX, LOG_ERROR, "createAppMess " + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
                 break;
             }
         }

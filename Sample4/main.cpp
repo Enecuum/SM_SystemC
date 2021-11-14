@@ -145,13 +145,13 @@ int main(int argc, char* argv[])
     transport2.setConfParameters(params2);
 
 
-    //Set configuration parameters of Network model (simplified simulation model of TCP/IP network or network on UDP protocol)    
+    //Set configuration parameters of Network model (simplified simulation model of TCP/UDP network)    
     vector<network_address> addrs;
     addrs.push_back( params1.netwAddr );
     addrs.push_back( params2.netwAddr );
 
     network1.setNodeAddressList(addrs);
-    network1.setRandomLatencyTable(100, 150, 0);
+    network1.setRandomLatencyTable(1, 10, 0);
     network1.msgLog(network1.name(), LOG_TXRX, LOG_INFO, string("latencies, ms: \n") + network1.latencyTableToStr(), ALL_LOG);
 
 

@@ -24,20 +24,20 @@ namespace P2P_MODEL
 
     void network::push_into_network(const chord_byte_message& networkDataUnit) {
         //Needs to parse fields of chord_byte_message into chord_byte_message_fields
-        auto it = m_portIndexByNodeID.find(networkDataUnit.fields->destNodeIDwithSocket.id);
-        chord_byte_message_fields r = *(networkDataUnit.fields);
+        auto it = m_portIndexByNodeID.find(networkDataUnit.fields.destNodeIDwithSocket.id);
+        const_cast<chord_byte_message&>(networkDataUnit).fields.netwokrStartTime = sc_time_stamp();
 
         if (it == m_portIndexByNodeID.end()) {
             //ERROR
-            m_logText = "push_into_network" + LOG_TAB + string("NOT FOUND OUTPORT ") + r.toStr();
-            msgLog(name(), LOG_RX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+            m_logText = "push_into_network" + LOG_TAB + string("not found network buffer  ") + networkDataUnit.fields.toStr();
+            msgLog(name(), LOG_RX, LOG_ERROR, m_logText, ALL_LOG);
         }
         else {
             uint portIndex = it->second;
             if (portIndex >= m_buffMess.size()) {
                 //ERROR
-                m_logText = "push_into_network" + LOG_TAB + string("NOT FOUND BUFFER for outport") + to_string(portIndex);
-                msgLog(name(), LOG_RX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                m_logText = "push_into_network" + LOG_TAB + string("not found network buffer for outport") + to_string(portIndex);
+                msgLog(name(), LOG_RX, LOG_ERROR, m_logText, ALL_LOG);
             }
             else { 
                 m_buffMess[portIndex].push_back(networkDataUnit);
@@ -45,8 +45,8 @@ namespace P2P_MODEL
                 m_eventCheckReceive.notify(0, SC_NS);
                 m_hasNewMess = true;
 
-                m_logText = "push_into_network" + LOG_TAB + string("out") + to_string(portIndex) + LOG_SPACE + r.toStr();
-                msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);
+                m_logText = "push_into_network" + LOG_TAB + string("->") + to_string(portIndex) + LOG_SPACE + networkDataUnit.fields.toStr();
+                msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | EXTERNAL_LOG);
             }            
         }
     }
@@ -60,21 +60,22 @@ namespace P2P_MODEL
                 portIndex = i;
                 auto messIt = m_buffMess[portIndex].begin();
 
-                auto portIndexIt = m_portIndexByNodeID.find(messIt->fields->srcNodeIDwithSocket.id);
+                auto portIndexIt = m_portIndexByNodeID.find(messIt->fields.srcNodeIDwithSocket.id);
                 if (portIndexIt == m_portIndexByNodeID.end()) {
                     //ERROR
-                    m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND INPORT ") + messIt->fields->toStr();
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                    m_logText = "checkReceive" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + messIt->fields.toStr();
+                    msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
                     return;
                 }
                 
                 uint from = portIndexIt->second;
 
-                portIndexIt = m_portIndexByNodeID.find(messIt->fields->destNodeIDwithSocket.id);
+                portIndexIt = m_portIndexByNodeID.find(messIt->fields.destNodeIDwithSocket.id);
                 if (portIndexIt == m_portIndexByNodeID.end()) {
                     //ERROR
-                    m_logText = "checkReceive" + LOG_TAB + string("NOT FOUND OUTPORT ") + messIt->fields->toStr();
-                    msgLog(name(), LOG_TX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                    m_logText = "checkReceive" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + messIt->fields.toStr();
+                    msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
+                    return;
                 }
                 
                 uint to = portIndexIt->second;
@@ -94,13 +95,15 @@ namespace P2P_MODEL
                     else
                         millisec -= randValue;
                 }
-                m_wakeUpInfo[portIndex].bufIndex = i;
+                
                 sc_time delay = sc_time(millisec, SC_MS);
                 m_wakeUpInfo[portIndex].time = sc_time_stamp() + delay;
+                m_wakeUpInfo[portIndex].bufIndex = i;
+                m_wakeUpInfo[portIndex].creatingTime = sc_time_stamp();
                 m_eventSend[portIndex]->notify(delay);
                 
-                m_logText = "checkReceive" + LOG_TAB + to_string(from) + string("->") + to_string(to) + LOG_SPACE + messIt->fields->toStr();
-                msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | ERROR_LOG);                
+                m_logText = "checkReceive" + LOG_TAB + to_string(from) + string("->") + to_string(to) + LOG_SPACE + messIt->fields.toStr();
+                msgLog(name(), LOG_RX, LOG_IN, m_logText, DEBUG_LOG | EXTERNAL_LOG);                
                 
                 //m_eventCheckReceive.notify(0, SC_NS); 
             }
@@ -116,8 +119,8 @@ namespace P2P_MODEL
                 //Container has no nodeID 
                 if (portIndex >= trp_ports.size()) {
                     //ERROR
-                    m_logText = "setNodeAddressList" + LOG_TAB + string("NOT FOUND PORT nodeID: ") + nodeID.to_string();
-                    msgLog(name(), LOG_TXRX, LOG_ERROR_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG);
+                    m_logText = "setNodeAddressList" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + string("nodeID: ") + nodeID.to_string(SC_HEX_US);
+                    msgLog(name(), LOG_TXRX, LOG_ERROR, m_logText, ALL_LOG);
                     return;
                 }
         
@@ -244,20 +247,26 @@ namespace P2P_MODEL
         case CHORD_TX_SINGLE:              res = CHORD_RX_SINGLE;               break;
         default:
             //ERROR
-            msgLog(name(), LOG_RX, LOG_ERROR_INDICATOR, "specifyNewMessType CHORD_UNKNOWN", DEBUG_LOG | ERROR_LOG);
+            msgLog(name(), LOG_RX, LOG_ERROR, "specifyNewMessType CHORD_UNKNOWN", ALL_LOG);
         }
         return res;
     }
 
 
     void network::send() {
+        //static bool wasTransmitting;
+        //wasTransmitting = false;
         for (uint i = 0; i < m_wakeUpInfo.size(); ++i) {
+            string currTimeStr = sc_time_stamp().to_string();
+            string wakeUpTimeStr = m_wakeUpInfo[i].time.to_string();
+            string creatingTimeStr = m_wakeUpInfo[i].creatingTime.to_string();
             if ((m_wakeUpInfo[i].bufIndex != CAN_USE) && (m_wakeUpInfo[i].time <= sc_time_stamp())) {
+                //wasTransmitting = true;
                 auto messIt = m_buffMess[i].begin();
-                messIt->fields->type = specifyNewMessType(messIt->fields->type);
+                messIt->fields.type = specifyNewMessType(messIt->fields.type);
 
-                m_logText = "send" + LOG_TAB + "->" + to_string(i) + LOG_SPACE + messIt->fields->toStr();
-                msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | ERROR_LOG);
+                m_logText = "send" + LOG_TAB + "->" + to_string(i) + LOG_SPACE + messIt->fields.toStr();
+                msgLog(name(), LOG_TX, LOG_OUT, m_logText, DEBUG_LOG | EXTERNAL_LOG);
 
                 (*(trp_ports[i]))->receive_mess(*messIt);
                 m_buffMess[i].erase(messIt);
@@ -267,13 +276,10 @@ namespace P2P_MODEL
             }  
             else if (m_wakeUpInfo[i].bufIndex != CAN_USE) {
                 m_eventSend[i]->notify(m_wakeUpInfo[i].time - sc_time_stamp());
-
-                m_logText = to_string(sc_time_stamp().to_double()) + LOG_SPACE + to_string(m_wakeUpInfo[i].time.to_double());
-                msgLog(name(), LOG_TX, LOG_WARNING_INDICATOR, m_logText, DEBUG_LOG | ERROR_LOG | EXTERNAL_LOG);
-                cout << m_logText << endl;
+                //m_logText = to_string(sc_time_stamp().to_seconds()) + LOG_SPACE + to_string(m_wakeUpInfo[i].time.to_seconds());
+                //msgLog(name(), LOG_TX, LOG_WARNING, m_logText, ALL_LOG);
+                //cout << m_logText << endl;
             }
         }
     }
 }
-
-

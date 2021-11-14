@@ -2,7 +2,7 @@
 
 namespace P2P_MODEL
 {
-    ostream& operator<< (ostream& out, network_address& r) {
+    ostream& operator<< (ostream& out, const network_address& r) {
         out << r.toStr();
         return out;
     }
@@ -13,8 +13,7 @@ namespace P2P_MODEL
         return false;
     }
 
-
-    ostream& operator<< (ostream& out, node_address& r) {
+    ostream& operator<< (ostream& out, const node_address& r) {
         out << r.toStr();
         return out;
     }
@@ -26,8 +25,7 @@ namespace P2P_MODEL
         return false;
     }
 
-
-    ostream& operator<< (ostream& out, node_address_latency& r) {
+    ostream& operator<< (ostream& out, const node_address_latency& r) {
         out << r.toStr();
         return out;
     }
@@ -37,41 +35,44 @@ namespace P2P_MODEL
             if (l.latency == r.latency)
                 return true;
         return false;
-    }
+    }    
     
-    
-    ostream& operator<< (ostream& out, app_message& r) {
+    ostream& operator<< (ostream& out, const app_message& r) {
         out << r.toStr();
         return out;
     }
 
-
-    ostream& operator<< (ostream& out, chord_conf_message& r) {
+    ostream& operator<< (ostream& out, const chord_conf_message& r) {
         out << r.toStr();
         return out;
     }
 
-    ostream& operator<< (ostream& out, chord_apptx_message& r) {
+    ostream& operator<< (ostream& out, const chord_apptx_message& r) {
         out << r.toStr();
         return out;
     }
 
-    ostream& operator<< (ostream& out, chord_timer_message& r) {
+    ostream& operator<< (ostream& out, const chord_timer_message& r) {
         out << r.toStr();
         return out;
     }
 
-    ostream& operator<< (ostream& out, chord_bits_flags& r) {
+    ostream& operator<< (ostream& out, const chord_bits_flags& r) {
         out << r.toStr();
         return out;
     }
 
-    ostream& operator<< (ostream& out, chord_byte_message_fields& r) {
+    ostream& operator<< (ostream& out, const chord_byte_message_fields& r) {
         out << r.toStr();
         return out;
     }
 
-    ostream& operator<< (ostream& out, chord_byte_message& r) {
+    ostream& operator<< (ostream& out, const chord_byte_message& r) {
+        out << r.toStr();
+        return out;
+    }
+
+    ostream& operator<< (ostream& out, chord_message& r) {
         out << r.toStr();
         return out;
     }

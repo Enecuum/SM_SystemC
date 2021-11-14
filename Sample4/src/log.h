@@ -14,17 +14,20 @@ namespace P2P_MODEL
     const string LOG_IN                   = string("< < <");
     const string LOG_OUT                  = string("> > >");
     const string LOG_INFO                 = string(":::::");
-    const string LOG_WARNING_INDICATOR    = string("!!!!!");
-    const string LOG_ERROR_INDICATOR      = LOG_WARNING_INDICATOR;
+    const string LOG_WARNING              = string("!!!!!");
+    const string LOG_ERROR                = string("ERROR");
     const string LOG_ERROR_OVERFLOW       = string("OVERFLOW BUFFER");
     const string LOG_ERROR_NO_ADDR        = string("NO ADDR");
     const string LOG_ERROR_NULLPTR        = string("NULLPTR");
     const string LOG_ERROR_NOT_RECOGNIZED = string("UNKNOWN, NOT RECOGNIZED");
+    const string LOG_ERROR_INVALID_RANGE  = string("OUT OF RANGE");
     const string LOG_ERROR_INVALID_ADDR   = string("DROP MESS, UNKNOWN ADDR");
     const string LOG_ERROR_INVALID_MESS_ID = string("DROP MESS, UNKNOWN MESS ID");    
 
 
-    #define LOG_ERROR_MESS(m)  string("m");
+    #define LOG_MESS(m)  string("m");
+    #define LOG_BOOL(m)   (m == true ? string("yes") : string("no"))
+    #define LOG_DEC_BOOL(m)   (m == 1 ? string("yes") : string("no"))
 
     const int MAX_LEN_METHOD_NAME = 30;
     const int MAX_LEN_TIME = 20;
