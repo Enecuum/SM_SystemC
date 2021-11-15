@@ -16,7 +16,7 @@ namespace P2P_MODEL
     typedef chord_message*             buffer_element_pointer;
     #define t_container                list 
     #define t_buffer_container(a)      t_container<a>
-    typedef t_container<chord_message> buffer_container;
+    typedef t_container<buffer_element> buffer_container;
 
     enum buffer_type {
         BUFF_CONFIG = 0,
@@ -142,40 +142,49 @@ namespace P2P_MODEL
             return nullptr;
         }
 
-        void eraseFirstMess() {
-            if (messages.size() > 0)
+        bool eraseFirstMess() {
+            if (messages.size() > 0) {
                 eraseMess(messages.begin());
+                return true;
+            }
+            return false;
         }
 
-        void eraseMess(const typename t_buffer_container(T)::iterator& it) {
-            messages.erase(it);
+        bool eraseMess(const typename t_buffer_container(T)::iterator& it) {
+            if (it != messages.end()) {
+                messages.erase(it);
+                return true;
+            }
+            return false;
         }
 
-        void eraseMess(const uint messType) {
+        bool eraseMess(const uint messType) {
             bool exist;
             vector<uint> retryMessTypes;
             typename t_buffer_container(T)::iterator it = find1Mess(exist, messType, retryMessTypes, 0);
-            if (exist == true)
-                eraseMess(it);
+            if (exist == true) 
+                return eraseMess(it);
+            return false;
         }
 
 
-        void eraseMess(const uint messType, const uint retryMessType, const uint retryMessID) {
+        bool eraseMess(const uint messType, const uint retryMessType, const uint retryMessID) {
             bool exist;
             vector<uint> retryMessTypes(1, retryMessType);
             typename t_buffer_container(T)::iterator it = find1Mess(exist, messType, retryMessTypes, retryMessID);
             if (exist == true)
-                eraseMess(it);
+                return eraseMess(it);
+            return false;
         }
 
-        void eraseAllMess(const vector<uint>& messTypes, const vector<uint>& retryMessTypes, const vector<uint>& retryMessIDs) {
+        bool eraseAllMess(const vector<uint>& messTypes, const vector<uint>& retryMessTypes, const vector<uint>& retryMessIDs) {
             bool exist;            
             vector<typename t_buffer_container(T)::iterator> all = findAllMess(exist, messTypes, retryMessTypes, retryMessIDs);
             if (exist == true) {
-                for (uint i = 0; i < all.size(); ++i) {
-                    eraseMess(all[i]);
-                }
+                for (uint i = 0; i < all.size(); ++i) 
+                    eraseMess(all[i]);                
             }
+            return exist;
         }
 
 

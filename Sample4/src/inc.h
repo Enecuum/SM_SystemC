@@ -337,6 +337,8 @@ namespace P2P_MODEL {
     class node_address_latency: virtual public node_address {
     public:
         sc_time latency;
+        uint fingerIndex;
+        bool isClockWise;
         bool isUpdated;
 
         node_address_latency() {
@@ -344,7 +346,8 @@ namespace P2P_MODEL {
         };
 
         node_address_latency(const node_address_latency& src) {
-            set(src);
+            latency = src.latency;
+            isUpdated = src.isUpdated;
         }
 
         node_address_latency(const node_address& src) {
@@ -354,18 +357,22 @@ namespace P2P_MODEL {
 
         node_address_latency(const network_address& src) {
             clear();
-            network_address::set(src);
+            network_address::set(src);            
         }
 
         void clear() {
             node_address::clear();
             latency = DEFAULT_LATENCY;
+            fingerIndex = 0;
+            isClockWise = true;
             isUpdated = false;
         }
 
-        void set(const node_address_latency& src) {
+        void setCopy(const node_address_latency& src) {
             node_address::set(src.ip, src.inSocket, src.outSocket);
             latency = src.latency;
+            fingerIndex = src.fingerIndex;
+            isClockWise = src.isClockWise;
             isUpdated = src.isUpdated;
         }
 
@@ -375,11 +382,12 @@ namespace P2P_MODEL {
 
             node_address::operator=(src);
             this->latency = src.latency;
+            this->isUpdated = src.isUpdated;
             return *this;
         }
 
         string toStr() const {
-            string str = node_address::toStr() + string(" ") + latency.to_string() + (isUpdated ? string(" updated") : string(" old"));
+            string str = node_address::toStr() + string(" ") + latency.to_string() + string(" index ") + to_string(fingerIndex) + string(" cw ") + (isClockWise ? string("yes") : string("no")) + (isUpdated ? string(" upd") : string(" old"));
             return str;
         }
 
@@ -888,7 +896,7 @@ namespace P2P_MODEL {
             str += string("s ") + srcNodeIDwithSocket.toStr() + string(" ");            
             str += string("i ") + initiatorNodeIDwithSocket.toStr() + string(" ");           
             //string hex = searchedNodeIDwithSocket.to_string(SC_HEX_US); hex.erase(0, 4);
-            str += string("sID") + searchedNodeIDwithSocket.toStr() + string(" ");
+            str += string("sID ") + searchedNodeIDwithSocket.toStr() + string(" ");
             str += string("pS ") + to_string(payload.size());
             return str;
         }
@@ -905,7 +913,7 @@ namespace P2P_MODEL {
        uint retryCounter;
        uint requestCounter;
        finite_state issuedState;
-       bool isWait;
+       bool isDelayed;
 
 
         chord_timer_message()/*: retryMess(nullptr)*/ {
@@ -939,7 +947,7 @@ namespace P2P_MODEL {
             retryCounter = src.retryCounter;
             requestCounter = src.requestCounter;
             issuedState = src.issuedState;
-            isWait = false;
+            isDelayed = false;
             return *this;
         }
 
@@ -955,7 +963,7 @@ namespace P2P_MODEL {
             retryCounter = 0;
             requestCounter = 0;
             issuedState = STATE_UNKNOWN;
-            isWait = false;
+            isDelayed = false;
         }
 
         string type2str(const int& type = NONE) const {

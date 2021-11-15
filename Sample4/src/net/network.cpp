@@ -237,8 +237,8 @@ namespace P2P_MODEL
         case CHORD_TX_ACK:                 res = CHORD_RX_ACK;                  break;
         case CHORD_TX_SUCCESSOR:           res = CHORD_RX_SUCCESSOR;            break;
         case CHORD_TX_FIND_SUCCESSOR:      res = CHORD_RX_FIND_SUCCESSOR;       break;
-        case CHORD_TX_PREDECESSOR:         res = CHORD_RX_SUCCESSOR;            break;
-        case CHORD_TX_FIND_PREDECESSOR:    res = CHORD_RX_FIND_SUCCESSOR;       break;
+        case CHORD_TX_PREDECESSOR:         res = CHORD_RX_PREDECESSOR;          break;
+        case CHORD_TX_FIND_PREDECESSOR:    res = CHORD_RX_FIND_PREDECESSOR;     break;
         case CHORD_TX_FWD_BROADCAST:       res = CHORD_RX_BROADCAST;            break;
         case CHORD_TX_FWD_MULTICAST:       res = CHORD_RX_MULTICAST;            break;
         case CHORD_TX_FWD_SINGLE:          res = CHORD_RX_SINGLE;               break;
