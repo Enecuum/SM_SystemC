@@ -3,42 +3,57 @@
 0.001               	transport_2.low_latency_chord 	TxRx	:::::	INIT	_# Without
 0.001               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# Without
 0.001               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	issueMessagePushTimers TX_JOIN mID 0 retryC 0(1)
-0.001               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage TX_JOIN mID 0 pid 1 f t JOIN a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab9 pS 0
+0.001               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage TX_JOIN mID 0 pid 1 f t JOIN a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i C0.A8.0.2 115c 457 000000001 sID C0.A8.0.2 115c 457 000000002 pS 0
 0.001               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	set TIMER_SUCCESSOR_JOIN mID 0 retryC 0 reqC 0
 0.001               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	set TIMER_ACK mID 0 retryC 0 reqC 0
-0.001               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# TX_JOIN mID 0 pid 1 f t JOIN a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab9 pS 0
-0.001               	transport_2.low_latency_chord 	Tx  	> > >	JOIN	sendMessage	TX_JOIN mID 0 pid 1 f t JOIN a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab9 pS 0
-0.013               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage RX_ACK mID 0 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 pS 0
-0.013               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_ACK mID 0 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 pS 0
-0.013               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK mID 0
-0.019               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage RX_SUCCESSOR mID 0 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 pS 0
-0.019               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_SUCCESSOR mID 0 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 pS 0
-0.019               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK TIMER_SUCCESSOR_JOIN  mID 0
-0.019               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	setSuccessorRemoveTimers successor(finger 0) C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 1 s index 0 cw yes upd
-0.019               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	issueMessagePushTimers TX_FIND_SUCCESSOR mID 432 retryC 0(1)
-0.019               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage TX_FIND_SUCCESSOR mID 432 pid 1 f t FIND_SUCCESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID -1.-1.-1.-1 0 0 82aef1134f9a2f7abf75b2d58e935956619d3aba pS 0
-0.019               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	set TIMER_SUCCESSOR mID 432 retryC 0 reqC 0
-0.019               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	set TIMER_ACK mID 432 retryC 0 reqC 0
-0.019               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# TX_FIND_SUCCESSOR mID 432 pid 1 f t FIND_SUCCESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID -1.-1.-1.-1 0 0 82aef1134f9a2f7abf75b2d58e935956619d3aba pS 0
-0.019               	transport_2.low_latency_chord 	Tx  	> > >	JOIN	sendMessage	TX_FIND_SUCCESSOR mID 432 pid 1 f t FIND_SUCCESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID -1.-1.-1.-1 0 0 82aef1134f9a2f7abf75b2d58e935956619d3aba pS 0
-0.031               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage RX_ACK mID 432 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 pS 0
-0.031               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_ACK mID 432 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 pS 0
-0.031               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK mID 432
-0.037               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage RX_SUCCESSOR mID 432 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 pS 0
-0.037               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_SUCCESSOR mID 432 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 pS 0
-0.037               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK TIMER_SUCCESSOR  mID 432
-0.037               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	setFingerRemoveTimers C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239
-0.037               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
-0.037               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	set TIMER_UPDATE mID 0 retryC 0 reqC 0
-1.037               	transport_2.low_latency_chord 	TxRx	:::::	IDLE	_# TIMER_UPDATE mID 0 retryC 0 reqC 0
-1.037               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# TIMER_UPDATE mID 0 retryC 0 reqC 0
-1.037               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	issueMessagePushTimers TX_FIND_PREDECESSOR mID 557 retryC 0(1)
-1.037               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	pushNewMessage TX_FIND_PREDECESSOR mID 557 pid 1 f t FIND_PREDECESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID -1.-1.-1.-1 0 0 6905e743f079eb86cec3c8e5ae5b76c526e90238 pS 0
-1.037               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	set TIMER_PREDECESSOR mID 557 retryC 0 reqC 0
-1.037               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	set TIMER_ACK mID 557 retryC 0 reqC 0
-1.037               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# TX_FIND_PREDECESSOR mID 557 pid 1 f t FIND_PREDECESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID -1.-1.-1.-1 0 0 6905e743f079eb86cec3c8e5ae5b76c526e90238 pS 0
-1.037               	transport_2.low_latency_chord 	Tx  	> > >	UPDATE	sendMessage	TX_FIND_PREDECESSOR mID 557 pid 1 f t FIND_PREDECESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 s C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 i C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 sID -1.-1.-1.-1 0 0 6905e743f079eb86cec3c8e5ae5b76c526e90238 pS 0
-1.049               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	pushNewMessage RX_PREDECESSOR mID 557 pid 1 f t PREDECESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 pS 0
-1.049               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# RX_PREDECESSOR mID 557 pid 1 f t PREDECESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 82aef1134f9a2f7abf75b2d58e935956619d3ab8 s C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 i -1.-1.-1.-1 0 0 0000000000000000000000000000000000000000 sID C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 pS 0
-1.049               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	remove TIMER_ACK TIMER_PREDECESSOR  mID 557
-1.049               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	stabilizeSetSuccessor successor(cwfinger 0) C0.A8.0.1 115c 457 6905e743f079eb86cec3c8e5ae5b76c526e90239 1 s index 0 cw yes old
+0.001               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+0.001               	transport_2.low_latency_chord 	Tx  	> > >	IDLE	sendMessage	TX_JOIN mID 0 pid 1 f t JOIN a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i C0.A8.0.2 115c 457 000000001 sID C0.A8.0.2 115c 457 000000002 pS 0
+0.021               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_ACK mID 0 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+0.021               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_ACK mID 0 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+0.021               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK mID 0
+0.021               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+0.031               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_SUCCESSOR mID 0 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.1 115c 457 000000004 pS 0
+0.031               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_SUCCESSOR mID 0 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.1 115c 457 000000004 pS 0
+0.031               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK TIMER_SUCCESSOR_JOIN  mID 0
+0.031               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	setSuccessorRemoveTimers successor cwfinger0 C0.A8.0.1 115c 457 000000004 1 s index 0 cw yes upd 31 ms
+0.031               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	issueMessagePushTimers TX_FIND_SUCCESSOR mID 90 retryC 0(1)
+0.031               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	pushNewMessage TX_FIND_SUCCESSOR mID 90 pid 1 f t FIND_SUCCESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i C0.A8.0.2 115c 457 000000001 sID -1.-1.-1.-1 0 0 000000003 pS 0
+0.031               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	set TIMER_SUCCESSOR mID 90 retryC 0 reqC 0
+0.031               	transport_2.low_latency_chord 	TxRx	< < <	JOIN	set TIMER_ACK mID 90 retryC 0 reqC 0
+0.031               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+0.031               	transport_2.low_latency_chord 	Tx  	> > >	IDLE	sendMessage	TX_FIND_SUCCESSOR mID 90 pid 1 f t FIND_SUCCESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i C0.A8.0.2 115c 457 000000001 sID -1.-1.-1.-1 0 0 000000003 pS 0
+0.051               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_ACK mID 90 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+0.051               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_ACK mID 90 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+0.051               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK mID 90
+0.051               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+0.061               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_SUCCESSOR mID 90 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.1 115c 457 000000004 pS 0
+0.061               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	_# RX_SUCCESSOR mID 90 pid 1 f t SUCCESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.1 115c 457 000000004 pS 0
+0.061               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	remove TIMER_ACK TIMER_SUCCESSOR  mID 90
+0.061               	transport_2.low_latency_chord 	TxRx	:::::	JOIN	setFingerRemoveTimers cwfinger1 C0.A8.0.1 115c 457 000000004
+0.061               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+0.061               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	set TIMER_UPDATE mID 0 retryC 0 reqC 0
+0.061               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+1.061               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# TIMER_UPDATE mID 0 retryC 0 reqC 0
+1.061               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	issueMessagePushTimers TX_FIND_PREDECESSOR mID 749 retryC 0(1)
+1.061               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	pushNewMessage TX_FIND_PREDECESSOR mID 749 pid 1 f t FIND_PREDECESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i C0.A8.0.2 115c 457 000000001 sID -1.-1.-1.-1 0 0 000000003 pS 0
+1.061               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	set TIMER_PREDECESSOR mID 749 retryC 0 reqC 0
+1.061               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	set TIMER_ACK mID 749 retryC 0 reqC 0
+1.061               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+1.061               	transport_2.low_latency_chord 	Tx  	> > >	IDLE	sendMessage	TX_FIND_PREDECESSOR mID 749 pid 1 f t FIND_PREDECESSOR a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i C0.A8.0.2 115c 457 000000001 sID -1.-1.-1.-1 0 0 000000003 pS 0
+1.081               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_ACK mID 749 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+1.081               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# RX_ACK mID 749 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+1.081               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	remove TIMER_ACK mID 749
+1.081               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+1.091               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_PREDECESSOR mID 749 pid 1 f t PREDECESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.1 115c 457 000000004 pS 0
+1.091               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# RX_PREDECESSOR mID 749 pid 1 f t PREDECESSOR a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.1 115c 457 000000004 pS 0
+1.091               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	remove TIMER_ACK TIMER_PREDECESSOR  mID 749
+1.091               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	setSuccessorStabilize successor = cwfinger 0 C0.A8.0.1 115c 457 000000004 1 s index 0 cw yes upd 1091 ms
+1.091               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	issueMessagePushTimers TX_NOTIFY mID 1117 retryC 0(1)
+1.091               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	pushNewMessage TX_NOTIFY mID 1117 pid 1 f t NOTIFY a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.2 115c 457 000000001 pS 0
+1.091               	transport_2.low_latency_chord 	TxRx	< < <	UPDATE	set TIMER_ACK mID 1117 retryC 0 reqC 0
+1.091               	transport_2.low_latency_chord 	TxRx	:::::	IDLE
+1.091               	transport_2.low_latency_chord 	Tx  	> > >	IDLE	sendMessage	TX_NOTIFY mID 1117 pid 1 f t NOTIFY a 1 ps 0 r 0 d C0.A8.0.1 115c 457 000000004 s C0.A8.0.2 115c 457 000000001 i -1.-1.-1.-1 0 0 000000000 sID C0.A8.0.2 115c 457 000000001 pS 0
+1.111               	transport_2.low_latency_chord 	TxRx	< < <	IDLE	pushNewMessage RX_ACK mID 1117 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+1.111               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	_# RX_ACK mID 1117 pid 1 f t ACK a 0 ps 0 r 0 d C0.A8.0.2 115c 457 000000001 s C0.A8.0.1 115c 457 000000004 i -1.-1.-1.-1 0 0 000000000 sID -1.-1.-1.-1 0 0 000000000 pS 0
+1.111               	transport_2.low_latency_chord 	TxRx	:::::	UPDATE	remove TIMER_ACK mID 1117
+1.111               	transport_2.low_latency_chord 	TxRx	:::::	IDLE

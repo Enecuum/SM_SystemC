@@ -2,11 +2,6 @@
 
 namespace P2P_MODEL
 {
-
-
-
-
-
     low_latency_chord::low_latency_chord(sc_module_name name) : sc_module(name) {
         SC_METHOD(core);
         dont_initialize();
@@ -23,16 +18,42 @@ namespace P2P_MODEL
         m_state = STATE_OFF;
         m_nodeAddr.clear();                        
         m_confParams.setDefaultTimersCountersFingersSize();
-        hardReset();
+        
+        allowableTimers.resize(MAX_FINITE_STATE,  vector<uint>(1,DENIED));        
+        allowableRxMess.resize(MAX_FINITE_STATE,  vector<uint>(1,DENIED));
+        allowableTxMess.resize(MAX_FINITE_STATE,  vector<uint>(1,DENIED));
+        allowableAppreqs.resize(MAX_FINITE_STATE, vector<uint>(1,DENIED));
+
+        allowableTimers[STATE_JOIN] = {CHORD_TIMER_RX_ACK , CHORD_TIMER_RX_SUCCESSOR_ON_JOIN , CHORD_TIMER_RX_SUCCESSOR};
+        allowableRxMess[STATE_JOIN] = {CHORD_RX_ACK , CHORD_RX_SUCCESSOR};
+        allowableTxMess[STATE_JOIN] = {CHORD_TX_JOIN , CHORD_TX_FIND_SUCCESSOR};
+
+        allowableTimers[STATE_SERVICE] = {CHORD_TIMER_RX_ACK};
+        allowableRxMess[STATE_SERVICE] = {CHORD_RX_ACK , CHORD_RX_JOIN , CHORD_RX_FIND_SUCCESSOR , CHORD_RX_FIND_PREDECESSOR};
+        allowableTxMess[STATE_SERVICE] = {CHORD_TX_SUCCESSOR , CHORD_TX_FIND_SUCCESSOR , CHORD_TX_ACK , CHORD_TX_PREDECESSOR};
+
+        allowableTimers[STATE_UPDATE] = {CHORD_TIMER_RX_ACK , CHORD_TIMER_RX_SUCCESSOR , CHORD_TIMER_RX_PREDECESSOR , CHORD_TIMER_UPDATE};
+        allowableRxMess[STATE_UPDATE] = {CHORD_RX_SUCCESSOR , CHORD_RX_PREDECESSOR , CHORD_RX_ACK , CHORD_RX_NOTIFY};
+        allowableTxMess[STATE_UPDATE] = {CHORD_TX_FIND_SUCCESSOR , CHORD_TX_ACK , CHORD_TX_FIND_PREDECESSOR , CHORD_TX_NOTIFY};
+
+        allowableTimers[STATE_INDATA] = {CHORD_TIMER_RX_ACK};
+        allowableRxMess[STATE_INDATA] = {CHORD_RX_ACK , CHORD_RX_BROADCAST , CHORD_RX_MULTICAST , CHORD_RX_SINGLE};
+        allowableTxMess[STATE_INDATA] = {CHORD_TX_ACK , CHORD_TX_FWD_BROADCAST , CHORD_TX_FWD_MULTICAST , CHORD_TX_FWD_SINGLE};
+        allowableAppreqs[STATE_INDATA] = {CHORD_BROADCAST , CHORD_MULTICAST , CHORD_SINGLE};
+
+        allowableTimers[STATE_APPREQUEST] = {CHORD_TIMER_RX_ACK};
+        allowableRxMess[STATE_APPREQUEST] = {CHORD_RX_ACK};
+        allowableTxMess[STATE_APPREQUEST] = {CHORD_TX_BROADCAST , CHORD_TX_MULTICAST , CHORD_TX_SINGLE};
+
+        m_txMemoryList.set(BUFF_MEMORY, MAX_SIZE_MEMORY_LIST, MAX_SIZE_MEMORY_LIST, true, 0);
 
         //Create buffers
         // 
         //Set priority
-        //priority "1" is the highest priority
-        //priority "15"  is the lowest priority
+        //priority "0" is the highest priority
+        //priority "13"  is the lowest priority
         //flag "immediate" allows to handle all messages into buffer without consider max deep limit
-        uint priority = 0;
-        m_indexLastBufferCall = 0;
+        uint priority = 0;        
         m_howManyBuffers = 14;
         m_buffer.resize(m_howManyBuffers, message_buffer<chord_message>());
         uint buffI = 0;
@@ -57,15 +78,14 @@ namespace P2P_MODEL
         //Sort buffers by priority and immediate fields of message_buffer class, comparison's operator for sorting is defined in message_buffer class
         std::sort(m_buffer.begin(), m_buffer.end());
         
-        //Save index of timer buffer
-        m_timerBufferIndex = chordMessType2buffIndex(CHORD_TIMER_UPDATE);
-        m_txMessBufferIndex = chordMessType2buffIndex(CHORD_TIMER_RX_SUCCESSOR);
+        //Save indexes of timer and tx mess buffers
+        m_timerBufferIndex = chordMessType2buffIndex(CHORD_TIMER_UPDATE);        
         if ((m_timerBufferIndex == ERROR) || (m_txMessBufferIndex == ERROR)) {
             //ERROR
-            msgLog(name(), LOG_TXRX, LOG_ERROR, "preinit" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_ERROR, "preinit" + LOG_TAB + LOG_ERROR_INVALID_RANGE, ALL_LOG);
         }
 
-        //Print info about buffers (priority...)
+        //Print on screen info about buffers (priority...)
         static bool printOnce = false;
         if (printOnce == false) {
             printOnce = true;
@@ -83,6 +103,8 @@ namespace P2P_MODEL
             for (uint i = MIN_CHORD_TX_TYPE + 1; i < MAX_CHORD_TX_TYPE; ++i)
                 cout << chord_byte_message_fields().type2str(i) << LOG_TAB << i << endl;
         }        
+        
+        hardReset();
     }
 
 
@@ -120,6 +142,7 @@ namespace P2P_MODEL
     void low_latency_chord::pushNewMessage(const chord_message& mess, const bool toBack) {
         chord_message r = mess;
         r.creatingTime = sc_time_stamp();
+        r.issuedState = m_state;
 
         if ((r.type > MIN_CHORD_TIMER_TYPE) && (r.type < MAX_CHORD_TIMER_TYPE))
             msgLog(name(), LOG_TXRX, LOG_IN, state2str(m_state) + LOG_TAB + string("set ") + r.toStr(), DEBUG_LOG | INTERNAL_LOG);
@@ -139,7 +162,7 @@ namespace P2P_MODEL
         //Drop rx message, if addr is zero
         if ((r.destNodeIDwithSocket.isNone()) && (r.type > MIN_CHORD_RX_TYPE) && (r.type < MAX_CHORD_RX_TYPE)) {
             m_logText = state2str(m_state) + LOG_TAB + string("pushNewMessage") + LOG_TAB + LOG_ERROR_NO_ADDR;
-            msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | INTERNAL_LOG | EXTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, ALL_LOG);
             return;
         }           
 
@@ -147,7 +170,7 @@ namespace P2P_MODEL
         if (m_buffer[i].push(r, toBack) == false) {
             //OVERFLOW BUFFER
             m_logText = state2str(m_state) + LOG_TAB + string("pushNewMessage") + LOG_TAB + LOG_ERROR_OVERFLOW;
-            msgLog(name(), LOG_TXRX, LOG_WARNING, m_logText, DEBUG_LOG | INTERNAL_LOG | EXTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_WARNING, m_logText, ALL_LOG);
         }
             
         m_eventCore.notify(0, SC_NS);
@@ -294,31 +317,31 @@ namespace P2P_MODEL
             break;
 
         case STATE_INIT:
-            goStateInit(mess);
+            goStateInit(mess, true);
             break;
             
         case STATE_JOIN:
-            goStateJoin(mess);            
+            goStateJoin(mess, true);
             break;                
             
         case STATE_IDLE:
-            goStateIdle(mess);
+            goStateIdle(mess, true);
             break;
             
         case STATE_INDATA:
-            goStateIndata(mess);
+            goStateIndata(mess, true);
             break;
             
         case STATE_SERVICE:
-            goStateService(mess);
+            goStateService(mess, true);
             break;
             
         case STATE_UPDATE:
-            goStateUpdate(mess);
+            goStateUpdate(mess, true);
             break;
             
         case STATE_APPREQUEST:
-            goStateApprequest(mess);
+            goStateApprequest(mess, true);
             break;
 
         default:
@@ -353,7 +376,11 @@ namespace P2P_MODEL
         m_fingerMask.resize(m_confParams.fingersSize, 1);
         for (uint i = 1; i < m_fingerMask.size(); ++i) 
             m_fingerMask[i] = m_fingerMask[i-1] << 1;
-        
+
+        if (m_confParams.fingersSize < 1) {
+            //ERROR
+            msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + LOG_ERROR_INVALID_RANGE, ALL_LOG);
+        }
         
         m_latency.clear();
         if (m_confParams.seed.size() == 0) {
@@ -364,46 +391,58 @@ namespace P2P_MODEL
             for (uint i = 0; i < m_ccwFingers.size(); ++i) {
                 m_ccwFingers[i].fingerIndex = i;
                 m_ccwFingers[i].isClockWise = false;
+                m_ccwFingers[i].isUpdated = false;
             }
             
             m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr));
-            for (uint i = 0; i < m_cwFingers.size(); ++i) 
+            for (uint i = 0; i < m_cwFingers.size(); ++i) {
                 m_cwFingers[i].fingerIndex = i;
+                m_cwFingers[i].isClockWise = true;
+                m_cwFingers[i].isUpdated = false;
+            }
 
             m_predecessor.clear();
             m_predecessor.isClockWise = false;
+            m_predecessor.fingerIndex = 0;
             m_successor = m_nodeAddr;
+            m_successor.fingerIndex = 0;
             m_isAcked.clear();
 
-            if (m_confParams.fillFingersMinQty >= m_cwFingers.size()) {
+            if ((m_confParams.fillFingersMinQty > m_cwFingers.size()) || (m_cwFingers.size() == 0)) {
                 m_confParams.fillFingersMinQty = (uint) m_cwFingers.size();
                 //ERROR
                 msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + "confParams.fillFingersMinQty >= m_cwFingers.size()", ALL_LOG);                
             }
-            goStateIdle(mess, false);
+            setNextState(STATE_IDLE);
         }
         else {
             m_ccwFingers.resize(m_confParams.fingersSize, node_address_latency(m_confParams.seed.front()));
             for (uint i = 0; i < m_ccwFingers.size(); ++i) {
                 m_ccwFingers[i].fingerIndex = i;
                 m_ccwFingers[i].isClockWise = false;
+                m_ccwFingers[i].isUpdated = false;
             }
 
             m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_confParams.seed.front()));
-            for (uint i = 0; i < m_cwFingers.size(); ++i)
+            for (uint i = 0; i < m_cwFingers.size(); ++i) {
                 m_cwFingers[i].fingerIndex = i;
+                m_cwFingers[i].isClockWise = true;
+                m_cwFingers[i].isUpdated = false;
+            }
 
             m_predecessor.clear();
             m_predecessor.isClockWise = false;
-            m_successor = m_confParams.seed.front();            
+            m_predecessor.fingerIndex = 0;
+            m_successor = m_confParams.seed.front();   
+            m_successor.fingerIndex = 0;
             m_isAcked.clear();
 
-            if (m_confParams.fillFingersMinQty >= m_cwFingers.size()) {
+            if ((m_confParams.fillFingersMinQty > m_cwFingers.size()) || (m_ccwFingers.size() == 0)) {
                 //ERROR
                 msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + "confParams.fillFingersMinQty >= m_cwFingers.size()", ALL_LOG);
                 m_confParams.fillFingersMinQty = (uint) m_cwFingers.size();
-            }
-            goStateJoin(mess, false);
+            }            
+            goStateJoin(chord_message(), false);
         }
     }
 
@@ -424,12 +463,11 @@ namespace P2P_MODEL
         vector<chord_tx_message_type> retryMessTypes;
         chord_timer_message_type timer;
         bool exist;
-        if (mess.type == CHORD_RX_ACK) {
-            
+        if (mess.type == CHORD_RX_ACK) {            
             retryMessTypes = {CHORD_TX_JOIN, CHORD_TX_NOTIFY, CHORD_TX_FIND_SUCCESSOR, CHORD_TX_FIND_PREDECESSOR, CHORD_TX_BROADCAST, CHORD_TX_MULTICAST, CHORD_TX_SINGLE, CHORD_TX_FWD_BROADCAST, CHORD_TX_FWD_MULTICAST, CHORD_TX_FWD_SINGLE};
             timer = CHORD_TIMER_RX_ACK;
             if (m_confParams.TrxAck == NO_TIMEOUT) {
-                return true; //There are no `ACK` timers
+                return true;                //There are no `ACK` timers
             }
             
             it = findMessageOnTimersWithRetryParams(exist, timer, retryMessTypes, mess.messageID);
@@ -439,13 +477,13 @@ namespace P2P_MODEL
             retryMessTypes = {CHORD_TX_JOIN, CHORD_TX_FIND_SUCCESSOR};
             timer = CHORD_TIMER_RX_SUCCESSOR;
             if (m_confParams.TrxSucc == NO_TIMEOUT) {
-                return true; //There is no `Successor` timers            
+                return true;                 //There are no `Successor` timers            
             }
                 
-            if (m_isFirstTimeSetSuccessor == false) {
+            if (m_isSuccessorSet == false) {
                 timer = CHORD_TIMER_RX_SUCCESSOR_ON_JOIN;
                 if (m_confParams.TrxSuccOnJoin == NO_TIMEOUT) {
-                    return true; //There is no `Successor on join` timers                                                        
+                    return true;            //There are no `Successor on join` timers                                                        
                 }
             }
             
@@ -456,7 +494,7 @@ namespace P2P_MODEL
             retryMessTypes = { CHORD_TX_FIND_PREDECESSOR };
             timer = CHORD_TIMER_RX_PREDECESSOR;
             if (m_confParams.TrxPred == NO_TIMEOUT) {
-                return true; //There is no `Predecessor` timers  
+                return true;                //There are no `Predecessor` timers  
             }
             it = findMessageOnTimersWithRetryParams(exist, timer, retryMessTypes, mess.messageID);
             return exist;
@@ -479,7 +517,7 @@ namespace P2P_MODEL
 
         switch (eventType(mess, existMess)) {
             case CALLED_BY_ANOTHER_STATE: {           
-                issueMessagePushTimers(CHORD_TX_JOIN, false, 0, mess, timer);                    //First call this state, message wasn't received, timer wasn't expired               
+                issueMessagePushTimers(CHORD_TX_JOIN, false, 0);                                         //First call this state, message wasn't received, timer wasn't expired               
             }
             break;
 
@@ -492,17 +530,21 @@ namespace P2P_MODEL
             case RX_MESS_RECEIVED: {               //RX Message was received 
                 if (mess.type == CHORD_RX_SUCCESSOR) {                
                     if (checkMessage(mess, timer, m_errCode) != ERROR) {                                                      
-                        if (m_isFirstTimeSetSuccessor == false) {
-                            setSuccessorRemoveTimers(mess, timer);  
-                            m_isCwFingerUpdating = true;
+                        if (m_isSuccessorSet == false) {
+                            setSuccessorRemoveTimers(mess, timer);     
+                            setNextFingerToUpdate();
                         }
-                        else 
+                        else {
                             setFingerRemoveTimers(mess, timer);
+                            setNextFingerToUpdate();
+                        }
     
                         if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
-                            issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0, mess, timer);
-                        else 
-                            setNextState(STATE_IDLE);                    
+                            issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);                  
+                        else {
+                            setNextState(STATE_IDLE);
+                            pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
+                        }
                     }
                 }
                 else if (mess.type == CHORD_RX_ACK) {
@@ -522,7 +564,7 @@ namespace P2P_MODEL
                         if (isIssueSuccess == false) {
                             isRepeatSuccess = repeatMessage(CHORD_TX_JOIN, mess.retryMess, timer);
                             if (isRepeatSuccess == false)
-                                issueMessagePushTimers(CHORD_TX_JOIN, false, 0, mess.retryMess, timer);
+                                issueMessagePushTimers(CHORD_TX_JOIN, false, 0);                        
                         }
                     }
                     else if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
@@ -532,10 +574,13 @@ namespace P2P_MODEL
                             isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                             if (isRepeatSuccess == false) {
                                 setCopyPreviousFinger();
+                                setNextFingerToUpdate();
                                 if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
-                                    issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0, mess.retryMess, timer);
-                                else
+                                    issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);          
+                                else {
                                     setNextState(STATE_IDLE);
+                                    pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());                                    
+                                }
                             }
                         }
                     }
@@ -545,7 +590,7 @@ namespace P2P_MODEL
                         removeTimer(CHORD_TIMER_RX_ACK, CHORD_TX_JOIN, mess.retryMess.messageID);
                         isRepeatSuccess = repeatMessage(CHORD_TX_JOIN, mess.retryMess, timer);
                         if (isRepeatSuccess == false)
-                            issueMessagePushTimers(CHORD_TX_JOIN, false, 0, mess.retryMess, timer);                        
+                            issueMessagePushTimers(CHORD_TX_JOIN, false, 0);                            
                     }
                 }
                 else if (mess.type == CHORD_TIMER_RX_SUCCESSOR) {
@@ -554,44 +599,26 @@ namespace P2P_MODEL
                         isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                         if (isRepeatSuccess == false) {
                             setCopyPreviousFinger();
+                            setNextFingerToUpdate();
                             if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
-                                issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0, mess.retryMess, timer);
-                            else
+                                issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);              
+                            else {
                                 setNextState(STATE_IDLE);
+                                pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
+                            }
                         }
                     }
                 }
             }
             break;
-        }
-    }
-
-    
-    bool low_latency_chord::doResetFlushIfMess(const chord_message& mess, const bool existMess) {        
-        if (existMess == true) {
-            if (mess.type == CHORD_HARD_RESET) {
-                hardReset();
-                goStateLoad();
-                return true;
-            }
-            else if (mess.type == CHORD_SOFT_RESET) {
-                softReset();
-                goStateInit(mess, false);
-                return true;
-            }
-            else if (mess.type == CHORD_FLUSH) {
-                flush();
-                goStateIdle(mess, false);
-                return true;
-            }
         }        
-        return false;
+        setNextState(STATE_IDLE);
     }
 
 
     void low_latency_chord::goStateIdle(const chord_message& mess, const bool existMess) {
         m_state = STATE_IDLE;
-        msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG|INTERNAL_LOG);
+        //msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG|INTERNAL_LOG);
 
         if (doResetFlushIfMess(mess, existMess) == true)
             return;
@@ -600,38 +627,40 @@ namespace P2P_MODEL
         bool isIssueSuccess;
         bool isRepeatSuccess;
 
-        switch (eventType(mess, existMess)) {
-            case CALLED_BY_ANOTHER_STATE: {           
+        low_latency_chord::FP funcPointer = nullptr;
+        event_type evType = eventType(mess, existMess);
+
+        switch (evType) {
+            case CALLED_BY_ANOTHER_STATE: {      
+                //ERROR
+                msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + "Who call me?", ALL_LOG);
             }
             break;
 
             case TX_MESS_SHOULD_SEND: {
-
+                sendMessage(mess);
             }
             break;
 
-            case RX_MESS_RECEIVED: {               //RX Message was received       
-                if ((mess.type > MIN_CHORD_RX_TYPE) && (mess.type < MAX_CHORD_RX_TYPE)) {
-                    goStateService(mess);
-                }
+            case RX_MESS_RECEIVED: {               //RX Message was received                       
+                funcPointer = mess2state(evType, mess);
+                if (funcPointer != nullptr)
+                    (this->*funcPointer)(mess, existMess);
+                else
+                    msgLog(name(), LOG_TXRX, LOG_WARNING, state2str(m_state) + LOG_TAB + "Drop message " + mess.toStr(), ALL_LOG);
             }
             break;
 
-            case TIMER_EXPIRED:{                     //Timer was expired, analysing
-                if (mess.type == CHORD_TIMER_UPDATE) {
-                    goStateUpdate(mess);
-                }
+            case TIMER_EXPIRED:{                     //Timer was expired, analysing                
+                funcPointer = mess2state(evType, mess);
+                if (funcPointer != nullptr)
+                    (this->*funcPointer)(mess, existMess);
+                else
+                    msgLog(name(), LOG_TXRX, LOG_WARNING, state2str(m_state) + LOG_TAB + "Drop message " + mess.toStr(), ALL_LOG);
             }
             break;
-        }
+        }        
     }
-
-
-    void low_latency_chord::goStateIndata(const chord_message& mess, const bool existMess)  {
-        m_state = STATE_INDATA;
-        msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG|INTERNAL_LOG);
-    }
-
 
     void low_latency_chord::goStateService(const chord_message& mess, const bool existMess) {
         m_state = STATE_SERVICE;
@@ -647,7 +676,7 @@ namespace P2P_MODEL
 
         switch (eventType(mess, existMess)) {
             case CALLED_BY_ANOTHER_STATE: {
-           
+                msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG | INTERNAL_LOG);
             }
             break;
 
@@ -660,7 +689,7 @@ namespace P2P_MODEL
             case RX_MESS_RECEIVED: {           
                 if ((mess.type == CHORD_RX_JOIN) || (mess.type == CHORD_RX_FIND_SUCCESSOR)) {
                     if (checkMessage(mess, timer, m_errCode) != ERROR) {
-                        issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess, chord_timer_message());
+                        issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);            
 
                         chord_action action = findSuccessor(mess.searchedNodeIDwithSocket.id, lookupAddr);
                         if (action == DO_REPLY)
@@ -671,6 +700,8 @@ namespace P2P_MODEL
                 }
                 else if (mess.type == CHORD_RX_FIND_PREDECESSOR) {
                     if (checkMessage(mess, timer, m_errCode) != ERROR) {
+                        issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);
+
                         chord_action action = findPredecessor(mess.searchedNodeIDwithSocket.id, lookupAddr);
                         issueMessagePushTimers(CHORD_TX_PREDECESSOR, false, 0, mess, chord_timer_message(), action, lookupAddr);
                     }
@@ -688,17 +719,18 @@ namespace P2P_MODEL
                 if (mess.type == CHORD_TIMER_RX_ACK) {
                     if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
                         removeTimer(CHORD_TIMER_RX_SUCCESSOR, CHORD_TX_FIND_SUCCESSOR, mess.retryMess.messageID);
-                        isIssueSuccess = issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, true, timer.requestCounter, mess.retryMess, timer, DO_FORWARD, mess.searchedNodeIDwithSocket);
+                        isIssueSuccess = issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, true, timer.requestCounter, mess.retryMess, timer, DO_FORWARD, mess.retryMess.searchedNodeIDwithSocket);
                         if (isIssueSuccess == false) {
                             timer.isDelayed = true;
                             pushNewTimer(timer, false);
                             goStateUpdate(timer, true);
                         }
-                    }
+                    }                    
                 }
             }
             break;
         }
+        setNextState(STATE_IDLE);
     }
 
 
@@ -716,15 +748,17 @@ namespace P2P_MODEL
         bool isRepeatSuccess;
         chord_timer_message timer;
 
+        //m_canTakeDelayedTimers = false;
+
         switch (eventType(mess, existMess)) {
             case UNAVAILABLE_NODE: {
-                if (mess.retryMess.destNodeIDwithSocket.id == m_predecessor.id) {
+                m_canTakeDelayedTimers = false;
+                if (mess.retryMess.type == CHORD_TX_FIND_PREDECESSOR) {
                     m_predecessor.isUpdated = false;
                     issueMessagePushTimers(CHORD_TX_FIND_PREDECESSOR, false, 0, mess.retryMess, chord_timer_message(), DO_REQUEST, m_predecessor);
                 }
-                else {
-                    bool isResult = false;
-                    if (m_isCwFingerUpdating) {
+                else if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
+                    if (m_isClockwise) {
                         for (uint i = 0; i < m_cwFingers.size(); ++i) {
                             if (mess.retryMess.destNodeIDwithSocket.id == m_cwFingers[i].id) {
                                 m_cwFingers[i].isUpdated = false;
@@ -745,8 +779,8 @@ namespace P2P_MODEL
                     node_address_latency badFinger;
                     badFinger.setCopy(m_unavailableFingers.back());                    
                     uint160 whatID = m_nodeAddr.id + (badFinger.isClockWise ? badFinger.id: (-badFinger.id) );
-                    issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0, mess.retryMess, mess, DO_REQUEST);
-                }
+                    issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);                  
+                }                
             }
             break;
             
@@ -757,7 +791,10 @@ namespace P2P_MODEL
             break;
 
             case TX_MESS_SHOULD_SEND: {                        
-                if ((mess.type == CHORD_TX_FIND_SUCCESSOR) || (mess.type == CHORD_TX_ACK) || (mess.type == CHORD_TX_FIND_PREDECESSOR))
+                if ((mess.type == CHORD_TX_FIND_SUCCESSOR) ||
+                    (mess.type == CHORD_TX_ACK) ||
+                    (mess.type == CHORD_TX_FIND_PREDECESSOR) ||
+                    (mess.type == CHORD_TX_NOTIFY))
                     sendMessage(mess);                
             }
             break;
@@ -766,16 +803,27 @@ namespace P2P_MODEL
                 if (mess.type == CHORD_RX_SUCCESSOR) {
                     if (checkMessage(mess, timer, m_errCode) != ERROR) {                        
                         setFingerRemoveTimers(mess, timer);                        
+                        setNextFingerToUpdate();
                     }
                 }
                 else if (mess.type == CHORD_RX_PREDECESSOR) {
                     if (checkMessage(mess, timer, m_errCode) != ERROR) {                        
-                        stabilizeSetSuccessor(mess, timer);
+                        setSuccessorStabilize(mess, timer);
+                        setNextFingerToUpdate();
+                        issueMessagePushTimers(CHORD_TX_NOTIFY);
                     }
                 }
                 else if (mess.type == CHORD_RX_ACK) {
                     if ((checkMessage(mess, timer, m_errCode) != ERROR) && (m_confParams.needsACK == NEEDS_ACK)) {
                         removeTimer((chord_timer_message_type)timer.type, (chord_tx_message_type)timer.retryMess.type, timer.retryMess.messageID);
+                    }
+                }
+                else if (mess.type == CHORD_RX_NOTIFY) {
+                    if ((checkMessage(mess, timer, m_errCode) != ERROR) && (m_confParams.needsACK == NEEDS_ACK)) {                        
+                        issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);
+
+                        setPredecessor(mess, timer);
+                        setNextFingerToUpdate();
                     }
                 }
             }
@@ -786,30 +834,65 @@ namespace P2P_MODEL
                 if (mess.type == CHORD_TIMER_RX_ACK) {
                     if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
                         removeTimer(CHORD_TIMER_RX_SUCCESSOR, CHORD_TX_FIND_SUCCESSOR, mess.retryMess.messageID);                        
-                        isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
-                        if (isRepeatSuccess == false) {
-                            setCopyPreviousFinger();
-                                
-                        }                        
+                        isIssueSuccess = issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, true, timer.requestCounter, mess.retryMess, timer, DO_REQUEST, mess.retryMess.searchedNodeIDwithSocket);
+                        if (isIssueSuccess == false) {
+                            isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
+                            if (isRepeatSuccess == false) {
+                                setCopyPreviousFinger();     
+                                setNextFingerToUpdate();
+                            }     
+                        }
+                    }
+                    else if (mess.retryMess.type == CHORD_TX_FIND_PREDECESSOR) {
+                        removeTimer(CHORD_TIMER_RX_PREDECESSOR, CHORD_TX_FIND_PREDECESSOR, mess.retryMess.messageID);
+                        isIssueSuccess = issueMessagePushTimers(CHORD_TX_FIND_PREDECESSOR, true, timer.requestCounter, mess.retryMess, timer, DO_REQUEST, mess.retryMess.searchedNodeIDwithSocket);
+                        if (isIssueSuccess == false) {
+                            isRepeatSuccess = repeatMessage(CHORD_TX_FIND_PREDECESSOR, mess.retryMess, timer);
+                            if (isRepeatSuccess == false) {
+                                setCopyPreviousFinger();
+                                setNextFingerToUpdate();
+                            }
+                        }
+                    }
+                    else if (mess.retryMess.type == CHORD_TX_NOTIFY) {
+                        //removeTimer(CHORD_TIMER_RX_ACK, CHORD_TX_NOTIFY, mess.retryMess.messageID);
+                        isIssueSuccess = issueMessagePushTimers(CHORD_TX_NOTIFY, true, timer.requestCounter, mess.retryMess, timer, DO_REQUEST, mess.retryMess.searchedNodeIDwithSocket);
+                        if (isIssueSuccess == false) {
+                            timer.isDelayed = true;
+                            pushNewTimer(timer, false);
+                            //goStateUpdate(timer, true);
+                        }
                     }
                 }
+                else if (mess.type == CHORD_TIMER_RX_SUCCESSOR) {
+
+                }
                 else if (mess.type == CHORD_TIMER_UPDATE) {
-                    if (!m_predecessor.isUpdated) {
-                        issueMessagePushTimers(CHORD_TX_FIND_PREDECESSOR, false, 0, chord_byte_message_fields(), timer, DO_REQUEST);
-                    }
+                    setNextFingerToUpdate();                    
+                    issueMessagePushTimers(CHORD_TX_FIND_PREDECESSOR, false, 0);                   
                 }
             }
             break;
         }
+
+        setNextState(STATE_IDLE);
     }
 
     
-    void low_latency_chord::goStateApprequest(const chord_message& mess, const bool existMess) {    }
+    void low_latency_chord::goStateApprequest(const chord_message& mess, const bool existMess) { 
+        m_state = STATE_INDATA;
+        msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG | INTERNAL_LOG);
+
+        goStateIdle(chord_message(), false);
+    }
 
 
-    //void low_latency_chord::finiteStateMachine(chord_message* p) {
- 
-    //}
+    void low_latency_chord::goStateIndata(const chord_message& mess, const bool existMess) {
+        m_state = STATE_INDATA;
+        msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG | INTERNAL_LOG);
+
+        goStateIdle(chord_message(), false);
+    }
 
 
     int low_latency_chord::chordMessType2buffIndex(const uint type) {
@@ -848,9 +931,9 @@ namespace P2P_MODEL
         case CHORD_TX_FIND_SUCCESSOR: buffType = BUFF_TX_FIND_SUCCESSOR; break;
         case CHORD_TX_PREDECESSOR:    buffType = BUFF_TX_PREDECESSOR; break;
         case CHORD_TX_FIND_PREDECESSOR: buffType = BUFF_TX_FIND_PREDECESSOR; break;
-        case CHORD_TX_FWD_BROADCAST:  buffType = BUFF_TX_FWD_BROADCAST;  break;
-        case CHORD_TX_FWD_MULTICAST:  buffType = BUFF_TX_FWD_MULTICAST;  break;
-        case CHORD_TX_FWD_SINGLE:     buffType = BUFF_TX_FWD_SINGLE;     break;
+        case CHORD_TX_FWD_BROADCAST:  buffType = /*BUFF_TX_FWD_BROADCAST;*/ BUFF_TX_BROADCAST; break;
+        case CHORD_TX_FWD_MULTICAST:  buffType = /*BUFF_TX_FWD_MULTICAST;*/ BUFF_TX_MULTICAST; break;
+        case CHORD_TX_FWD_SINGLE:     buffType = /*BUFF_TX_FWD_SINGLE;   */ BUFF_TX_SINGLE;    break;
         case CHORD_TX_BROADCAST:      buffType = BUFF_TX_BROADCAST;      break;
         case CHORD_TX_MULTICAST:      buffType = BUFF_TX_MULTICAST;      break;
         case CHORD_TX_SINGLE:         buffType = BUFF_TX_SINGLE;         break;
@@ -899,11 +982,13 @@ namespace P2P_MODEL
         m_successor.clear();
         m_predecessor.clear();
         m_currSeed = 0;
-        m_isFirstTimeSetSuccessor = false;
+        m_isSuccessorSet = false;
         m_isPredecessorSet = false;
         m_cwFingerIndex = 0;
         m_ccwFingerIndex = 0;
-        m_isCwFingerUpdating = true;
+        //m_cwFingerIndexToUpdate = 0;
+        //m_ccwFingerIndexToUpdate = 0;
+        m_isClockwise = true;
         m_messageID = 0;
     }
 
@@ -915,6 +1000,7 @@ namespace P2P_MODEL
         for (uint i = 0; i < m_buffer.size(); ++i)
             m_buffer[i].clearMessages();
         m_canTakeDelayedTimers = false;
+        m_indexLastBufferCall = 0;
 
         //Fingers, latency, precessor, successor are stored
     }
@@ -934,6 +1020,8 @@ namespace P2P_MODEL
 
         chord_byte_message raw;
         raw.fields = mess;
+
+        pushTxMessageMemoryList(mess);
 
         trp_port->send_mess(raw);
     }
@@ -1153,8 +1241,8 @@ namespace P2P_MODEL
     void low_latency_chord::removeTimer(buffer_container::iterator timerIt) {  
         if ((m_timerBufferIndex >= 0) && (m_timerBufferIndex < m_buffer.size())) {
             if ((timerIt->type > MIN_CHORD_TIMER_TYPE) && (timerIt->type < MAX_CHORD_TIMER_TYPE)) {
-                m_buffer[m_timerBufferIndex].eraseMess(timerIt);
-                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("remove ") + (*timerIt).toStr(), DEBUG_LOG | INTERNAL_LOG);
+                if (true == m_buffer[m_timerBufferIndex].eraseMess(timerIt))
+                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("remove ") + (*timerIt).toStr(), DEBUG_LOG | INTERNAL_LOG);
             }
         }
     }
@@ -1162,8 +1250,8 @@ namespace P2P_MODEL
     void low_latency_chord::removeTimer(const chord_timer_message_type timerType, const chord_tx_message_type retryMessType, const uint retryMessID) {
         if ((m_timerBufferIndex >= 0) && (m_timerBufferIndex < m_buffer.size())) {
             if ((timerType > MIN_CHORD_TIMER_TYPE) && (timerType < MAX_CHORD_TIMER_TYPE)) {
-                m_buffer[m_timerBufferIndex].eraseMess(timerType, retryMessType, retryMessID);
-                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("remove ") + chord_timer_message().type2str(timerType) + string(" mID ") + to_string(retryMessID), DEBUG_LOG | INTERNAL_LOG);
+                if (true == m_buffer[m_timerBufferIndex].eraseMess(timerType, retryMessType, retryMessID))
+                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("remove ") + chord_timer_message().type2str(timerType) + string(" mID ") + to_string(retryMessID), DEBUG_LOG | INTERNAL_LOG);
             }
         }
     }
@@ -1194,13 +1282,24 @@ namespace P2P_MODEL
         newMess.messageID = m_messageID;
         newMess.type = CHORD_TX_JOIN;
         newMess.flags.bitMessType = CHORD_BYTE_JOIN;
-        newMess.flags.needsACK = m_confParams.needsACK;
+        newMess.flags.needsACK = m_confParams.needsACK ? NEEDS_ACK : NO_ACK;
         m_messageID = nextUniqueMessageID();
         return newMess;
     }
 
     chord_message low_latency_chord::createNotifyMessage(const node_address& dest) {
         chord_message newMess;
+        newMess.clear();
+        newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
+        newMess.destNodeIDwithSocket = dest;
+        newMess.srcNodeIDwithSocket = m_nodeAddr;
+        //newMess.initiatorNodeIDwithSocket = m_nodeAddr;
+        newMess.searchedNodeIDwithSocket = m_nodeAddr;
+        newMess.messageID = m_messageID;
+        newMess.type = CHORD_TX_NOTIFY;
+        newMess.flags.bitMessType = CHORD_BYTE_NOTIFY;
+        newMess.flags.needsACK = m_confParams.needsACK ? NEEDS_ACK : NO_ACK;
+        m_messageID = nextUniqueMessageID();
         return newMess;
     }
 
@@ -1239,6 +1338,7 @@ namespace P2P_MODEL
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
         newMess.srcNodeIDwithSocket = m_nodeAddr;
+        //newMess.initiatorNodeIDwithSocket = m_nodeAddr;
         newMess.type = CHORD_TX_SUCCESSOR;
         newMess.messageID = messageID;
         newMess.searchedNodeIDwithSocket = fingerAddr;
@@ -1357,7 +1457,7 @@ namespace P2P_MODEL
 
 
     bool low_latency_chord::issueMessagePushTimers(const chord_tx_message_type& type, const bool isRetry, const uint requestCounter,
-                                                   const chord_byte_message_fields& rxMess, const chord_timer_message& expiredTimer,
+                                                   const chord_byte_message_fields rxMess, const chord_timer_message expiredTimer,
                                                    const chord_action action, const node_address lookupAddr) {
         chord_message newMess;
 
@@ -1365,7 +1465,8 @@ namespace P2P_MODEL
             case CHORD_TX_JOIN: {
                 if ((isRetry == false) /* || ((isRetry == true) && (expiredTimer.retryCounter >= m_confParams.CtxRetry) && (m_confParams.needsACK == NEEDS_ACK))*/) {
                     m_currSeed = (m_currSeed + 1) % (uint)(m_confParams.seed.size());
-                    m_cwFingerIndex = 0;                
+                    //m_isClockwise = true;
+                    //m_ccwFingerIndex = 0;
                     newMess = createJoinMessage(m_confParams.seed.at(m_currSeed));
 
                     msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
@@ -1399,12 +1500,14 @@ namespace P2P_MODEL
                 uint currFinger;
                 node_address_latency fingerPast;
                 node_address_latency finger;
-                if (m_isCwFingerUpdating) {
+                uint160 whatId = m_nodeAddr.id;
+                if (m_isClockwise) {
                     if (m_cwFingerIndex == 0)
                         m_cwFingerIndex++;
                     currFinger = m_cwFingerIndex;
                     fingerPast.setCopy(m_cwFingers[currFinger-1]);
                     finger.setCopy(m_cwFingers[currFinger]);
+                    whatId = whatId + m_fingerMask[currFinger];
                 }
                 else {
                     if (m_ccwFingerIndex == 0)
@@ -1412,13 +1515,14 @@ namespace P2P_MODEL
                     currFinger = m_ccwFingerIndex;     
                     fingerPast.setCopy(m_ccwFingers[currFinger-1]);
                     finger.setCopy(m_ccwFingers[currFinger]);
+                    whatId = whatId - m_fingerMask[currFinger];
                 }
             
                 if (isRetry == false) {
                     if (action == DO_FORWARD)
                         newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id);
                     else if (action == DO_REQUEST)
-                        newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, m_nodeAddr.id+m_fingerMask[currFinger]);
+                        newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, whatId);
                         
 
                     msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
@@ -1454,8 +1558,7 @@ namespace P2P_MODEL
             break;
 
             case CHORD_TX_FIND_PREDECESSOR: {
-                if (isRetry == false) {
-
+                if (isRetry == false) {                   
                     newMess = createFindPredecessorMessage(m_successor, m_nodeAddr, m_successor.id-1);
 
                     msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
@@ -1469,6 +1572,8 @@ namespace P2P_MODEL
                 }
                 else {
                     if ((expiredTimer.retryCounter < m_confParams.CtxRetry) && (m_confParams.needsACK == NEEDS_ACK)) {
+                        m_isClockwise = true;
+                        m_ccwFingerIndex = 0;
                         newMess = createFindPredecessorMessage(m_successor, m_nodeAddr, m_successor.id-1);
 
                         msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(expiredTimer.retryCounter + 1) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
@@ -1481,8 +1586,37 @@ namespace P2P_MODEL
                         return true;      //Try retry
                     }
                     else {
-                        return false; //No possible to retry find_predecessor
+                        return false;     //No possible to retry find_predecessor
                     }
+                }
+            }
+            break;
+
+
+            case CHORD_TX_NOTIFY: {
+                if (isRetry == false) {
+                    newMess = createNotifyMessage(m_successor);
+
+                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+
+                    pushNewMessage(newMess);
+                    if ((m_confParams.TrxAck != NO_TIMEOUT) && (m_confParams.needsACK == NEEDS_ACK))
+                        pushNewTimer(CHORD_TIMER_RX_ACK, 0, requestCounter, newMess);
+                    return true;
+                }
+                else {
+                    if ((expiredTimer.retryCounter < m_confParams.CtxRetry) && (m_confParams.needsACK == NEEDS_ACK)) {
+                        newMess = createNotifyMessage(m_successor);
+
+                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+
+                        pushNewMessage(newMess);
+                        if ((m_confParams.TrxAck != NO_TIMEOUT) && (m_confParams.needsACK == NEEDS_ACK))
+                            pushNewTimer(CHORD_TIMER_RX_ACK, 0, requestCounter, newMess);
+                        return true;    //Try retry
+                    }
+                    else
+                        return false;  //No possible to retry find_predecessor
                 }
             }
             break;
@@ -1510,6 +1644,8 @@ namespace P2P_MODEL
             }
             break;
 
+            
+
             default:
                 //ERROR
                 msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers") + LOG_SPACE + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
@@ -1520,25 +1656,25 @@ namespace P2P_MODEL
 
     bool low_latency_chord::setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
         bool needsFillFingersMinQty = false;
-        if (m_isFirstTimeSetSuccessor == false) {
+        if (m_isSuccessorSet == false) {
             m_successor = rxMess.searchedNodeIDwithSocket;
             m_successor.isUpdated = true;
-            m_cwFingerIndex = 0;
-            m_ccwFingerIndex = 0;
-            m_cwFingers[m_cwFingerIndex] = m_successor;
+            m_successor.updateTime = sc_time_stamp();
             m_cwFingerIndex++;
-            m_isFirstTimeSetSuccessor = true;
+            if (m_cwFingers.size() > 0)
+                m_cwFingers[0] = m_successor;            
+            m_isSuccessorSet = true;
 
             //Remove timers        
             vector<chord_timer_message_type> timerTypes = {CHORD_TIMER_RX_ACK, CHORD_TIMER_RX_SUCCESSOR_ON_JOIN};
             vector<chord_tx_message_type> retryMessTypes = {CHORD_TX_JOIN};
             removeTimers(timerTypes, retryMessTypes, rxMess.messageID);                
         
-            //Remove message
-            if (sc_time_stamp() >= timer.creatingTime)
+            //Remove possible retry message
+            if ((sc_time_stamp() >= timer.creatingTime) && (timer.retryMess.type == CHORD_TX_JOIN))
                 eraseTxMess(CHORD_TX_JOIN);
 
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorRemoveTimers successor(finger 0) ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorRemoveTimers successor cwfinger0 ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);
             
             if ((m_cwFingerIndex < m_confParams.fillFingersMinQty) && (m_state == STATE_JOIN))
                 needsFillFingersMinQty = true;
@@ -1546,6 +1682,8 @@ namespace P2P_MODEL
         else {
             m_successor = rxMess.searchedNodeIDwithSocket;
             m_successor.isUpdated = true;
+            m_successor.updateTime = sc_time_stamp();
+            m_cwFingerIndex++;
             if (m_cwFingers.size() > 0)
                 m_cwFingers[0] = m_successor;
 
@@ -1559,107 +1697,139 @@ namespace P2P_MODEL
             if ((sc_time_stamp() >= timer.creatingTime) && (timer.retryMess.type == CHORD_TX_FIND_SUCCESSOR))
                 eraseTxMess(CHORD_TX_FIND_SUCCESSOR);
 
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorRemoveTimers successor(finger 0) ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorRemoveTimers successor finger0 ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);
             needsFillFingersMinQty = false;
-        }        
+        }     
         return needsFillFingersMinQty;
     }
 
-
-    bool low_latency_chord::stabilizeSetSuccessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
+    bool low_latency_chord::setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
         bool isSuccess = false;
-        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) && (isInRange(rxMess.searchedNodeIDwithSocket.id, m_nodeAddr.id, false, m_successor.id, true))) {
-            m_successor = rxMess.searchedNodeIDwithSocket;
-            m_successor.isUpdated;
-            m_cwFingers[0] = m_successor;
-            m_isFirstTimeSetSuccessor = true;                
+        m_predecessor.isUpdated = true;
+        m_predecessor.updateTime = sc_time_stamp();
+        m_ccwFingerIndex = 1;
+        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) || (isInRange(rxMess.searchedNodeIDwithSocket.id, m_predecessor.id, false, m_nodeAddr.id, true))) {
+            m_predecessor = rxMess.searchedNodeIDwithSocket;
+            m_ccwFingers[0] = m_predecessor;
             isSuccess = true;
         }
+        //m_isPredecessorSet = true;
+
+        if (isSuccess)
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setPredecessor predecessor = ccwfinger 0 ") + m_predecessor.toStr(), DEBUG_LOG | INTERNAL_LOG);
+        else
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setPredecessor predecessor is invalid") + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+
+        return isSuccess;
+    }
+
+
+    bool low_latency_chord::setSuccessorStabilize(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
+        bool isSuccess = false;
+        m_successor.isUpdated = true;
+        m_successor.updateTime = sc_time_stamp();        
+        m_cwFingerIndex = 1;
+        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) && (isInRange(rxMess.searchedNodeIDwithSocket.id, m_nodeAddr.id, false, m_successor.id, true))) {
+            m_successor = rxMess.searchedNodeIDwithSocket;
+            m_cwFingers[0] = m_successor;
+            isSuccess = true;
+        }
+        //m_isSuccessorSet = true;
+        
 
         //Remove timers        
         vector<chord_timer_message_type> timerTypes = {CHORD_TIMER_RX_ACK, CHORD_TIMER_RX_PREDECESSOR};
         vector<chord_tx_message_type> retryMessTypes = {CHORD_TX_FIND_PREDECESSOR};
         removeTimers(timerTypes, retryMessTypes, rxMess.messageID);
 
-        //Remove message
-        //if (timer.retryMess.type == CHORD_TX_FIND_SUCCESSOR)
+        //Remove message        
         if ((sc_time_stamp() >= timer.creatingTime) && (timer.retryMess.type == CHORD_TX_FIND_PREDECESSOR))
             eraseTxMess(CHORD_TX_FIND_PREDECESSOR);
 
         if (isSuccess) 
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("stabilizeSetSuccessor successor(cwfinger 0) ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);            
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorStabilize successor = cwfinger 0 ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);            
         else 
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("stabilizeSetSuccessor successor is invalid") + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorStabilize successor is invalid") + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+
         
         return isSuccess;
     }
 
 
     void low_latency_chord::setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {        
-        if (m_isCwFingerUpdating) {
+        if (m_isClockwise) {
             m_cwFingers[m_cwFingerIndex] = rxMess.searchedNodeIDwithSocket;
             m_cwFingers[m_cwFingerIndex].isUpdated = true;
+            m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
             if (m_cwFingerIndex == 0) {
                 m_successor = m_cwFingers[m_cwFingerIndex];
-            }
+                //m_isSuccessorSet = true;
+            }    
             m_cwFingerIndex++;
         }
         else {
             m_ccwFingers[m_ccwFingerIndex] = rxMess.searchedNodeIDwithSocket;
             m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
+            m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
             if (m_ccwFingerIndex == 0) {
                 m_predecessor = m_ccwFingers[m_ccwFingerIndex];
-            }
+                //m_isPredecessorSet = true;
+            }            
             m_ccwFingerIndex++;
-        }
+        }        
 
         //Remove timers        
         vector<chord_timer_message_type> timerTypes = {CHORD_TIMER_RX_ACK, CHORD_TIMER_RX_SUCCESSOR};
         vector<chord_tx_message_type> retryMessTypes = {CHORD_TX_FIND_SUCCESSOR};
         removeTimers(timerTypes, retryMessTypes, rxMess.messageID);
 
-        //Remove message
+        //Remove possible retry message
         if ((sc_time_stamp() >= timer.creatingTime) && (timer.retryMess.type == CHORD_TX_FIND_SUCCESSOR))
             eraseTxMess(CHORD_TX_FIND_SUCCESSOR);
 
-        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setFingerRemoveTimers") + LOG_SPACE + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setFingerRemoveTimers ") + (m_isClockwise ? string("cwfinger") + to_string(m_cwFingerIndex-1) : string("ccwfinger") + to_string(m_ccwFingerIndex-1)) + LOG_SPACE + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
     }
 
 
     void low_latency_chord::setNextState(const finite_state& state) {
         m_state = state;
-        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state), DEBUG_LOG | INTERNAL_LOG);
-
-        pushNewTimer(CHORD_TIMER_UPDATE, 0,0, chord_byte_message_fields());        
+        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state), DEBUG_LOG | INTERNAL_LOG);               
     }
 
 
     void low_latency_chord::setCopyPreviousFinger() {
-        if (m_isCwFingerUpdating) {
-            m_cwFingers[m_cwFingerIndex].isUpdated = true;
+        if (m_isClockwise) {           
             if (m_cwFingerIndex >= 1) {
                 m_cwFingers[m_cwFingerIndex] = m_cwFingers[m_cwFingerIndex-1];
+                m_cwFingers[m_cwFingerIndex].isUpdated = true;
+                m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
             }
             else {
                 m_cwFingers[m_cwFingerIndex] = m_nodeAddr;
+                m_cwFingers[m_cwFingerIndex].isUpdated = true;
+                m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
                 m_successor = m_cwFingers[m_cwFingerIndex];
             }
+            
             m_cwFingerIndex++;
         }
         else {
-            m_ccwFingers[m_cwFingerIndex].isUpdated = true;
+           
             if (m_ccwFingerIndex >= 1) {
                 m_ccwFingers[m_ccwFingerIndex] = m_ccwFingers[m_ccwFingerIndex-1];
+                m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
+                m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
             }
             else {
                 m_ccwFingers[m_ccwFingerIndex] = m_nodeAddr;
-                m_predecessor = m_cwFingers[m_cwFingerIndex];
-                
+                m_predecessor = m_ccwFingers[m_ccwFingerIndex];
+                m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
+                m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
             }
             m_ccwFingerIndex++;
         }
 
-        msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setCopyPreviousFinger") + LOG_SPACE + string("cw ") + LOG_DEC_BOOL(m_isCwFingerUpdating) + string(" finger ") + to_string(m_isCwFingerUpdating ? m_cwFingerIndex-1 : m_ccwFingerIndex-1), DEBUG_LOG | INTERNAL_LOG);
+        msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setCopyPreviousFinger") + LOG_SPACE + string("cw ") + LOG_DEC_BOOL(m_isClockwise) + string(" finger ") + to_string(m_isClockwise ? m_cwFingerIndex-1 : m_ccwFingerIndex-1), DEBUG_LOG | INTERNAL_LOG);
     }
 
 
@@ -1674,7 +1844,8 @@ namespace P2P_MODEL
                 else {
                     return false;
                 }
-            }   break;
+            }
+            break;
 
             case CHORD_TX_FIND_SUCCESSOR: {
                 if (expiredTimer.requestCounter < m_confParams.CtxFindSucc) {
@@ -1685,7 +1856,8 @@ namespace P2P_MODEL
                 else {
                     return false;
                 }
-            }   break;
+            }
+            break;
 
             case CHORD_TX_FIND_PREDECESSOR: {
                 if (expiredTimer.requestCounter < m_confParams.CtxFindSucc) {
@@ -1696,7 +1868,20 @@ namespace P2P_MODEL
                 else {
                     return false;
                 }
-            }   break;
+            }
+            break;
+
+            //case CHORD_TX_NOTIFY: {
+            //    if (expiredTimer.requestCounter < m_confParams.CtxJoin) {
+            //        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("repeatMessage ") + rxMess.type2str() + string(" mID ") + to_string(rxMess.messageID) + string(" reqC ") + to_string(expiredTimer.requestCounter + 1) + string("(") + to_string(m_confParams.CtxJoin) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+            //        issueMessagePushTimers(CHORD_TX_JOIN, false, expiredTimer.requestCounter + 1, rxMess, expiredTimer);
+            //        return true;
+            //    }
+            //    else {
+            //        return false;
+            //    }
+            //}
+            //break;
 
             default:
                 //ERROR
@@ -1709,7 +1894,7 @@ namespace P2P_MODEL
 
     //pair<node_address, uint160> low_latency_chord::whatFingerUpdate() {
     //    uint currFinger;
-    //    if (m_isCwFingerUpdating) {
+    //    if (m_isClockwise) {
     //        if (m_cwFingerIndex == 0)
     //            m_cwFingerIndex++;
     //        currFinger = m_cwFingerIndex;
@@ -1729,6 +1914,379 @@ namespace P2P_MODEL
     }
 
 
+    void low_latency_chord::setNextFingerToUpdate() {
+        uint initialI = min((uint) m_cwFingers.size(), m_confParams.fillFingersMinQty);
+        for (uint i = 0; i < initialI; ++i) {
+            if (m_cwFingers[i].isUpdated == false) {
+                m_cwFingerIndex = i;
+                m_isClockwise = true;
+                return;
+            }
+        }
+
+        if (m_successor.isUpdated == false) {
+            m_cwFingerIndex = 0;
+            m_isClockwise = true;
+            return;
+        }
+
+        if (m_state != STATE_JOIN) {
+            if (m_predecessor.isUpdated == false)  {
+                m_ccwFingerIndex = 0;
+                m_isClockwise = false;
+                return;
+            }
+        }
+
+        for (uint i = initialI; i < m_cwFingers.size(); ++i) {
+            if (m_cwFingers[i].isUpdated == false) {
+                m_cwFingerIndex = i;
+                m_isClockwise = true;
+                return;
+            }
+        }
+
+        
+        for (uint i = 0; i < m_ccwFingers.size(); ++i) {
+            if (m_ccwFingers[i].isUpdated == false) {
+                m_ccwFingerIndex = i;
+                m_isClockwise = false;
+                return;
+            }
+        }
+    }
 
 
+    bool low_latency_chord::doResetFlushIfMess(const chord_message& mess, const bool existMess) {
+        if (existMess == true) {
+            if (mess.type == CHORD_HARD_RESET) {
+                hardReset();
+                goStateLoad();
+                return true;
+            }
+            else if (mess.type == CHORD_SOFT_RESET) {
+                softReset();
+                goStateInit(mess, false);
+                return true;
+            }
+            else if (mess.type == CHORD_FLUSH) {
+                flush();
+                goStateIdle(mess, false);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    bool low_latency_chord::pushTxMessageMemoryList(const chord_message& mess) {
+        //bool exist = false;
+        //buffer_container::iterator it = findTxMessageMemoryList(exist, mess.messageID, mess.type);
+        //if (exist == true) {
+        //    m_txMemoryList.eraseMess(it);        
+        //}
+
+        bool res = false;
+        if (mess.flags.needsACK == NEEDS_ACK) {           
+            //Push message into buffer
+            if (m_txMemoryList.push(mess, true) == true) {
+                res =  true;
+            }
+            else {
+                //OVERFLOW BUFFER
+                m_logText = state2str(m_state) + LOG_TAB + string("pushTxMessageMemoryList") + LOG_TAB + LOG_ERROR_OVERFLOW;
+                msgLog(name(), LOG_TXRX, LOG_WARNING, m_logText, ALL_LOG);
+                res = false;
+            }                   
+        }
+
+        if ((mess.type == CHORD_TX_JOIN) || (mess.type == CHORD_TX_FIND_SUCCESSOR) || (mess.type == CHORD_TX_FIND_PREDECESSOR)) {
+            //Push message into buffer
+            if (m_txMemoryList.push(mess, true) == true) {
+                res = true;
+            }
+            else {
+                //OVERFLOW BUFFER
+                m_logText = state2str(m_state) + LOG_TAB + string("pushTxMessageMemoryList") + LOG_TAB + LOG_ERROR_OVERFLOW;
+                msgLog(name(), LOG_TXRX, LOG_WARNING, m_logText, ALL_LOG);
+                res = false;
+            }    
+        }
+
+        return res;
+        
+        //if (m_txMemoryList.size() < MAX_SIZE_MEMORY_LIST) {
+        //    m_txMemoryList.push(mess);            
+        //}
+        //else {
+        //    buffer_container::iterator minIt = m_txMemoryList.messIterator(0);
+        //    buffer_container::iterator nextMess = minIt;
+        //    uint counter = 1;
+        //    nextMess++;
+        //    while (counter < m_txMemoryList.size()) {
+        //        if (minIt->creatingTime > nextMess->creatingTime) {
+        //            minIt = nextMess;
+        //        }
+        //        nextMess++;
+        //        counter++;
+        //    }
+        //    m_txMemoryList.eraseMess(minIt);
+        //    m_txMemoryList.push(mess);
+        //}
+    }
+
+
+    bool low_latency_chord::eraseTxMessageMemoryList(const chord_message& mess) {
+        buffer_container::iterator memMessIt = m_txMemoryList.messIterator(0);
+        for (uint i = 0; i < m_txMemoryList.size(); ++i) {
+            chord_message memMess = *memMessIt;
+
+            if ((memMess.messageID == mess.messageID) && (memMess.type == mess.type) && (memMess.issuedState == mess.issuedState)) {
+                m_txMemoryList.eraseMess(memMessIt);
+                return true;
+            }
+            memMessIt++;
+        }
+        return false;
+    }
+
+
+    buffer_container::iterator low_latency_chord::findTxMessageMemoryList(bool& exist, const uint messageID, const uint type, const finite_state state) {
+        exist = false;
+        buffer_container::iterator memMessIt = m_txMemoryList.messIterator(0);
+        if (state == STATE_UNKNOWN) {
+            for (uint i = 0; i < m_txMemoryList.size(); ++i) {            
+                if ((memMessIt->messageID == messageID) && (memMessIt->type == type)) {
+                    exist = true;
+                    return memMessIt;
+                }
+                memMessIt++;
+            }
+        }
+        else {
+            for (uint i = 0; i < m_txMemoryList.size(); ++i) {
+                if ((memMessIt->messageID == messageID) && (memMessIt->type == type) && (memMessIt->issuedState == state)) {
+                    exist = true;
+                    return memMessIt;
+                }
+                memMessIt++;
+            }
+        }
+        return memMessIt;
+    }
+
+
+    finite_state low_latency_chord::findStateOnRxReplyMess(const chord_message& rxMess) {
+        bool exist = false;
+        buffer_container::iterator it;
+        uint possibleTxType = CHORD_UNKNOWN;
+
+        if (rxMess.type == CHORD_RX_SUCCESSOR) {
+            vector<uint> possibleTxType = {CHORD_TX_JOIN, CHORD_TX_FIND_SUCCESSOR};
+            for (uint i = 0; i < possibleTxType.size(); ++i) {
+                for (uint stateI = 0; stateI < MAX_FINITE_STATE; ++stateI) {
+                    for (uint typeI = 0; typeI < allowableTxMess[stateI].size(); ++typeI) {
+                        string stateStr = state2str((finite_state)stateI);
+                        if (possibleTxType[i] == allowableTxMess[stateI][typeI]) {
+                            it = findTxMessageMemoryList(exist, rxMess.messageID, possibleTxType[i], (finite_state)stateI);
+                            if (exist) {
+                                m_txMemoryList.eraseMess(it);
+                                return (finite_state)stateI;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (rxMess.type == CHORD_RX_PREDECESSOR) {
+            vector<uint> possibleTxType = {CHORD_TX_FIND_PREDECESSOR};
+            for (uint i = 0; i < possibleTxType.size(); ++i) {
+                for (uint stateI = 0; stateI < MAX_FINITE_STATE; ++stateI) {
+                    for (uint typeI = 0; typeI < allowableTxMess[stateI].size(); ++typeI) {
+                        string stateStr = state2str((finite_state)stateI);
+                        if (possibleTxType[i] == allowableTxMess[stateI][typeI]) {
+                            it = findTxMessageMemoryList(exist, rxMess.messageID, possibleTxType[i], (finite_state)stateI);
+                            if (exist) {
+                                m_txMemoryList.eraseMess(it);
+                                return (finite_state)stateI;
+                            }
+                        }
+                    }
+                }
+            }
+        }       
+        else if (rxMess.type == CHORD_RX_ACK) {
+            if (m_confParams.needsACK == NEEDS_ACK) {
+                vector<uint> possibleTxType = {CHORD_TX_JOIN, CHORD_TX_FIND_SUCCESSOR, CHORD_TX_FIND_PREDECESSOR, CHORD_TX_NOTIFY, CHORD_TX_BROADCAST, CHORD_TX_MULTICAST, CHORD_TX_SINGLE, CHORD_TX_FWD_BROADCAST, CHORD_TX_FWD_MULTICAST, CHORD_TX_FWD_SINGLE};
+                for (uint i = 0; i < possibleTxType.size(); ++i) {
+                    for (uint stateI = 0; stateI < MAX_FINITE_STATE; ++stateI) {
+                        for (uint typeI = 0; typeI < allowableTxMess[stateI].size(); ++typeI) {
+                            string stateStr = state2str((finite_state)stateI);
+                            if (possibleTxType[i] == allowableTxMess[stateI][typeI]) {
+                                it = findTxMessageMemoryList(exist, rxMess.messageID, possibleTxType[i], (finite_state)stateI);
+                                if (exist) {
+                                    m_txMemoryList.eraseMess(it);
+                                    return (finite_state)stateI;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return STATE_UNKNOWN;
+    }
+
+
+
+
+    low_latency_chord::FP low_latency_chord::mess2state(const event_type eventType, const chord_message& rxMess) {       
+        if (arrFunctions.size() == 0) {
+            arrFunctions.resize(MAX_FINITE_STATE, nullptr);
+            arrFunctions[STATE_JOIN] = &low_latency_chord::goStateJoin;
+            arrFunctions[STATE_IDLE] = &low_latency_chord::goStateIdle;
+            arrFunctions[STATE_SERVICE] = &low_latency_chord::goStateService;
+            arrFunctions[STATE_UPDATE] = &low_latency_chord::goStateUpdate;
+            arrFunctions[STATE_INDATA] = &low_latency_chord::goStateIndata;
+            arrFunctions[STATE_APPREQUEST] = &low_latency_chord::goStateApprequest;
+        }
+
+        if (eventType == RX_MESS_RECEIVED) {
+            if (isAddrValid(rxMess) == false)
+                return nullptr;   //Drop message
+
+            finite_state state = findStateOnRxReplyMess(rxMess);
+            if ((state != STATE_UNKNOWN) && (STATE_JOIN <= state) && (state <= STATE_APPREQUEST)) {
+                return arrFunctions[state];
+            }
+            else {
+                switch (rxMess.type) {
+                    case CHORD_RX_JOIN:  
+                        return arrFunctions[STATE_SERVICE];
+
+                    case CHORD_RX_NOTIFY:
+                        return arrFunctions[STATE_UPDATE];
+
+                    case CHORD_RX_FIND_SUCCESSOR: 
+                        return arrFunctions[STATE_SERVICE];                
+
+                    case CHORD_RX_FIND_PREDECESSOR:
+                        return arrFunctions[STATE_SERVICE];
+
+                    case CHORD_RX_ACK: {
+                        return nullptr; //Drop message
+                    }
+
+                    case CHORD_RX_SUCCESSOR: 
+                        return nullptr; //Drop message 
+                                               
+                    case CHORD_RX_PREDECESSOR:
+                        return nullptr; //Drop message 
+
+                    case CHORD_RX_BROADCAST:
+                        return arrFunctions[STATE_INDATA];
+
+                    case CHORD_RX_MULTICAST:
+                        return arrFunctions[STATE_INDATA];
+
+                    case CHORD_RX_SINGLE:
+                        return arrFunctions[STATE_INDATA];
+
+                    default:
+                        return nullptr;
+                }
+            }            
+        }
+        else if (eventType == TIMER_EXPIRED) {            
+            if (rxMess.type == CHORD_TIMER_UPDATE)
+                return arrFunctions[STATE_UPDATE];
+            else if ((rxMess.issuedState >= STATE_JOIN) && (rxMess.issuedState  <= STATE_INDATA))
+                return arrFunctions[rxMess.issuedState];
+            else
+                return nullptr;
+        }
+
+        return nullptr;        
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+        switch (eventType(mess, existMess)) {
+            case CALLED_BY_ANOTHER_STATE: {           
+            }
+            break;
+
+            case TX_MESS_SHOULD_SEND: {
+
+            }
+            break;
+
+            case RX_MESS_RECEIVED: {               //RX Message was received       
+                if (mess.type == CHORD_RX_ACK) {
+                    if (checkMessage(mess, timer, m_errCode) != ERROR) {
+                        switch (timer.issuedState) {
+                            case STATE_SERVICE:    goStateService(mess, true);    break;
+                            case STATE_UPDATE:     goStateUpdate(mess, true);     break;
+                            case STATE_APPREQUEST: goStateApprequest(mess, true); break;
+                            case STATE_INDATA:     goStateIndata(mess, true);     break;
+                            case STATE_JOIN:       goStateJoin(mess, true);       break;
+                        }                        
+                    }
+                }
+                else {
+                    //uint match
+                }
+                
+                
+                if ((mess.type == CHORD_RX_FIND_SUCCESSOR) ||
+                         (mess.type == CHORD_RX_FIND_PREDECESSOR) ||
+                         (mess.type == CHORD_RX_JOIN))
+                {
+                    goStateService(mess, true);
+                }
+                
+            }
+            break;
+
+            case TIMER_EXPIRED:{                     //Timer was expired, analysing
+                
+                timer = mess;
+                switch (timer.issuedState) {
+                    case STATE_SERVICE:    goStateService(mess, true);    break;
+                    case STATE_UPDATE:     goStateUpdate(mess, true);     break;
+                    case STATE_APPREQUEST: goStateApprequest(mess, true); break;
+                    case STATE_INDATA:     goStateIndata(mess, true);     break;
+                    default: {
+                        if (timer.type == CHORD_TIMER_UPDATE)
+                            goStateUpdate(mess, true);
+                    }
+                }
+            }
+            break;
+        }
+*/

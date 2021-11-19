@@ -30,6 +30,7 @@ namespace P2P_MODEL {
     typedef vector<byte>       byte_array;
     typedef data_type          data_unit;
 
+    const uint DENIED = 0;
     const int NONE = -1;
     const uint PID  = 0x01;    //PROTOCOL IDENTIFIER
     const uint IP_4_VERSION = 0; 
@@ -181,16 +182,16 @@ namespace P2P_MODEL {
 
 
     enum finite_state {
-        STATE_LOAD = 0,
+        STATE_OFF = 0,
+        STATE_LOAD,
         STATE_INIT,
         STATE_JOIN,
         STATE_IDLE,
         STATE_INDATA,
         STATE_SERVICE,
         STATE_UPDATE,
-        STATE_APPREQUEST,
-        MAX_FINITE_STATE,
-        STATE_OFF,
+        STATE_APPREQUEST,        
+        MAX_FINITE_STATE,        
         STATE_UNKNOWN
     };
 
@@ -311,24 +312,39 @@ namespace P2P_MODEL {
             return *this;
         }
 
-        string toStr() const {
+        string toStr(const bool isSmalluint = true) const {
             string str;
             str = network_address::toStr() + " ";
-            string hex = id.to_string(SC_HEX_US);
-            str +=  hex.erase(0, 4);
+            if (isSmalluint == true) {
+                //string hex = decToHex(id.to_uint());
+                //str += hex;
+                string hex = id.to_string(SC_HEX_US);
+                str += hex.erase(0, 35);
+            }
+            else {
+                string hex = id.to_string(SC_HEX_US);
+                str +=  hex.erase(0, 4);
+            }
             return str;
         }
 
         friend ostream& operator<< (ostream& out,          const node_address& r);
         friend bool     operator== (const node_address& l, const node_address& r);
 
-    private:
-        uint160 sha1(const string& str) {
+    private:    
+        uint160 sha1(const string& str, const bool isSmalluint = true) {
+            uint160 res;
+
             SHA1 checksum;
             checksum.update(str);
             string strID = checksum.final();
+
             strID.insert(0, "0xus");
-            uint160 res = strID.c_str();
+            res = strID.c_str();
+            
+            if (isSmalluint == true) {
+                res = 1 + res % 10;
+            }
             return res;
         }
     };
@@ -340,24 +356,24 @@ namespace P2P_MODEL {
         uint fingerIndex;
         bool isClockWise;
         bool isUpdated;
+        sc_time updateTime;
 
         node_address_latency() {
             clear();
         };
 
         node_address_latency(const node_address_latency& src) {
-            latency = src.latency;
-            isUpdated = src.isUpdated;
+            *this = src;
         }
 
-        node_address_latency(const node_address& src) {
-            clear();
-            node_address::set(src);
+        node_address_latency(const node_address& src): isUpdated(false), isClockWise(true){
+            //node_address::set(src);
+            *this = src;
         }
 
-        node_address_latency(const network_address& src) {
-            clear();
-            network_address::set(src);            
+        node_address_latency(const network_address& src): isUpdated(false), isClockWise(true) {
+            //network_address::set(src);            
+            *this = src;
         }
 
         void clear() {
@@ -366,14 +382,17 @@ namespace P2P_MODEL {
             fingerIndex = 0;
             isClockWise = true;
             isUpdated = false;
+            updateTime = SC_ZERO_TIME;
         }
 
         void setCopy(const node_address_latency& src) {
+            clear();
             node_address::set(src.ip, src.inSocket, src.outSocket);
             latency = src.latency;
             fingerIndex = src.fingerIndex;
             isClockWise = src.isClockWise;
             isUpdated = src.isUpdated;
+            updateTime = src.updateTime;
         }
 
         node_address_latency& operator= (const node_address_latency& src) {
@@ -383,11 +402,28 @@ namespace P2P_MODEL {
             node_address::operator=(src);
             this->latency = src.latency;
             this->isUpdated = src.isUpdated;
+            this->updateTime = src.updateTime;
+            return *this;
+        }
+
+        node_address_latency& operator= (const node_address& src) {
+            if (this == &src)
+                return *this;
+
+            node_address::operator=(src);            
+            return *this;
+        }
+
+        node_address_latency& operator= (const network_address& src) {
+            if (this == &src)
+                return *this;
+
+            network_address::operator=(src);
             return *this;
         }
 
         string toStr() const {
-            string str = node_address::toStr() + string(" ") + latency.to_string() + string(" index ") + to_string(fingerIndex) + string(" cw ") + (isClockWise ? string("yes") : string("no")) + (isUpdated ? string(" upd") : string(" old"));
+            string str = node_address::toStr() + string(" ") + latency.to_string() + string(" index ") + to_string(fingerIndex) + string(" cw ") + (isClockWise ? string("yes") : string("no")) + (isUpdated ? string(" upd ") : string(" old ")) + updateTime.to_string();
             return str;
         }
 

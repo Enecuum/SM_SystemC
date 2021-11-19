@@ -37,9 +37,10 @@ namespace P2P_MODEL
         BUFF_TX_BROADCAST,
         BUFF_TX_MULTICAST,
         BUFF_TX_SINGLE,
-        
+        BUFF_MEMORY,        
         MAX_BUFF_TYPE,
         BUFF_UNKNOWN
+        
     };
 
     template <class T>
@@ -298,6 +299,7 @@ namespace P2P_MODEL
                 case BUFF_TX_BROADCAST:            typeStr = "BUFF_TX_BROADCAST"; break;
                 case BUFF_TX_MULTICAST:            typeStr = "BUFF_TX_MULTICAST"; break;
                 case BUFF_TX_SINGLE:               typeStr = "BUFF_TX_SINGLE"; break;
+                case BUFF_MEMORY:                  typeStr = "BUFF_MEMORY"; break;
                 default:                           typeStr = "BUFF_UNKNOWN"; break;
             }
             str = typeStr + "\timmediate\t" + string(immediate == true ? "true" : "false") + "\tpri\t" + to_string(priority);

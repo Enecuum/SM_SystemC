@@ -78,9 +78,10 @@ namespace P2P_MODEL
                             const string& text)
     {
         if (m_isEnabled) {
+            std::stringstream ss;
             uint isMatched = primary & secondary;
             if (isMatched > 0) {
-                std::stringstream ss;
+                
                 ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_seconds());
                 ss << LOG_TAB;
                 ss << std::setw(m_maxLenMethodName) << std::setiosflags(std::ios::left) << methodName;
@@ -110,6 +111,13 @@ namespace P2P_MODEL
                     file->open(filePath.data(), std::ofstream::app);
                     *file << ss.str() << text << std::endl;
                 }
+            }
+
+            if (logInOut == LOG_ERROR) {                
+                cout << ss.str() << text << std::endl;
+                cout << "Press enter...";
+                getchar();                
+                exit(-1);
             }
         }
     }

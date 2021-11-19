@@ -9,7 +9,8 @@ namespace P2P_MODEL {
     const int BUFFER_NOT_CHOOSEN = -1;
 
     const sc_time NO_TIMEOUT = SC_ZERO_TIME;
-    //const uint160 MAX_160BIT = uint160("0d14615");
+    
+    const uint MAX_SIZE_MEMORY_LIST = 100;
 
     //Default constants to init buffers of low_latency_chord
     const int MAX_SIZE_BUFF_CONFIG = 100;
