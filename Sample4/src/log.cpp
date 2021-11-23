@@ -77,12 +77,13 @@ namespace P2P_MODEL
                             const string& logInOut,
                             const string& text)
     {
+        char c;
         if (m_isEnabled) {
             std::stringstream ss;
             uint isMatched = primary & secondary;
             if (isMatched > 0) {
                 
-                ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_seconds());
+                ss << std::setw(m_maxLenTime) << std::setiosflags(std::ios::left) << (sc_time_stamp().to_seconds()) /* << " " << (sc_time_stamp().to_seconds() * 1000)*/;
                 ss << LOG_TAB;
                 ss << std::setw(m_maxLenMethodName) << std::setiosflags(std::ios::left) << methodName;
                 ss << LOG_TAB;
@@ -90,13 +91,21 @@ namespace P2P_MODEL
                 ss << logInOut << LOG_TAB;
 
                 static std::map<std::string, std::ofstream*> mapFile;
-                ofstream *file;
+                ofstream* file;
+                
                 bool isOverWrite = false;
                 auto it = mapFile.find(filePath.data());
                 if (it == mapFile.end()) {
-                    file = new ofstream(filePath.data(), std::ofstream::out);
+                    file = new ofstream(filePath.c_str(), std::ofstream::out);                                        
+                    
+                    if (file->bad()) {
+                        cout << "log file `" << filePath.data() << "` not openned. Press text 'y' to abort simulating...";
+                        cin >> c; getchar();
+                        exit(-1);
+                    }
+
                     mapFile[filePath.data()] = file;
-                    isOverWrite = true;
+                    isOverWrite = true;                    
                 }
                 else {
                     file = it->second;
@@ -109,14 +118,19 @@ namespace P2P_MODEL
                 if (isOverWrite) {
                     file->close();
                     file->open(filePath.data(), std::ofstream::app);
+                    if (file->bad()) {
+                        cout << "log file `" << filePath.data() << "` not re-openned. Press text 'y' to abort simulating...";
+                        cin >> c; getchar();
+                        exit(-1);
+                    }
                     *file << ss.str() << text << std::endl;
                 }
             }
 
             if (logInOut == LOG_ERROR) {                
                 cout << ss.str() << text << std::endl;
-                cout << "Press enter...";
-                getchar();                
+                cout << "Press text 'y' to abort simulating...";
+                cin >> c; getchar();
                 exit(-1);
             }
         }

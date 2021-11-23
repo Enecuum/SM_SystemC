@@ -1,4 +1,5 @@
-﻿#include <iostream>
+﻿#include <stdio.h>
+#include <iostream>
 #include <vector>
 #include <string>
 
@@ -6,16 +7,21 @@
 #include "trp/transport_plus.h"
 #include "net/network.h"
 
-
-
 using namespace P2P_MODEL;
 using namespace std;
+
+
+
+const uint NODES = 2;
+uint P2P_MODEL::MAX_SMALL_UINT = NODES;
 
 
 
 int main(int argc, char* argv[])
 {
     setlocale(LC_ALL, "Russian");
+    
+    _setmaxstdio(2048);
 
     vector<string> argvStr;
     for (int i = 0; i < argc; ++i) {
@@ -26,152 +32,140 @@ int main(int argc, char* argv[])
         argvStr[i].erase(itRemoveSymbol, itEnd);
     }
     
+    uint nodes = NODES;
+    application*    applications[NODES];
+    transport_plus* transports[NODES];
+    network         network1("netw", nodes);
+    string str;
 
-    application    application1("application_1");
-    application    application2("application_2");
-    
-    transport_plus   transport1("transport_1");
-    transport_plus   transport2("transport_2");
-
-    uint nodes = 2;
-    network          network1("network", nodes);;
-
-    application1.trp_port.bind(transport1);
-    application2.trp_port.bind(transport2);
-
-    transport1.network_port.bind(network1);
-    transport2.network_port.bind(network1);
+    //Set simulating scenarios of message issuing for Application layer
+    sim_message mess;
+    vector<network_address> addrs;
 
     
-    uint nodeIndex = 0;    
-    network1.trp_ports[nodeIndex++]->bind(transport1);
-    network1.trp_ports[nodeIndex++]->bind(transport2);
+    mess.type = SIM_HARD_RESET;
+    mess.amount = 1;
+    mess.firstDelay = sc_time(0, SC_MS);
 
-    //Set initial settings of layers: Application, Transport+ and Network model
-    application1.setEnabledLog();
-    application1.setLogMode(ALL_LOG);
-    application1.setPathLog("./log/app1.txt");
 
-    transport1.setEnabledLog();
-    transport1.setLogMode(ALL_LOG);
-    transport1.setPathLog("./log/trp1.txt");
+    for (uint i = 0; i < nodes; ++i) {
+        str = string("app") + to_string(i);
+        applications[i] = new application(str.c_str());
+        str = string("trp") + to_string(i);
+        transports[i] = new transport_plus(str.c_str());
 
-    application2.setEnabledLog();
-    application2.setLogMode(ALL_LOG);
-    application2.setPathLog("./log/app2.txt");
+        applications[i]->trp_port.bind( *(transports[i]) );
+        transports[i]->network_port.bind(network1);
+        network1.trp_ports[i]->bind( *(transports[i]) );
 
-    transport2.setEnabledLog();
-    transport2.setLogMode(ALL_LOG);
-    transport2.setPathLog("./log/trp2.txt");
+        applications[i]->setEnabledLog();
+        applications[i]->setLogMode(ALL_LOG);        
+        str = "./log/app" /* + to_string(i)*/ + string(".txt");
+        applications[i]->setPathLog(str.c_str());
+        applications[i]->msgLog(applications[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
+
+        transports[i]->setEnabledLog();
+        transports[i]->setLogMode(ALL_LOG);
+        str = "./log/trp" + to_string(i) + string(".txt");
+        transports[i]->setPathLog(str);
+        transports[i]->msgLog(transports[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
+        
+        applications[i]->pushSimulatingMess(mess);
+        mess.firstDelay += sc_time(0.0, SC_SEC);
+
+        chord_conf_parameters params;
+        str = string("192.168.0.") + to_string(i);
+        params.netwAddr.set(str.c_str(), 1111, 2222);
+        params.setDefaultTimersCountersFingersSize();
+
+        addrs.push_back(params.netwAddr);
+        
+        if (i >= 1) {
+            params.seed.push_back(addrs.at(0/*i-1*/));
+        }
+        transports[i]->setConfParameters(params);
+    }
+    
+    mess.clear();
+    mess.type = SIM_PAUSE;
+    mess.amount = 1;
+    mess.firstDelay = sc_time(10, SC_SEC);
+    applications[1]->pushSimulatingMess(mess);
+    
+    
+    mess.clear();
+    mess.type = SIM_CONTINUE;
+    mess.amount = 1;
+    mess.firstDelay = sc_time(30, SC_SEC);
+    applications[1]->pushSimulatingMess(mess);
 
     network1.setEnabledLog();
     network1.setLogMode(ALL_LOG);
     network1.setPathLog("./log/net.txt");
 
-
-    //Set simulating scenarios of message issuing for Application layer
-    sim_message mess;
-
-    //mess.clear();
-    mess.type = SIM_HARD_RESET;
-    mess.amount = 1;
-    mess.firstDelay = sc_time(0, SC_MS);
-    application1.pushSimulatingMess(mess);
-
-
-    //mess.clear();
-    //mess.destNetwAddrs;
-    //mess.type = SIM_SINGLE;
-    //mess.payloadType = DATA;  
-    //mess.amount = 1;
-    //mess.period = sc_time(15, SC_SEC);
-    //mess.firstDelay = sc_time(0, SC_MS);
-    //mess.randType[RAND_DEST] = true;
-    //mess.randFrom[RAND_DEST] = 0;
-    //mess.randTo[RAND_DEST] = 256;
-    //mess.randAmount[RAND_DEST] = 1;
-    //mess.timeUnit = SC_MS;
-    //mess.dataSize = 1000;
-    //application2.pushSimulatingMess(mess);
-
-    //mess.clear();
-    //mess.destNetwAddrs;
-    //mess.type = SIM_MULTICAST;
-    //mess.payloadType = DATA;
-    //mess.amount = 4;
-    //mess.period = sc_time(15, SC_SEC);
-    //mess.firstDelay = sc_time(0, SC_MS);
-    //mess.randType[RAND_DEST] = true;
-    //mess.randFrom[RAND_DEST] = 0;
-    //mess.randTo[RAND_DEST] = 256;
-    //mess.randAmount[RAND_DEST] = 3;
-    //mess.randNeedRecalc[RAND_DEST] = true;
-    //mess.timeUnit = SC_MS;
-    //mess.dataSize = 1000;
-    //application2.pushSimulatingMess(mess);
-
-    mess.clear();
-    mess.type = SIM_HARD_RESET;
-    mess.amount = 1;
-    mess.firstDelay = sc_time(1, SC_MS);
-    application2.pushSimulatingMess(mess);
-
-    //mess.clear();
-    //mess.type = SIM_SOFT_RESET;
-    //mess.amount = 4;
-    //mess.period = sc_time(6, SC_SEC);
-    //mess.firstDelay = sc_time(2, SC_MS);
-    //application2.pushSimulatingMess(mess);
-
-    //mess.clear();
-    //mess.type = SIM_FLUSH;
-    //mess.amount = 5;
-    //mess.period = sc_time(7, SC_SEC);
-    //mess.firstDelay = sc_time(3, SC_MS);
-    //application2.pushSimulatingMess(mess);
-
-
-    //Set configuration parameters of Transport+ layer
-    chord_conf_parameters params1, params2;    
-    params1.netwAddr.set("C0.A8.0.1", 0x115C, 0x0457);
-    params2.netwAddr.set("C0.A8.0.2", 0x115C, 0x0457);
-    
-    params1.setDefaultTimersCountersFingersSize();
-
-    params2.setDefaultTimersCountersFingersSize();
-    params2.seed.push_back(params1.netwAddr);
-   
-    transport1.setConfParameters(params1);
-    transport2.setConfParameters(params2);
-
-
-    //Set configuration parameters of Network model (simplified simulation model of TCP/UDP network)    
-    vector<network_address> addrs;
-    addrs.push_back( params1.netwAddr );
-    addrs.push_back( params2.netwAddr );
-
+    //Set configuration parameters of Network model (simplified simulation model of TCP/UDP network) 
     network1.setNodeAddressList(addrs);
-    network1.setRandomLatencyTable(1, 10, 0);
+    network1.setRandomLatencyTable(150, 150, 0);
     network1.msgLog(network1.name(), LOG_TXRX, LOG_INFO, string("latencies, ms: \n") + network1.latencyTableToStr(), ALL_LOG);
-
-
-
-    //LOG
-    node_address nodeAddr1, nodeAddr2;
-    nodeAddr1 = transport1.getNodeAddress();
-    cout << nodeAddr1 << endl;
-    nodeAddr2 = transport2.getNodeAddress();
-    cout << nodeAddr2 << endl;
-    
-    
     
     //Run simulation
     cout << endl << "Run simulation" << endl;
 
-    sc_start(60*100, SC_SEC);
+    
+    sc_start(300, SC_SEC);
     cout << endl << "Read results" << endl;
 
 
-    cout << endl << "*** Press Enter to exit ***"; getchar();
+    //Free memory layer-by-layer
+    char c;
+    cout << endl << "*** Prepare to free memory used by applications. Press 'y': "; cin >> c;  getchar();
+    for (uint i = 0; i < nodes; ++i) {
+        delete applications[i];
+    }
+    
+    cout << "*** Prepare to free memory used by low_latency_chord. Press 'y': "; cin >> c;
+    for (uint i = 0; i < nodes; ++i) {
+        delete transports[i];
+    }
+    
+    cout << "*** Prepare to free memory used by network. Press 'y': "; cin >> c;
+    network1.~network();
+    
+    cout << "*** Press 'y' to exit: "; cin >> c;
     return 0;
 }
+
+
+
+
+
+//mess.clear();
+//mess.destNetwAddrs;
+//mess.type = SIM_SINGLE;
+//mess.payloadType = DATA;  
+//mess.amount = 1;
+//mess.period = sc_time(15, SC_SEC);
+//mess.firstDelay = sc_time(0, SC_MS);
+//mess.randType[RAND_DEST] = true;
+//mess.randFrom[RAND_DEST] = 0;
+//mess.randTo[RAND_DEST] = 256;
+//mess.randAmount[RAND_DEST] = 1;
+//mess.timeUnit = SC_MS;
+//mess.dataSize = 1000;
+//application2.pushSimulatingMess(mess);
+
+//mess.clear();
+//mess.destNetwAddrs;
+//mess.type = SIM_MULTICAST;
+//mess.payloadType = DATA;
+//mess.amount = 4;
+//mess.period = sc_time(15, SC_SEC);
+//mess.firstDelay = sc_time(0, SC_MS);
+//mess.randType[RAND_DEST] = true;
+//mess.randFrom[RAND_DEST] = 0;
+//mess.randTo[RAND_DEST] = 256;
+//mess.randAmount[RAND_DEST] = 3;
+//mess.randNeedRecalc[RAND_DEST] = true;
+//mess.timeUnit = SC_MS;
+//mess.dataSize = 1000;
+//application2.pushSimulatingMess(mess);

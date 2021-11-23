@@ -2,7 +2,7 @@
 
 namespace P2P_MODEL
 {
-    transport_plus::transport_plus(sc_module_name name): sc_module(name), m_llchord("low_latency_chord")
+    transport_plus::transport_plus(sc_module_name name): sc_module(name), m_llchord("llchord")
     {
         m_llchord.trp_port.bind(*this);
     }
@@ -26,6 +26,9 @@ namespace P2P_MODEL
         case APP_SINGLE:    res.type = CHORD_SINGLE;      break;
         case APP_MULTICAST: res.type = CHORD_MULTICAST;   break;
         case APP_BROADCAST: res.type = CHORD_BROADCAST;   break;
+        case APP_CONF:      res.type = CHORD_CONF;        break;
+        case APP_PAUSE:     res.type = CHORD_PAUSE;       break;
+        case APP_CONTINUE: res.type = CHORD_CONTINUE;     break;
         default:
             //ERROR
             msgLog(name(), LOG_TX, LOG_ERROR, "appMess2chordMess", ALL_LOG);

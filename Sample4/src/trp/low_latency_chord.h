@@ -33,12 +33,17 @@ namespace P2P_MODEL
         TX_MESS_SHOULD_SEND,
         TIMER_EXPIRED,
         APPTXREQUEST,
-        UNAVAILABLE_NODE,
+        INACCESSIBLE_NODE,
         MAX_EVENT_TYPE,
         EVENT_TYPE_UNKNOWN
     };
 
-
+    enum update_type {
+        FIX_FINGER = 0,
+        STABILIZE_SUCCESSOR,
+        CHECK_PREDECESSOR,
+        INACCESSIBLE_FINGER
+    };
     
     
     class low_latency_chord: public sc_module,
@@ -48,6 +53,8 @@ namespace P2P_MODEL
         sc_port<trp_llchord_if> trp_port;
 
     private:
+        const uint160 MAX_UINT160 = -1;
+
         node_address_latency m_nodeAddr;                        //�����, ������������ ��� ������������� ���� �� Transport+ ������ �� ID, �����������, ��� SHA-1
         uint         m_currSeed;
         
@@ -79,40 +86,33 @@ namespace P2P_MODEL
         bool m_isPredecessorSet;
         
         vector<uint160> m_fingerMask;
-        bool m_isClockwise;
+        bool m_isClockWise;
         uint m_messageID;
 
         bool m_canTakeDelayedTimers;
+        bool m_isRequestGotReply;
+        bool m_isPaused;
 
         string m_errCode;
-        //uint m_cwFingerIndexToUpdate;
-        //uint m_ccwFingerIndexToUpdate;
+        uint m_cwFingerIndexToUpdate;
+        uint m_ccwFingerIndexToUpdate;
         uint m_cwFingerIndex;
         uint m_ccwFingerIndex;
+        bool m_isNowUpdate;
+        update_type m_updateType;
+        bool m_isNowStabilize;        
         
-        vector<node_address_latency> m_unavailableFingers;
         vector<vector<uint>> allowableTimers;
         vector<vector<uint>> allowableRxMess;
         vector<vector<uint>> allowableTxMess;
         vector<vector<uint>> allowableAppreqs;
 
-        class message_id_with_state {
-        public:
-            uint id;
-            uint type;
-            finite_state state;
-            sc_time time;
 
-            message_id_with_state(const uint _id, const uint _type, const finite_state _state, const sc_time& _time) {
-                this->id    = _id;
-                this->type  = _type;
-                this->state = _state;
-                this->time  = _time;
-            }
-        };
-
-        //vector<message_id_with_state> m_messMemoryList;
+        vector<bad_finger_with_retry_timer> m_inaccessibleFingers;
         message_buffer<chord_message> m_txMemoryList;
+        
+
+
         
 
     public:
@@ -136,7 +136,7 @@ namespace P2P_MODEL
         void hardReset();
         void softReset();
         void flush();
-        bool doResetFlushIfMess(const chord_message& mess, const bool existMess); 
+        bool doResetFlushPauseIfMess(const chord_message& mess, const bool existMess); 
 
         void goStateLoad(); 
         void goStateInit(const chord_message& mess, const bool existMess);
@@ -159,7 +159,7 @@ namespace P2P_MODEL
         chord_message firstMessByPriority(bool& exist);
         void eraseFirstMess();
         void eraseTxMess(const chord_tx_message_type type);
-        void pushNewTimer(const chord_timer_message& type, const bool toBack = true);
+        void pushNewTimer(const chord_timer_message& timer, const bool toBack = true);
         void pushNewTimer(const chord_timer_message_type type, const uint retryCounter, const uint requestCounter, const chord_byte_message_fields& retryMess, const bool toBack = true);
         void removeTimer(const chord_timer_message_type timerType, const chord_tx_message_type retryMessType, const uint retryMessID);
         void removeTimer(buffer_container::iterator timerIt);
@@ -170,7 +170,7 @@ namespace P2P_MODEL
 
         string state2str(const finite_state& state) const;
 
-        chord_action findSuccessor(const uint160& id, node_address& found);
+        chord_action findSuccessor(const uint160& id, const uint160& senderID, node_address& found);
         chord_action findPredecessor(const uint160& searchedID, node_address& found);
         bool isClockWiseDirection(const uint160& id);
         node_address closestPrecedingNode(const uint160& id);
@@ -197,7 +197,7 @@ namespace P2P_MODEL
         bool setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setSuccessorStabilize(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
-        void setNextFingerToUpdate();
+        update_type setNextFingerToUpdate(const bool isTimerUpdateExpired = false, const node_address_latency badFinger = node_address_latency());
         
         bool issueMessagePushTimers(const chord_tx_message_type& type, const bool isRetry = false, const uint requestCounter = 0, const chord_byte_message_fields rxMess = chord_byte_message_fields(), const chord_timer_message expiredTimer = chord_timer_message(), const chord_action action = DO_REQUEST, const node_address fingerAddr = node_address());
         bool repeatMessage(const chord_tx_message_type& type, const chord_byte_message_fields& rxMess, const chord_timer_message& expiredTimer);
@@ -212,6 +212,8 @@ namespace P2P_MODEL
         bool eraseTxMessageMemoryList(const chord_message& mess);
         buffer_container::iterator findTxMessageMemoryList(bool& exist, const uint messageID, const uint type, const finite_state state = STATE_UNKNOWN);
         finite_state findStateOnRxReplyMess(const chord_message& rxMess);
+        void pushInaccessibleFinger(const chord_timer_message& timer);
+        void eraseFirstInaccessFingersIssueNewMessage();
     };
 }
 #endif

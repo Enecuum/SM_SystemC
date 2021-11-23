@@ -23,6 +23,7 @@ namespace P2P_MODEL
         sc_event m_eventGenerateBroadcast;
         sc_event m_eventGeneratePause;
         sc_event m_eventGenerateContinue;
+        sc_event m_eventGenerateConfigurating;
 
         sc_event m_eventStart;
         
@@ -31,6 +32,9 @@ namespace P2P_MODEL
 
         bool m_isPaused;
         vector<bool> m_isTriggeredReq;
+        
+        typedef void(application::* FP)();  //FP is function pointer
+        vector<FP> arrFunctions;
     
     public:
         sc_port<trp_application_if> trp_port;
@@ -61,9 +65,14 @@ namespace P2P_MODEL
         void generatePause();
 
         void generateContinue();
+        
+        void generateConfigurating();
 
         void generateMess(const sim_message_type& type);
 
+        FP mess2generateFunc(const sim_message_type& type);
+
+        sc_event* mess2generateEvent(const sim_message_type& type);
         
         void pushSimulatingMess(const sim_message& mess);
 

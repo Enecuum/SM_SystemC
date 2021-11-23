@@ -29,7 +29,7 @@ namespace P2P_MODEL
     #define LOG_BOOL(m)   (m == true ? string("yes") : string("no"))
     #define LOG_DEC_BOOL(m)   (m == 1 ? string("yes") : string("no"))
 
-    const int MAX_LEN_METHOD_NAME = 30;
+    const int MAX_LEN_METHOD_NAME = 30/2;
     const int MAX_LEN_TIME = 20;
 
     enum log_mode {

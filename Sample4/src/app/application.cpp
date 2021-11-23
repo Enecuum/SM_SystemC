@@ -28,6 +28,18 @@ namespace P2P_MODEL
         dont_initialize();
         sensitive << m_eventGenerateBroadcast;
 
+        SC_METHOD(generatePause);
+        dont_initialize();
+        sensitive << m_eventGeneratePause;
+
+        SC_METHOD(generateContinue);
+        dont_initialize();
+        sensitive << m_eventGenerateContinue;
+
+        SC_METHOD(generateConfigurating);
+        dont_initialize();
+        sensitive << m_eventGenerateConfigurating;
+
         SC_METHOD(run);        
         sensitive << m_eventStart;  
         
@@ -42,14 +54,20 @@ namespace P2P_MODEL
 
 
 
-    void application::run() {      
+    void application::run() {  
+//DEBUG
+        if (string(name()) == string("app800"))
+            int tmp = 0;
+
         for (int i = 0; i < m_reqs.size(); ++i) {
             if (m_reqs[i].size() > 0) {
                 vector<sim_message>::iterator r = m_reqs[i].begin();
                 switch (r->type)
                 {
-                case SIM_HARD_RESET:
-                    m_eventGenerateHardReset.notify(r->firstDelay);
+                case SIM_HARD_RESET: {
+                    string time = r->firstDelay.to_string();
+                    m_eventGenerateHardReset.notify(r->firstDelay);                    
+                    }
                     break;
 
                 case SIM_SOFT_RESET:
@@ -73,16 +91,16 @@ namespace P2P_MODEL
                     break;
 
                 case SIM_PAUSE:
-                    if (r->firstDelay == SC_ZERO_TIME)
-                        m_isPaused = true;
-                    else
+                    //if (r->firstDelay == SC_ZERO_TIME)
+                    //    m_isPaused = true;
+                    //else
                         m_eventGeneratePause.notify(r->firstDelay);
                     break;
 
                 case SIM_CONTINUE:
-                    if (r->firstDelay == SC_ZERO_TIME)
-                        m_isPaused = false;
-                    else
+                    //if (r->firstDelay == SC_ZERO_TIME)
+                    //    m_isPaused = false;
+                    //else
                         m_eventGenerateContinue.notify(r->firstDelay);
                     break;
 
@@ -97,11 +115,115 @@ namespace P2P_MODEL
     }
 
 
+    application::FP application::mess2generateFunc(const sim_message_type& type) {
+        if (arrFunctions.size() == 0) {
+            arrFunctions.resize(MAX_SIM_MESS_TYPE, nullptr);
+            arrFunctions[SIM_HARD_RESET] = &application::generateHardReset;
+            arrFunctions[SIM_SOFT_RESET] = &application::generateSoftReset;
+            arrFunctions[SIM_FLUSH]      = &application::generateFlush;
+            arrFunctions[SIM_SINGLE]     = &application::generateSingle;
+            arrFunctions[SIM_MULTICAST]  = &application::generateMulticast;
+            arrFunctions[SIM_BROADCAST]  = &application::generateBroadcast;
+            arrFunctions[SIM_CONTINUE] = &application::generateContinue;
+            arrFunctions[SIM_PAUSE] = &application::generatePause;
+            arrFunctions[SIM_CONF] = &application::generateConfigurating;
+        }
+
+        switch (type) {
+        case SIM_HARD_RESET:
+            return arrFunctions[SIM_HARD_RESET];
+
+        case SIM_SOFT_RESET:
+            return arrFunctions[SIM_SOFT_RESET];
+
+        case SIM_FLUSH:
+            return arrFunctions[SIM_FLUSH];
+
+        case SIM_SINGLE:
+            return arrFunctions[SIM_SINGLE];
+
+        case SIM_MULTICAST: 
+            return arrFunctions[SIM_MULTICAST];
+
+        case SIM_BROADCAST:
+            return arrFunctions[SIM_BROADCAST];
+
+        case SIM_CONTINUE:
+            return arrFunctions[SIM_CONTINUE];
+
+        case SIM_PAUSE:
+            return arrFunctions[SIM_PAUSE];
+
+        case SIM_CONF:
+            return arrFunctions[SIM_CONF];
+
+        default:
+            return nullptr;
+        }
+    }
+
+
+    sc_event* application::mess2generateEvent(const sim_message_type& type) {        
+        switch (type) {
+        case SIM_HARD_RESET:
+            return &m_eventGenerateHardReset;
+
+        case SIM_SOFT_RESET:
+            return &m_eventGenerateSoftReset;
+
+        case SIM_FLUSH:
+            return &m_eventGenerateFlush;
+
+        case SIM_SINGLE:
+            return &m_eventGenerateSingle;
+
+        case SIM_MULTICAST:
+            return &m_eventGenerateMulticast;
+
+        case SIM_BROADCAST:
+            return &m_eventGenerateBroadcast;
+
+        case SIM_CONTINUE:
+            return &m_eventGenerateContinue;
+
+        case SIM_PAUSE:
+            return &m_eventGeneratePause;
+
+        case SIM_CONF:
+            return &m_eventGenerateConfigurating;
+
+        default:
+            return nullptr;
+        }
+    }
+
+
     void application::generateMess(const sim_message_type& type) {
+        if (type == SIM_CONTINUE)
+            m_isPaused = false;
+
         if (m_isPaused) {
             m_isTriggeredReq[type] = true;
         }
-        else {             
+        else { 
+            if (type == SIM_PAUSE) {
+                m_isPaused = true;
+            }
+            else if (type == SIM_CONTINUE){
+                if (m_isPaused == true) {
+                    m_isPaused = false;
+                    for (uint i = 0; i < m_isTriggeredReq.size(); ++i) {
+                        if (m_isTriggeredReq[i] == true) {
+                            m_isTriggeredReq[i] = false;
+                            sc_event* e;
+                            e = mess2generateEvent((sim_message_type) i);
+                            if (e != nullptr)
+                                e->notify(0, SC_MS);
+                        }
+                    }
+                }
+            }
+
             if (!(type < m_reqs.size())) {
                 //ERROR
                 m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + sim_message().type2str(type);
@@ -125,6 +247,9 @@ namespace P2P_MODEL
             case SIM_HARD_RESET: 
             case SIM_SOFT_RESET:
             case SIM_FLUSH: 
+            case SIM_PAUSE:
+            case SIM_CONTINUE:
+            case SIM_CONF:
                 trp_port->config_req(a);
                 break;
                 
@@ -176,6 +301,7 @@ namespace P2P_MODEL
             case SIM_BROADCAST: m_eventGenerateBroadcast.notify(nextGenerate); break;
             case SIM_PAUSE: m_eventGeneratePause.notify(nextGenerate); break;
             case SIM_CONTINUE: m_eventGenerateContinue.notify(nextGenerate); break;
+            case SIM_CONF: m_eventGenerateConfigurating.notify(nextGenerate); break;
             default:
                 //ERROR        
                 m_logText = "generateMess" + LOG_TAB + LOG_ERROR_NOT_RECOGNIZED + LOG_SPACE + currReq->type2str();
@@ -208,6 +334,8 @@ namespace P2P_MODEL
         case SIM_SINGLE:     return APP_SINGLE;
         case SIM_MULTICAST:  return APP_MULTICAST;
         case SIM_BROADCAST:  return APP_BROADCAST;       
+        case SIM_PAUSE:      return APP_PAUSE;
+        case SIM_CONTINUE:   return APP_CONTINUE;
         case SIM_CONF:       return APP_CONF;
         default:
             //ERROR
@@ -364,16 +492,16 @@ namespace P2P_MODEL
 
 
     void application::generatePause() {
-        msgLog(name(), LOG_TX, LOG_OUT, "generate_pause", DEBUG_LOG | EXTERNAL_LOG);
-        m_isPaused = true;
-        m_eventGeneratePause.notify(100, SC_MS);
+        generateMess(SIM_PAUSE);
     }
 
 
     void application::generateContinue() {
-        msgLog(name(), LOG_TX, LOG_OUT, "generate_continue", DEBUG_LOG | EXTERNAL_LOG);
-        m_isPaused = false;
-        m_eventGenerateContinue.notify(100, SC_MS);
+        generateMess(SIM_CONTINUE);
+    }
+
+    void application::generateConfigurating() {
+        generateMess(SIM_CONF);
     }
 
 

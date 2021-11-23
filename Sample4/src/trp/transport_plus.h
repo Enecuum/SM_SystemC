@@ -23,8 +23,7 @@ namespace P2P_MODEL
                            public trp_llchord_if
     {
     public:
-        sc_port<network_trp_if> network_port;
-        //sc_event m_eventSendMess;
+        sc_port<network_trp_if> network_port;        
 
     private:
         low_latency_chord m_llchord;

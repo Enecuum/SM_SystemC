@@ -28,9 +28,9 @@ namespace P2P_MODEL {
     //Default constants to init timers of low_latency_chord
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(14.0, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN/2;
-    const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR;
+    const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR/3;
     const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1.0, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(0.500, SC_SEC);       
+    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(0.8, SC_SEC);       
     const sc_time DEFAULT_TIMEOUT_RX_DUPLE = 2*DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN;
 
     //Default constants to init retry counters of low_latency_chord
@@ -38,11 +38,41 @@ namespace P2P_MODEL {
     const uint    DEFAULT_COUNTER_TX_FIND_SUCC = 1;
     const uint    DEFAULT_COUNTER_TX_RETRY = 1;
     const uint    DEFAULT_COUNTER_RX_DUPLE = 1;
-    const uint    DEFAULT_FINGERS_SIZE = 32;
+    const uint    DEFAULT_FINGERS_SIZE = 10;
     const uint    DEFAULT_NEEDS_ACK = 1;   
-    const uint    DEFAULT_FILL_FINGERS_MIN_QTY = 2;
+    const uint    DEFAULT_FILL_FINGERS_MIN_QTY = 0;
     
-    
+
+
+    class bad_finger_with_retry_timer {
+    public:
+        node_address_latency badFinger;
+        chord_timer_message  timer;
+
+        bad_finger_with_retry_timer() {
+            badFinger.clear();
+            timer.clear();
+        }
+
+        bad_finger_with_retry_timer(const bad_finger_with_retry_timer& src) {
+            *this = src;
+        }
+
+        bad_finger_with_retry_timer(const node_address_latency& badFinger, const chord_timer_message& timer) {
+            this->badFinger.setCopy(badFinger);
+            this->timer = timer;
+        }
+
+        bad_finger_with_retry_timer& operator= (const bad_finger_with_retry_timer& src) {
+            if (this == &src)
+                return *this;
+            this->badFinger.setCopy(src.badFinger);
+            this->timer = src.timer;
+            return *this;
+        }
+    };
+
+
 
     class chord_conf_parameters {
     public:
