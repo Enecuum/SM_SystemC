@@ -26,11 +26,11 @@ namespace P2P_MODEL {
     const int MAX_DEEP_BUFF_TX_MESS = MAX_DEEP_BUFF_APPTXDATA + MAX_DEEP_BUFF_RX_MESS + 1;
     
     //Default constants to init timers of low_latency_chord
-    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(14.0, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(20.0, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN/2;
     const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR/3;
-    const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1.0, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(0.8, SC_SEC);       
+    const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(2.0, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(1.5, SC_SEC);       
     const sc_time DEFAULT_TIMEOUT_RX_DUPLE = 2*DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN;
 
     //Default constants to init retry counters of low_latency_chord
@@ -38,10 +38,15 @@ namespace P2P_MODEL {
     const uint    DEFAULT_COUNTER_TX_FIND_SUCC = 1;
     const uint    DEFAULT_COUNTER_TX_RETRY = 1;
     const uint    DEFAULT_COUNTER_RX_DUPLE = 1;
-    const uint    DEFAULT_FINGERS_SIZE = 10;
+    const uint    DEFAULT_FINGERS_SIZE = 2;
     const uint    DEFAULT_NEEDS_ACK = 1;   
     const uint    DEFAULT_FILL_FINGERS_MIN_QTY = 0;
     
+
+    //class snapshot {
+    //public:
+    //    snapshot() {}
+    //};
 
 
     class bad_finger_with_retry_timer {

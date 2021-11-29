@@ -585,13 +585,20 @@ namespace P2P_MODEL
                             if (isIssueSuccess == false) {
                                 isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                                 if (isRepeatSuccess == false) {
-                                    setCopyPreviousFinger();
-                                    m_updateType = setNextFingerToUpdate();
-                                    if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
-                                        issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);          
+                                    if (setCopyPreviousAliveFinger() == false) {
+                                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                                        chord_conf_message reset;
+                                        reset.type = CHORD_HARD_RESET;
+                                        pushNewMessage(reset);
+                                    }
                                     else {
-                                        setNextState(STATE_IDLE);
-                                        pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());                                    
+                                        m_updateType = setNextFingerToUpdate();
+                                        if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
+                                            issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);
+                                        else {
+                                            setNextState(STATE_IDLE);
+                                            pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
+                                        }
                                     }
                                 }
                             }
@@ -609,14 +616,21 @@ namespace P2P_MODEL
                         if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
                             removeTimer(CHORD_TIMER_RX_ACK, CHORD_TX_FIND_SUCCESSOR, mess.retryMess.messageID);
                             isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
-                            if (isRepeatSuccess == false) {
-                                setCopyPreviousFinger();
-                                m_updateType = setNextFingerToUpdate();
-                                if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
-                                    issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);              
+                            if (isRepeatSuccess == false) {                                
+                                if (setCopyPreviousAliveFinger() == false) {
+                                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                                    chord_conf_message reset;
+                                    reset.type = CHORD_HARD_RESET;
+                                    pushNewMessage(reset);
+                                }
                                 else {
-                                    setNextState(STATE_IDLE);
-                                    pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
+                                    m_updateType = setNextFingerToUpdate();
+                                    if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
+                                        issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);
+                                    else {
+                                        setNextState(STATE_IDLE);
+                                        pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
+                                    }
                                 }
                             }
                         }
@@ -667,6 +681,10 @@ namespace P2P_MODEL
                 break;
 
                 case TIMER_EXPIRED:{                     //Timer was expired, analysing                
+//DEBUG             
+if (sc_time_stamp() >= sc_time(10.95, SC_SEC))
+    int tmp = 0;
+
                     funcPointer = mess2state(evType, mess);
                     if (funcPointer != nullptr)
                         (this->*funcPointer)(mess, existMess);
@@ -687,15 +705,11 @@ namespace P2P_MODEL
         
         if (m_isPaused == false) {        
            
-           chord_message newMess;
+            chord_message newMess;
             chord_timer_message timer;
             node_address lookupAddr;
             bool isIssueSuccess;
-    //DEBUG
-            if ((name() == string("trp0.llchord")) && (mess.type == CHORD_RX_FIND_SUCCESSOR)) {
-                int tmp = 0;            
-            }
-            
+
 
             switch (eventType(mess, existMess)) {
                 case CALLED_BY_ANOTHER_STATE: {
@@ -720,9 +734,14 @@ namespace P2P_MODEL
                                 setNextState(STATE_SERVICE);
                             }
 
+//DEBUG
+if ((name() == string("trp2.llchord")) && (mess.type == CHORD_RX_FIND_SUCCESSOR) && (sc_time_stamp() >= sc_time(6.5, SC_SEC))) {
+    int tmp = 0;
+}
+
                             issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);            
 
-                            chord_action action = findSuccessor(mess.searchedNodeIDwithSocket.id, mess.srcNodeIDwithSocket.id, lookupAddr);
+                            chord_action action = findSuccessor(mess.searchedNodeIDwithSocket.id, mess.srcNodeIDwithSocket.id, mess.initiatorNodeIDwithSocket.id, lookupAddr);
                             if (action == DO_REPLY)
                                 issueMessagePushTimers(CHORD_TX_SUCCESSOR, false, 0, mess, chord_timer_message(), DO_REPLY, lookupAddr);
                             else if (action == DO_FORWARD)
@@ -768,14 +787,15 @@ namespace P2P_MODEL
 
     void low_latency_chord::goStateUpdate(const chord_message& mess, const bool existMess)  {
         m_state = STATE_UPDATE;
-        msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG | INTERNAL_LOG);
-
+        msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG | INTERNAL_LOG);        
 
         if (doResetFlushPauseIfMess(mess, existMess) == true)
             return;
         
         if (m_isPaused == false) {
-        
+
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("isNowUpdate = ") + LOG_BOOL(m_isNowUpdate), DEBUG_LOG | INTERNAL_LOG);
+
             chord_message newMess;
             node_address lookupAddr;
             bool isIssueSuccess;
@@ -813,7 +833,6 @@ namespace P2P_MODEL
                         if (checkMessage(mess, timer, m_errCode) != ERROR) {  
                             m_isNowUpdate = false;
                             setFingerRemoveTimers(mess, timer);                        
-                            //setNextFingerToUpdate();
                         }
                     }
                     else if (mess.type == CHORD_RX_PREDECESSOR) {
@@ -837,7 +856,6 @@ namespace P2P_MODEL
                             issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);
 
                             setPredecessor(mess, timer);
-                            //setNextFingerToUpdate();
                         }
                     }
                 }
@@ -847,24 +865,23 @@ namespace P2P_MODEL
                     timer = mess;
                     if (mess.type == CHORD_TIMER_RX_ACK) {
                         if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
+//DEBUG
+if (name() == string("trp2.llchord")) {
+    int tmp = 0;
+}
                             removeTimer(CHORD_TIMER_RX_SUCCESSOR, CHORD_TX_FIND_SUCCESSOR, mess.retryMess.messageID);                        
                             isIssueSuccess = issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, true, timer.requestCounter, mess.retryMess, timer, DO_REQUEST, mess.retryMess.searchedNodeIDwithSocket);
                             if (isIssueSuccess == false) {
                                 isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                                 if (isRepeatSuccess == false) {
                                     m_isNowUpdate = false;
-                                    if (m_isClockWise == true)
-                                        setCopyPreviousFinger();     
-                                    else {
-                                        setCopyPreviousFinger();
-                                        if (m_ccwFingerIndex == 0) {                                       
-                                            m_predecessor.clear();
-                                            m_predecessor.fingerIndex = 0;
-                                            m_predecessor.isUpdated = false;
-                                            m_predecessor.isClockWise = false;
-                                        }
+                                    if (setCopyPreviousAliveFinger() == false) {
+                                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                                        chord_conf_message reset;
+                                        reset.type = CHORD_HARD_RESET;
+                                        pushNewMessage(reset);
                                     }
-                                    //setNextFingerToUpdate();
+                                    
                                 }     
                             }
                         }
@@ -875,8 +892,6 @@ namespace P2P_MODEL
                                 isRepeatSuccess = repeatMessage(CHORD_TX_FIND_PREDECESSOR, mess.retryMess, timer);
                                 if (isRepeatSuccess == false) {
                                     m_isNowUpdate = false;
-                                    //setCopyPreviousFinger();
-                                    //setNextFingerToUpdate();
                                     msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("ACK wasn't received on TX_FIND_PREDECESSOR ") + to_string(m_updateType), ALL_LOG);
                                 }
                             }
@@ -894,23 +909,32 @@ namespace P2P_MODEL
                         isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                         if (isRepeatSuccess == false) {
                             m_isNowUpdate = false;
-                            setCopyPreviousFinger();
-                            //setNextFingerToUpdate();
+                            if (setCopyPreviousAliveFinger() == true) {
+                                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                                chord_conf_message reset;
+                                reset.type = CHORD_HARD_RESET;
+                                pushNewMessage(reset);
+                            } 
                         }
                     }
                     else if (mess.type == CHORD_TIMER_RX_PREDECESSOR) {
                         isRepeatSuccess = repeatMessage(CHORD_TX_FIND_PREDECESSOR, mess.retryMess, timer);
                         if (isRepeatSuccess == false) {
                             m_isNowUpdate = false;
-                            setCopyPreviousFinger();
-                            //setNextFingerToUpdate();
+                            if (setCopyPreviousAliveFinger() == false) {
+                                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                                chord_conf_message reset;
+                                reset.type = CHORD_HARD_RESET;
+                                pushNewMessage(reset);
+                            }
                         }
                     }
                     else if (mess.type == CHORD_TIMER_UPDATE) {                    
-                        pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
-                    
+                        pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());                    
+
                         if (m_isNowUpdate == false) {
                             m_isNowUpdate = true;
+
                             m_updateType = setNextFingerToUpdate(true);
                             if (m_updateType == STABILIZE_SUCCESSOR)
                                 issueMessagePushTimers(CHORD_TX_FIND_PREDECESSOR, false, 0);                    
@@ -927,7 +951,8 @@ namespace P2P_MODEL
                 break;
             }        
 
-            setNextState(STATE_IDLE);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("isNowUpdate = ") + LOG_BOOL(m_isNowUpdate), DEBUG_LOG | INTERNAL_LOG);
+            setNextState(STATE_IDLE);            
         }
     }
 
@@ -1076,12 +1101,12 @@ namespace P2P_MODEL
 
 
     void low_latency_chord::sendMessage(const chord_message& mess) {
-        if (mess.destNodeIDwithSocket.isNone()) {
+        if ((mess.destNodeIDwithSocket.isNone()) || (mess.destNodeIDwithSocket.id == m_nodeAddr.id)) {
             //ERROR
-            m_logText = "sendMessage" + LOG_TAB + LOG_ERROR_NO_ADDR;
+            m_logText = "sendMessage" + LOG_TAB + LOG_ERROR_NO_ADDR + LOG_SPACE + mess.toStr();
             msgLog(name(), LOG_TX, LOG_ERROR, m_logText, ALL_LOG);
-        }
-
+            return;
+        }        
 
         //LOG
         m_logText = state2str(m_state) + LOG_TAB + string("sendMessage") + LOG_TAB + mess.toStr();
@@ -1089,6 +1114,8 @@ namespace P2P_MODEL
 
         chord_byte_message raw;
         raw.fields = mess;
+
+
 
         pushTxMessageMemoryList(mess);
 
@@ -1122,7 +1149,7 @@ namespace P2P_MODEL
     }
 
 
-    node_address low_latency_chord::closestPrecedingNode(const uint160& searchedID) {
+    node_address low_latency_chord::closestPrecedingNode(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID) {
         node_address_latency found1, found2;       
         uint160 n  = m_nodeAddr.id < searchedID ? m_nodeAddr.id : searchedID;
         uint160 id = m_nodeAddr.id > searchedID ? m_nodeAddr.id : searchedID;
@@ -1130,7 +1157,9 @@ namespace P2P_MODEL
             if (m_cwFingers.size() > 0) {
                 for (int i = (int)m_cwFingers.size()-1; i >= 0; --i) {
 
-                    if ((n < m_cwFingers[i].id) && (m_cwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) {
+                    if (((n < m_cwFingers[i].id) && (m_cwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) &&
+                        (m_cwFingers[i].id != senderID) && (m_cwFingers[i].id != initiatorID))
+                    {
                         found1.setCopy(m_cwFingers[i]);
                         
                         if (i-1 >= 0) {
@@ -1147,7 +1176,9 @@ namespace P2P_MODEL
         else {
             if (m_ccwFingers.size() > 0) {
                 for (int i = (int) m_ccwFingers.size()-1; i >= 0; --i) {
-                    if ((n < m_ccwFingers[i].id) && (m_ccwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) {
+                    if (((n < m_ccwFingers[i].id) && (m_ccwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) &&
+                        (m_ccwFingers[i].id != senderID) && (m_ccwFingers[i].id != initiatorID))
+                    {
                         found1.setCopy(m_ccwFingers[i]);
 
                         if (i - 1 >= 0) {
@@ -1166,7 +1197,7 @@ namespace P2P_MODEL
 
     
                                           
-    chord_action low_latency_chord::findSuccessor(const uint160& searchedID, const uint160& senderID, node_address& found) {
+    chord_action low_latency_chord::findSuccessor(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID, node_address& found) {
         found.clear();
 //DEBUG
         if ((name() == string("trp0.llchord")) && (searchedID == 3)) {
@@ -1189,13 +1220,16 @@ namespace P2P_MODEL
             return DO_REPLY;
         }
         else if (isInRange(searchedID, m_nodeAddr.id, false, m_successor.id, true) && (m_successor.isUpdated)) {
-            found = m_successor;     
+            found = m_successor;  
+            if ((found.id == senderID) || (found.id == initiatorID))
+                found = m_nodeAddr;
             return DO_REPLY;
         }
         else {
-            found = closestPrecedingNode(searchedID);
-            if (found.id == senderID) 
+            found = closestPrecedingNode(searchedID, senderID, initiatorID);
+            if ((found.id == senderID) || (found.id == initiatorID))
                 found = m_nodeAddr;
+
             if (found.id == m_nodeAddr.id)
                 return DO_REPLY;
             return DO_FORWARD;
@@ -1391,7 +1425,7 @@ namespace P2P_MODEL
         return newMess;
     }
 
-    chord_message low_latency_chord::createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID) {
+    chord_message low_latency_chord::createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID, const int initialMessageID) {
         chord_message newMess;
         newMess.clear();
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
@@ -1399,11 +1433,17 @@ namespace P2P_MODEL
         newMess.srcNodeIDwithSocket = m_nodeAddr;
         newMess.initiatorNodeIDwithSocket = whoInitiator;
         newMess.type = CHORD_TX_FIND_SUCCESSOR;
-        newMess.messageID = m_messageID;
+        
         newMess.searchedNodeIDwithSocket.id = whatID;
         newMess.flags.bitMessType = CHORD_BYTE_FIND_SUCCESSOR;
         newMess.flags.needsACK = m_confParams.needsACK ? NEEDS_ACK : NO_ACK;        
-        m_messageID = nextUniqueMessageID();
+        if (initialMessageID == NONE) {
+            newMess.messageID = m_messageID;
+            m_messageID = nextUniqueMessageID();
+        }
+        else 
+            newMess.messageID = initialMessageID;
+
         return newMess;
     }
 
@@ -1577,55 +1617,83 @@ namespace P2P_MODEL
                 node_address_latency fingerPast;
                 node_address_latency finger;
                 uint160 whatId = m_nodeAddr.id;
-                if (m_isClockWise) {
-                    currFinger = m_cwFingerIndex;
-                    finger.setCopy(m_cwFingers[currFinger]);
-                    whatId = whatId+m_fingerMask[currFinger];
+                if (action == DO_REQUEST) {
+                    //fingerPast = findPrevAliveFinger(m_isClockWise,0);
 
-                    if (m_cwFingerIndex == 0) {
-                        if ((m_predecessor.isUpdated) && (m_predecessor.isNone() == false) && (m_predecessor.id != m_nodeAddr.id))
-                            fingerPast.setCopy(m_predecessor);
-                        else {                            
-                            node_address_latency addr;
-                            addr.set(m_seedAddrs.at(m_currSeed));
-                            fingerPast.setCopy(addr);
+                    if (m_isClockWise) {
+                        currFinger = m_cwFingerIndex;
+                        
+                        if (currFinger >= m_cwFingers.size()) {
+                            //ERROR
+                            msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers currFinger >= cwFingers.size() ") + LOG_ERROR_INVALID_RANGE, DEBUG_LOG | INTERNAL_LOG);
+                            return false;
                         }
+                            
+                        finger.setCopy(m_cwFingers[currFinger]);
+                        whatId = whatId+m_fingerMask[currFinger];
+
+                        if (m_cwFingerIndex == 0) {
+                            if ((m_predecessor.isUpdated) && (m_predecessor.isNone() == false) && (m_predecessor.id != m_nodeAddr.id))
+                                fingerPast.setCopy(m_predecessor);
+                            else {                            
+                                node_address_latency addr;
+                                addr.set(m_seedAddrs.at(m_currSeed));
+                                fingerPast.setCopy(addr);
+                            }
+                        }
+                        else {
+                            fingerPast.setCopy(m_cwFingers[currFinger-1]);
+                        }                                                           
                     }
                     else {
-                        fingerPast.setCopy(m_cwFingers[currFinger-1]);
-                    }                                                           
-                }
-                else {
-                    currFinger = m_ccwFingerIndex;
-                    finger.setCopy(m_ccwFingers[currFinger]);
-                    whatId = whatId-m_fingerMask[currFinger];                    
+                        currFinger = m_ccwFingerIndex;
 
-                    if (m_ccwFingerIndex == 0) {                        
-                        if ((m_successor.isUpdated) && (m_successor.isNone() == false) && (m_successor.id != m_nodeAddr.id))
-                            fingerPast.setCopy(m_successor);                        
-                        else {
-                            node_address_latency addr;
-                            addr.set(m_seedAddrs.at(m_currSeed));
-                            fingerPast.setCopy(addr);
+                        if (currFinger >= m_ccwFingers.size()) {
+                            //ERROR
+                            msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers currFinger >= ccwFingers.size() ") + LOG_ERROR_INVALID_RANGE, DEBUG_LOG | INTERNAL_LOG);
+                            return false;
                         }
+
+                        finger.setCopy(m_ccwFingers[currFinger]);
+                        whatId = whatId-m_fingerMask[currFinger];                    
+
+                        if (m_ccwFingerIndex == 0) {                        
+                            if ((m_successor.isUpdated) && (m_successor.isNone() == false) && (m_successor.id != m_nodeAddr.id))
+                                fingerPast.setCopy(m_successor);                        
+                            else {
+                                node_address_latency addr;
+                                addr.set(m_seedAddrs.at(m_currSeed));
+                                fingerPast.setCopy(addr);
+                            }
+                        }
+                        else {                        
+                            fingerPast.setCopy(m_ccwFingers[currFinger-1]);                        
+                        }                                        
                     }
-                    else {                        
-                        fingerPast.setCopy(m_ccwFingers[currFinger-1]);                        
-                    }                                        
                 }
             
                 if (isRetry == false) {
                     if (action == DO_FORWARD) {
-                        newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id);
-                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers FWD_") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+                        newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id, rxMess.messageID);
                     }
-                    else if (action == DO_REQUEST) {
+                    else if (action == DO_REQUEST) {                        
                         newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, whatId);
-                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
                     }
-                        
 
+                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + (action == DO_FORWARD ? string("FWD_") : string("")) + newMess.chord_byte_message_fields::type2str() + string(" mID ") +
+                        to_string(newMess.messageID) + string(" retryC ") + to_string(expiredTimer.retryCounter + 1) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
                     
+                    
+                    if (newMess.destNodeIDwithSocket.id == m_nodeAddr.id) {
+                        //fingerPast = m_seedAddrs[m_currSeed];
+                        msgLog(name(), LOG_TXRX, LOG_WARNING, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() +
+                            string(" d ") + node_address(fingerPast).toStr() + string(" dest addr = myAddr ") + node_address(m_nodeAddr).toStr() + string(" CANCELLED"), DEBUG_LOG | INTERNAL_LOG);
+                        
+                        if (m_isNowUpdate)
+                            m_isNowUpdate = false;
+                        return false;
+                    }
+
 
                     pushNewMessage(newMess);
                     if ((m_confParams.TrxSucc != NO_TIMEOUT) && (action == DO_REQUEST))
@@ -1636,15 +1704,31 @@ namespace P2P_MODEL
                 }
                 else {
                     if ((expiredTimer.retryCounter < m_confParams.CtxRetry) && (m_confParams.needsACK == NEEDS_ACK)) {
-                        if (action == DO_FORWARD)
-                            newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id);
-                        else if (action == DO_REQUEST)
-                            newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, m_nodeAddr.id+m_fingerMask[currFinger]);
+                        if (action == DO_FORWARD) {
+                            newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id, rxMess.messageID);
+                        }                        
+                        else if (action == DO_REQUEST) {                            
+                            newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, m_nodeAddr.id + m_fingerMask[currFinger]);                            
+                        }
 
-                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(expiredTimer.retryCounter + 1) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + (action == DO_FORWARD ? string("FWD_") : string("")) + newMess.chord_byte_message_fields::type2str() + string(" mID ") +
+                            to_string(newMess.messageID) + string(" retryC ") + to_string(expiredTimer.retryCounter + 1) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+
+
+                        if (newMess.destNodeIDwithSocket.id == m_nodeAddr.id) {
+                            msgLog(name(), LOG_TXRX, LOG_WARNING, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() +
+                                string(" d ") + node_address(fingerPast).toStr() + string(" dest addr = myAddr ") + node_address(m_nodeAddr).toStr() + string(" CANCELLED"), DEBUG_LOG | INTERNAL_LOG);
+
+                            if (m_isNowUpdate)
+                                m_isNowUpdate = false;
+                            return false;
+                        }
+
+                        //if ((m_isNowUpdate) && (action == DO_REQUEST))
+                        //     m_isNowUpdate = false;                        
 
                         pushNewMessage(newMess);
-                        if ((m_confParams.TrxSucc != NO_TIMEOUT) && (action == DO_REPLY))
+                        if ((m_confParams.TrxSucc != NO_TIMEOUT) && (action == DO_REQUEST))
                             pushNewTimer(CHORD_TIMER_RX_SUCCESSOR, expiredTimer.retryCounter, requestCounter, newMess);
                         if ((m_confParams.TrxAck != NO_TIMEOUT) && (m_confParams.needsACK == NEEDS_ACK))
                             pushNewTimer(CHORD_TIMER_RX_ACK, expiredTimer.retryCounter+1, requestCounter, newMess);
@@ -1661,7 +1745,8 @@ namespace P2P_MODEL
                 if (isRetry == false) {                   
                     newMess = createFindPredecessorMessage(m_successor, m_nodeAddr, m_successor.id-1);
 
-                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
+                    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) +
+                           string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
 
                     pushNewMessage(newMess);
                     if ((m_confParams.TrxPred != NO_TIMEOUT) && (action == DO_REQUEST))
@@ -1800,6 +1885,8 @@ namespace P2P_MODEL
             msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorRemoveTimers successor finger0 ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);
             needsFillFingersMinQty = false;
         }   
+
+        tryAddNewSeed(m_successor);
     
         if (m_inaccessibleFingers.size() > 0) {
             if (timer.retryMess.destNodeIDwithSocket.id == m_inaccessibleFingers.at(0).timer.retryMess.destNodeIDwithSocket.id) {
@@ -1813,6 +1900,7 @@ namespace P2P_MODEL
     }
 
     bool low_latency_chord::setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
+        
         bool isSuccess = false;
         m_predecessor.isUpdated = true;
         m_predecessor.updateTime = sc_time_stamp();
@@ -1821,13 +1909,15 @@ namespace P2P_MODEL
             m_predecessor = rxMess.searchedNodeIDwithSocket;
             m_ccwFingers[0] = m_predecessor;
             isSuccess = true;
-        }
-        //m_isPredecessorSet = true;
+
+            tryAddNewSeed(m_predecessor);
+            //m_isPredecessorSet = true;
+        }        
 
         if (isSuccess)
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setPredecessor predecessor = ccwfinger 0 ") + m_predecessor.toStr(), DEBUG_LOG | INTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setPredecessor new predecessor = ccwfinger0 ") + m_predecessor.toStrFinger(false), DEBUG_LOG | INTERNAL_LOG);
         else
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setPredecessor predecessor is invalid") + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setPredecessor addr ") + rxMess.searchedNodeIDwithSocket.toStr() + string(" doesn't fit for predecessor"), DEBUG_LOG | INTERNAL_LOG);
 
         if (m_inaccessibleFingers.size() > 0) {
             if (timer.retryMess.destNodeIDwithSocket.id == m_inaccessibleFingers.at(0).timer.retryMess.destNodeIDwithSocket.id) {
@@ -1852,8 +1942,9 @@ namespace P2P_MODEL
             m_successor = rxMess.searchedNodeIDwithSocket;
             m_cwFingers[0] = m_successor;
             isSuccess = true;
+            tryAddNewSeed(m_successor);
         }
-        //m_isSuccessorSet = true;
+        m_isSuccessorSet = true;
         
 
         //Remove timers        
@@ -1866,9 +1957,9 @@ namespace P2P_MODEL
             eraseTxMess(CHORD_TX_FIND_PREDECESSOR);
 
         if (isSuccess) 
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorStabilize new successor = cwfinger 0 ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);            
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorStabilize new successor = cwfinger0 ") + m_successor.toStr(), DEBUG_LOG | INTERNAL_LOG);            
         else 
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorStabilize successor not changed ") + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setSuccessorStabilize addr ") + rxMess.searchedNodeIDwithSocket.toStr() + string(" doesn't fit for successor"), DEBUG_LOG | INTERNAL_LOG);
         
         if (m_inaccessibleFingers.size() > 0) {
             if (timer.retryMess.destNodeIDwithSocket.id == m_inaccessibleFingers.at(0).timer.retryMess.destNodeIDwithSocket.id) {
@@ -1884,8 +1975,11 @@ namespace P2P_MODEL
 
 
     void low_latency_chord::setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {  
+//DEBUG
+if (name() == string("trp0.llchord")){
+    int tmp = 0;
+}        
         
-
         if (m_isClockWise) {
             m_cwFingers[m_cwFingerIndex] = rxMess.searchedNodeIDwithSocket;
             m_cwFingers[m_cwFingerIndex].isUpdated = true;
@@ -1916,7 +2010,11 @@ namespace P2P_MODEL
         if ((sc_time_stamp() >= timer.creatingTime) && (timer.retryMess.type == CHORD_TX_FIND_SUCCESSOR))
             eraseTxMess(CHORD_TX_FIND_SUCCESSOR);
 
-        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setFingerRemoveTimers ") + (m_isClockWise ? string("cwfinger") + to_string(m_cwFingerIndex-1) : string("ccwfinger") + to_string(m_ccwFingerIndex-1)) + LOG_SPACE + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setFingerRemoveTimers ") +
+                (m_isClockWise ? string("cwfinger") + to_string(m_cwFingerIndex-1) :
+                    string("ccwfinger") + to_string(m_ccwFingerIndex-1)) + LOG_SPACE + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+
+        tryAddNewSeed(rxMess.searchedNodeIDwithSocket);
 
         if (m_inaccessibleFingers.size() > 0) {
             if (timer.retryMess.destNodeIDwithSocket.id == m_inaccessibleFingers.at(0).timer.retryMess.destNodeIDwithSocket.id) {
@@ -1935,48 +2033,70 @@ namespace P2P_MODEL
     }
 
 
-    void low_latency_chord::setCopyPreviousFinger() {
+    bool low_latency_chord::setCopyPreviousAliveFinger() {
         uint fingerIndex = 0;
-        if (m_isClockWise) {           
-            if (m_cwFingerIndex >= 1) {
-                m_cwFingers[m_cwFingerIndex] = m_cwFingers[m_cwFingerIndex-1];
-                m_cwFingers[m_cwFingerIndex].isUpdated = true;
-                m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
+        node_address newAddr, prevAddr;
+
+        node_address_latency aliveFinger;
+        
+
+        if ((aliveFinger.isNone() != true) && (aliveFinger.isUpdated)) {            
+            fingerIndex = aliveFinger.fingerIndex;            
+            if (aliveFinger.isClockWise) {
+                m_cwFingerIndex = fingerIndex;
+                m_cwFingerIndex++;
             }
             else {
-                m_cwFingers[m_cwFingerIndex] = m_nodeAddr;
-                m_cwFingers[m_cwFingerIndex].isUpdated = true;
-                m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
-                m_successor = m_cwFingers[m_cwFingerIndex];
-            }
+                m_ccwFingerIndex = fingerIndex;
+                m_ccwFingerIndex++;
+            }  
+        }
+        
+        if (m_isClockWise) { 
+            findPrevAliveFinger(m_isClockWise, m_cwFingerIndex, aliveFinger);
+            if (aliveFinger.isNone())
+                return false;
+            
+            prevAddr = aliveFinger;
+            m_cwFingerIndex = aliveFinger.fingerIndex;            
+            m_cwFingers[m_cwFingerIndex] = prevAddr;
+            m_cwFingers[m_cwFingerIndex].isUpdated = true;
+            m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
+            if (m_cwFingerIndex == 0)
+                m_successor = m_cwFingers[m_cwFingerIndex];            
+            newAddr = m_cwFingers[m_cwFingerIndex];
             fingerIndex = m_cwFingerIndex;
             m_cwFingerIndex++;           
         }
         else {
-           
-            if (m_ccwFingerIndex >= 1) {
-                m_ccwFingers[m_ccwFingerIndex] = m_ccwFingers[m_ccwFingerIndex-1];
-                m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
-                m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
-            }
-            else {
-                m_ccwFingers[m_ccwFingerIndex] = m_nodeAddr;                
-                m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
-                m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
-                m_predecessor = m_ccwFingers[m_ccwFingerIndex];
-            }
+            findPrevAliveFinger(m_isClockWise, m_ccwFingerIndex, aliveFinger);
+            if (aliveFinger.isNone())
+                return false;
+
+            prevAddr = aliveFinger;
+            m_ccwFingerIndex = aliveFinger.fingerIndex;
+            m_cwFingers[m_ccwFingerIndex] = prevAddr;
+            m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
+            m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
+            if (m_cwFingerIndex == 0)
+                m_successor = m_ccwFingers[m_ccwFingerIndex];
+            newAddr = m_ccwFingers[m_ccwFingerIndex];
             fingerIndex = m_ccwFingerIndex;
-            m_ccwFingerIndex++;            
+            m_ccwFingerIndex++;
         }
 
-        msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setCopyPreviousFinger") + LOG_SPACE + string("cw ") + LOG_DEC_BOOL(m_isClockWise) + string(" finger ") + to_string(m_isClockWise ? m_cwFingerIndex-1 : m_ccwFingerIndex-1), DEBUG_LOG | INTERNAL_LOG);
+        msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setCopyPreviousAliveFinger") + LOG_SPACE +
+            (m_isClockWise ? m_cwFingers[m_cwFingerIndex-1].toStrFinger() + string(" = "): m_ccwFingers[m_ccwFingerIndex - 1].toStrFinger(true)) + string(" = ") + aliveFinger.toStrFinger(true), DEBUG_LOG | INTERNAL_LOG);
 
-        if ((fingerIndex == m_inaccessibleFingers.at(0).badFinger.fingerIndex) && (m_isClockWise == m_inaccessibleFingers.at(0).badFinger.isClockWise)) {
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Restore timer ") + chord_timer_message().type2str(m_inaccessibleFingers[0].timer.type) + LOG_SPACE + state2str(m_inaccessibleFingers[0].timer.issuedState), DEBUG_LOG | INTERNAL_LOG);
-            m_inaccessibleFingers[0].timer.isDelayed = false;
-            pushNewTimer(m_inaccessibleFingers[0].timer, false);
-            eraseFirstInaccessFingersIssueNewMessage();
+        if (m_inaccessibleFingers.size() > 0) {
+            if ((fingerIndex == m_inaccessibleFingers.at(0).badFinger.fingerIndex) && (m_isClockWise == m_inaccessibleFingers.at(0).badFinger.isClockWise)) {
+                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Restore timer ") + chord_timer_message().type2str(m_inaccessibleFingers[0].timer.type) + LOG_SPACE + state2str(m_inaccessibleFingers[0].timer.issuedState), DEBUG_LOG | INTERNAL_LOG);
+                m_inaccessibleFingers[0].timer.isDelayed = false;
+                pushNewTimer(m_inaccessibleFingers[0].timer, false);
+                eraseFirstInaccessFingersIssueNewMessage();
+            }
         }
+        return true;
     }
 
 
@@ -2057,7 +2177,7 @@ namespace P2P_MODEL
 
 
     string low_latency_chord::logHeadStateString(const chord_message& mess, const bool existMess) {
-        return state2str(m_state) + LOG_TAB + (existMess ? string("_# ")+mess.toStr() : string("_# Without"));
+        return state2str(m_state) + LOG_TAB + (existMess ? string("_# ")+mess.toStr() : string("_# Without") );
     }
 
 
@@ -2191,7 +2311,7 @@ namespace P2P_MODEL
             else {
                 //OVERFLOW BUFFER
                 m_logText = state2str(m_state) + LOG_TAB + string("pushTxMessageMemoryList") + LOG_TAB + LOG_ERROR_OVERFLOW;
-                msgLog(name(), LOG_TXRX, LOG_WARNING, m_logText, ALL_LOG);
+                msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, ALL_LOG);
                 res = false;
             }                   
         }
@@ -2396,7 +2516,7 @@ namespace P2P_MODEL
         else if (eventType == TIMER_EXPIRED) {            
             if (rxMess.type == CHORD_TIMER_UPDATE)
                 return arrFunctions[STATE_UPDATE];
-            else if ((rxMess.issuedState >= STATE_JOIN) && (rxMess.issuedState  <= STATE_INDATA))
+            else if ((rxMess.issuedState >= STATE_JOIN) && (rxMess.issuedState  <= STATE_APPREQUEST))
                 return arrFunctions[rxMess.issuedState];
             else
                 return nullptr;
@@ -2442,6 +2562,56 @@ namespace P2P_MODEL
             if (m_updateType == INACCESSIBLE_FINGER)
                 issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR);
         }
+    }
+
+
+
+    bool low_latency_chord::findPrevAliveFinger(const bool isClockWise, const uint forThisFinger, node_address_latency& prevFinger) {
+        vector<node_address_latency>* myFingers;
+        vector<node_address_latency>* neighbourFingers;
+
+        if (isClockWise == true) {
+            myFingers = &m_cwFingers;
+            neighbourFingers = &m_ccwFingers;
+        }
+        else {
+            myFingers = &m_ccwFingers;
+            neighbourFingers = &m_cwFingers;
+        }
+        
+        for (int i = forThisFinger -1; (i >= 0) && (i < (*myFingers).size()); --i) {
+            if ((myFingers->at(i).isUpdated) && (myFingers->at(i).isNone() == false) && (myFingers->at(i).id != m_nodeAddr.id)) {
+                prevFinger.setCopy(myFingers->at(i));
+                return true;
+            }
+        }
+
+        for (uint i = 0; i < neighbourFingers->size(); ++i) {
+            if ((neighbourFingers->at(i).isUpdated) && (neighbourFingers->at(i).isNone() == false) && (neighbourFingers->at(i).id != m_nodeAddr.id)) {
+                prevFinger.setCopy(neighbourFingers->at(i));
+                return true;
+            }
+        }
+
+        prevFinger.clear();
+        return false;
+    }
+
+
+    void low_latency_chord::tryAddNewSeed(const node_address& newSeed) {
+        network_address a;
+        a.ip = newSeed.ip;
+        a.inSocket = newSeed.inSocket;
+        a.outSocket = newSeed.outSocket;
+        for (uint i = 0; i < m_confParams.seed.size(); ++i) {
+            if ((a.ip == m_confParams.seed[i].ip) &&
+                (a.outSocket == m_confParams.seed[i].outSocket) &&
+                (a.inSocket == m_confParams.seed[i].inSocket)) {
+                return;             //This addr has already been added (early)
+            }                
+        }
+       
+        m_confParams.seed.push_back(a);
     }
 }
 

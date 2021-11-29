@@ -53,11 +53,11 @@ namespace P2P_MODEL
         sc_port<trp_llchord_if> trp_port;
 
     private:
-        const uint160 MAX_UINT160 = -1;
+        const uint160 MAX_UINT160 = -1;        
 
-        node_address_latency m_nodeAddr;                        //�����, ������������ ��� ������������� ���� �� Transport+ ������ �� ID, �����������, ��� SHA-1
-        uint         m_currSeed;
-        
+        node_address_latency m_nodeAddr;                        
+        uint                 m_currSeed;
+        vector<node_address> m_seedAddrs;
         sc_event     m_eventCore;
 
         finite_state       m_state;
@@ -72,12 +72,10 @@ namespace P2P_MODEL
 
         //map<uint, node_address> m_cwFingers;
         //map<uint, node_address> m_ccwFingers;
-        //map<uint, sc_time>      m_latency;
-        vector<node_address> m_seedAddrs;
         node_address_latency m_predecessor;
         node_address_latency m_successor;
-        vector<node_address_latency>  m_cwFingers;  //clock wise fingers
-        vector<node_address_latency>  m_ccwFingers; //counter clock wise fingers
+        vector<node_address_latency>  m_cwFingers;      //clock wise fingers
+        vector<node_address_latency>  m_ccwFingers;     //counter clock wise fingers
         map<uint, sc_time>    m_latency;        
         chord_conf_parameters m_confParams; 
         map<uint160, sc_time> m_isAcked;
@@ -170,10 +168,10 @@ namespace P2P_MODEL
 
         string state2str(const finite_state& state) const;
 
-        chord_action findSuccessor(const uint160& id, const uint160& senderID, node_address& found);
+        chord_action findSuccessor(const uint160& id, const uint160& senderID, const uint160& initiatorID, node_address& found);
         chord_action findPredecessor(const uint160& searchedID, node_address& found);
         bool isClockWiseDirection(const uint160& id);
-        node_address closestPrecedingNode(const uint160& id);
+        node_address closestPrecedingNode(const uint160& id, const uint160& senderID, const uint160& initiatorID);
         bool isInRange(const uint160& id, const uint160& A, const bool includeA, const uint160& B, const bool includeB);
 
         chord_message createMessage(const chord_message& params);
@@ -182,7 +180,7 @@ namespace P2P_MODEL
         chord_message createJoinMessage(const node_address& dest);
         chord_message createNotifyMessage(const node_address& dest);
         chord_message createAckMessage(const node_address& dest, const uint messageID);
-        chord_message createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID);
+        chord_message createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID, const int initialMessageID = NONE);
         chord_message createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
         chord_message createFindPredecessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID);
         chord_message createPredecessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
@@ -193,7 +191,7 @@ namespace P2P_MODEL
         uint   nextUniqueMessageID();
 
         void setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
-        void setCopyPreviousFinger();
+        bool setCopyPreviousAliveFinger();
         bool setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setSuccessorStabilize(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
@@ -214,6 +212,11 @@ namespace P2P_MODEL
         finite_state findStateOnRxReplyMess(const chord_message& rxMess);
         void pushInaccessibleFinger(const chord_timer_message& timer);
         void eraseFirstInaccessFingersIssueNewMessage();
+
+        bool findPrevAliveFinger(const bool isClockWise, const uint forThisFingerIndex, node_address_latency& prevFinger);
+        void tryAddNewSeed(const node_address& newSeed);
+
+        //bool makeSnapshot();
     };
 }
 #endif

@@ -21,7 +21,7 @@ using namespace std;
 namespace P2P_MODEL {
 
     typedef sc_biguint<161>    uint161;
-    typedef sc_biguint<11>  uint160;
+    typedef sc_biguint<11>     uint160;
     //typedef unsigned char      uint160;
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
@@ -269,6 +269,8 @@ namespace P2P_MODEL {
 
 
     class node_address : virtual public network_address {
+        //private:
+        //    network_address m_networkAddr;
     public:
         uint160 id;
 
@@ -314,7 +316,7 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            network_address::operator=(src);
+            network_address::set(src.ip, src.inSocket, src.outSocket);
             this->id = src.id;
             return *this;
         }
@@ -341,28 +343,29 @@ namespace P2P_MODEL {
 
     private:    
         uint160 sha1(const string& str, const bool isSmalluint = true) {
-            static map<string, uint> ip2id;
-            static uint uniqueID = 0;
+            static map<string, uint160> ip2id;
+            static uint160 uniqueID = 0;
             uint160 res;
 
-            if (isSmalluint == true) {
-                auto it = ip2id.find(str);
-                if (it == ip2id.end()) {
-                    ip2id[str] = uniqueID;
+            auto it = ip2id.find(str);
+            if (it == ip2id.end()) {
+                if (isSmalluint == true) {
                     res = uniqueID;
                     uniqueID++;
                 }
                 else {
-                    res = it->second;
-                }                
+                    SHA1 checksum;
+                    checksum.update(str);
+                    string strID = checksum.final();
+                    strID.insert(0, "0xus");
+                    res = strID.c_str();                    
+                }
+                ip2id[str] = res;                
             }
             else {
-                SHA1 checksum;
-                checksum.update(str);
-                string strID = checksum.final();
-                strID.insert(0, "0xus");                
-                res = strID.c_str();
-            }                                   
+                res = it->second;
+            }
+                                               
             return res;
         }
 
@@ -496,7 +499,8 @@ namespace P2P_MODEL {
 
         void setCopy(const node_address_latency& src) {
             clear();
-            node_address::set(src.ip, src.inSocket, src.outSocket);
+            network_address::set(src.ip, src.inSocket, src.outSocket);
+            id = src.id;
             latency = src.latency;
             fingerIndex = src.fingerIndex;
             isClockWise = src.isClockWise;
@@ -508,7 +512,8 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            node_address::operator=(src);
+            network_address::set(src.ip, src.inSocket, src.outSocket);
+            this->id = src.id;
             this->latency = src.latency;
             this->isUpdated = src.isUpdated;
             this->updateTime = src.updateTime;
@@ -519,7 +524,8 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            node_address::operator=(src);            
+            network_address::set(src.ip, src.inSocket, src.outSocket);
+            this->id = src.id;
             return *this;
         }
 
@@ -527,13 +533,28 @@ namespace P2P_MODEL {
             if (this == &src)
                 return *this;
 
-            network_address::operator=(src);
+            node_address::set(src.ip, src.inSocket, src.outSocket);            
             return *this;
         }
 
         string toStr() const {
             string str = node_address::toStr() + string(" ltncy ") + latency.to_string() + string(" index ") + to_string(fingerIndex) + (isClockWise ? string(" cw") : string(" ccw")) + (isUpdated ? string(" upd time ") : string(" old time ")) + updateTime.to_string();
             return str;
+        }
+
+        string toStrFinger(const bool shortPrint = false) const {
+            stringstream str;
+            if (this->isClockWise) {
+                str << "cwfinger" << to_string(fingerIndex) << " " << node_address::toStr();
+                if (shortPrint != true)
+                    str << (isUpdated ? string("upd ") : string("old ")) << updateTime.to_string() << "latency " << latency.to_string();
+            }
+            else {
+                str << "ccwfinger" << to_string(fingerIndex) << " " << node_address::toStr();                
+                if (shortPrint != true)
+                    str << (isUpdated ? string("upd ") : string("old ")) << updateTime.to_string() << "latency " << latency.to_string();
+            }
+            return str.str();
         }
 
         friend ostream& operator<< (ostream& out, node_address_latency& r);

@@ -13,7 +13,7 @@ namespace P2P_MODEL
     const string LOG_TXRX                 = string("TxRx");
     const string LOG_IN                   = string("< < <");
     const string LOG_OUT                  = string("> > >");
-    const string LOG_INFO                 = string(":::::");
+    const string LOG_INFO                 = string("     "); /*string(":::::");*/
     const string LOG_WARNING              = string("!!!!!");
     const string LOG_ERROR                = string("ERROR");
     const string LOG_ERROR_OVERFLOW       = string("OVERFLOW BUFFER");
@@ -30,7 +30,7 @@ namespace P2P_MODEL
     #define LOG_DEC_BOOL(m)   (m == 1 ? string("yes") : string("no"))
 
     const int MAX_LEN_METHOD_NAME = 30/2;
-    const int MAX_LEN_TIME = 20;
+    const int MAX_LEN_TIME = 20/2;
 
     enum log_mode {
         LOG_DISABLED = 0,
