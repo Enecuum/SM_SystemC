@@ -29,8 +29,8 @@ namespace P2P_MODEL {
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(20.0, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN/2;
     const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR/3;
-    const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(2.0, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(1.5, SC_SEC);       
+    const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1.0, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(2, SC_SEC);       
     const sc_time DEFAULT_TIMEOUT_RX_DUPLE = 2*DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN;
 
     //Default constants to init retry counters of low_latency_chord

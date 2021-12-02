@@ -51,6 +51,7 @@ namespace P2P_MODEL
 
 
         void setPathLog(const string& pathLog);
+        void setSnapshotPathLog(const string& pathLog);
         void setLogMode(const log_mode& mode);
         void setDisabledLog();
         void setEnabledLog();

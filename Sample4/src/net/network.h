@@ -25,9 +25,12 @@ namespace P2P_MODEL
         vector< sc_event* > m_eventSend;
         sc_event m_eventCheckReceive;
 
-        vector< list <chord_byte_message> > m_buffMess;        
+        vector< list <chord_byte_message> > m_buffMess;
+
+    public:
         map<uint160, uint> m_portIndexByNodeID;
 
+    private:
         vector< vector<sc_time> > m_latencyTable;
        
        

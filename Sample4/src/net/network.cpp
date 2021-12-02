@@ -191,9 +191,12 @@ namespace P2P_MODEL
 
 
     void network::deleteEventsPorts() {
+
+
         if (m_eventSend.size() > 0) {
             for (int i = 0; i < m_eventSend.size(); ++i) {
                 if (m_eventSend[i] != nullptr) {
+                    m_eventSend[i]->cancel();
                     delete m_eventSend[i];
                     m_eventSend[i] = nullptr;
                 }
@@ -209,9 +212,10 @@ namespace P2P_MODEL
                 }
             }
             trp_ports.clear();
-        }
-
+        }  
+                
         m_buffMess.clear();
+
         m_portIndexByNodeID.clear();
     }
 

@@ -15,14 +15,15 @@
 
 #include <systemc.h>
 #include "trp/sha1.hpp"
+#include "nlohmann/json.hpp"
 
 using namespace std;
+using json = nlohmann::json;
 
 namespace P2P_MODEL {
 
     typedef sc_biguint<161>    uint161;
-    typedef sc_biguint<11>     uint160;
-    //typedef unsigned char      uint160;
+    typedef sc_biguint<11>     uint160;    
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
@@ -328,14 +329,39 @@ namespace P2P_MODEL {
                 //str = network_address::toStr() + " ";
                 //string hex = decToHex(id.to_uint());
                 string hex = id.to_string(SC_DEC);
-                str += "@" + hex;
+                str += "@" + hex /*+ (isNone() ? string(" None") : string(""))*/;
             }
             else {
                 str = network_address::toStr() + " ";
                 string hex = id.to_string(SC_HEX_US);
-                str += "@" + hex.erase(0, 4);
+                str += "@" + hex.erase(0, 4) /*+ (isNone() ? string(" None") : string(""))*/;
             }
             return str;
+        }
+
+        string toStrIDonly(const bool isSmalluint = true) const {
+            string str;
+
+            if (isSmalluint == true) {
+                //str = network_address::toStr() + " ";
+                //string hex = decToHex(id.to_uint());
+                string hex = id.to_string(SC_DEC);
+                str += "@" + hex /*+ (isNone() ? string(" None") : string(""))*/;
+            }
+            else {
+                string hex = id.to_string(SC_HEX_US);
+                str += "@" + hex.erase(0, 4) /*+ (isNone() ? string(" None") : string(""))*/;
+            }
+            return str;
+        }
+
+
+
+
+        network_address toNetworAddress() const {
+            network_address a;
+            a.network_address::set(this->ip, this->inSocket, this->outSocket);
+            return a;
         }
 
         friend ostream& operator<< (ostream& out,          const node_address& r);
@@ -537,22 +563,29 @@ namespace P2P_MODEL {
             return *this;
         }
 
-        string toStr() const {
-            string str = node_address::toStr() + string(" ltncy ") + latency.to_string() + string(" index ") + to_string(fingerIndex) + (isClockWise ? string(" cw") : string(" ccw")) + (isUpdated ? string(" upd time ") : string(" old time ")) + updateTime.to_string();
+        node_address toNodeAddress() const {
+            node_address a;
+            a.node_address::set(this->ip, this->inSocket, this->outSocket);
+            return a;
+        }
+
+        string toStr() const {            
+            string str = node_address::toStr() + /*string(", latency ") + latency.to_string() +*/ string(", index ") + to_string(fingerIndex) + (isClockWise ? string(" cw") : string(" ccw")) + (isUpdated ? string(" upd time ") : string(" old time ")) + updateTime.to_string();
             return str;
         }
+
 
         string toStrFinger(const bool shortPrint = false) const {
             stringstream str;
             if (this->isClockWise) {
                 str << "cwfinger" << to_string(fingerIndex) << " " << node_address::toStr();
                 if (shortPrint != true)
-                    str << (isUpdated ? string("upd ") : string("old ")) << updateTime.to_string() << "latency " << latency.to_string();
+                    str << (isUpdated ? string(", upd ") : string(", old ")) << updateTime.to_string() << (isNone() ? string(" None") : string(""))/* << ", latency " << latency.to_string()*/;
             }
             else {
                 str << "ccwfinger" << to_string(fingerIndex) << " " << node_address::toStr();                
                 if (shortPrint != true)
-                    str << (isUpdated ? string("upd ") : string("old ")) << updateTime.to_string() << "latency " << latency.to_string();
+                    str << (isUpdated ? string(", upd ") : string(", old ")) << updateTime.to_string() << (isNone() ? string(" None") : string(""))/* << ", latency " << latency.to_string()*/;
             }
             return str.str();
         }

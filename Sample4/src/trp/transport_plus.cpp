@@ -86,6 +86,11 @@ namespace P2P_MODEL
     }
 
 
+    void transport_plus::setSnapshotPathLog(const string& pathLog) {
+        m_llchord.setSnapshotPathLog(pathLog);
+    }
+
+
     void transport_plus::setLogMode(const log_mode& mode) {
         log::setLogMode(mode);
         m_llchord.setLogMode(mode);

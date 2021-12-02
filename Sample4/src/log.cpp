@@ -2,6 +2,7 @@
 
 namespace P2P_MODEL
 {
+    std::map<std::string, std::ofstream*> log::mapFile;
 
     log::log() {
         m_maxLenMethodName = MAX_LEN_METHOD_NAME;
@@ -10,7 +11,17 @@ namespace P2P_MODEL
         m_logMode = DEFAULT_LOG_MODE;
     }
 
-    log::~log() {   }
+    log::~log() {
+        if (mapFile.size() > 0) {
+            for (auto it = mapFile.begin(); it != mapFile.end(); ++it) {
+                if ((it->first.length() > 0) && (it->second != nullptr)) {
+                    delete it->second;
+                    it->second = nullptr;
+                }
+            }
+            mapFile.clear();
+        }
+    }
 
 
     void log::setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen) {
@@ -22,6 +33,11 @@ namespace P2P_MODEL
     void log::setPathLog(const string& pathLog)
     {
         m_logPath = pathLog;
+    }
+
+
+    void log::setSnapshotPathLog(const string& pathLog) {
+        m_logSnapshotPath = pathLog;
     }
 
 
@@ -76,9 +92,9 @@ namespace P2P_MODEL
                             const log_mode &secondary, const string& logRxTx,
                             const string& logInOut,
                             const string& text)
-    {
-        char c;
+    {        
         if (m_isEnabled) {
+            char c;
             std::stringstream ss;
             uint isMatched = primary & secondary;
             if (isMatched > 0) {
@@ -90,17 +106,16 @@ namespace P2P_MODEL
                 ss << logRxTx << LOG_TAB;
                 ss << logInOut << LOG_TAB;
 
-                static std::map<std::string, std::ofstream*> mapFile;
-                ofstream* file;
                 
+                ofstream* file;                
                 bool isOverWrite = false;
                 auto it = mapFile.find(filePath.data());
                 if (it == mapFile.end()) {
                     file = new ofstream(filePath.c_str(), std::ofstream::out);                                        
                     
                     if (file->bad()) {
-                        cout << "log file `" << filePath.data() << "` not openned. Press text 'y' to abort simulating...";
-                        cin >> c; getchar();
+                        cout << "log file `" << filePath.data() << "` not openned. Press 'y' to abort simulating...";
+                        cin >> c; //getchar();
                         exit(-1);
                     }
 
@@ -119,8 +134,8 @@ namespace P2P_MODEL
                     file->close();
                     file->open(filePath.data(), std::ofstream::app);
                     if (file->bad()) {
-                        cout << "log file `" << filePath.data() << "` not re-openned. Press text 'y' to abort simulating...";
-                        cin >> c; getchar();
+                        cout << "log file `" << filePath.data() << "` not re-openned. Press 'y' to abort simulating...";
+                        cin >> c; //getchar();
                         exit(-1);
                     }
                     *file << ss.str() << text << std::endl;
@@ -129,12 +144,207 @@ namespace P2P_MODEL
 
             if (logInOut == LOG_ERROR) {                
                 cout << ss.str() << text << std::endl;
-                cout << "Press text 'y' to abort simulating...";
-                cin >> c; getchar();
+                cout << "Press 'y' to abort simulating...";
+                cin >> c; //getchar();
                 exit(-1);
             }
         }
     }
+
+
+    void log::snapshotLog(const uint activeNodes, const node_address_latency& nodeAddr, const vector<node_address_latency>& cwFingers, const vector<node_address_latency>& ccwFingers, const sc_time& timestamp) {
+        static sc_time lastCallTime = SC_ZERO_TIME;
+        static bool isSnapshotHead = true;
+        string filePath = m_logSnapshotPath;
+        std::stringstream ss;
+
+        if ((m_isEnabled) && (filePath.size() > 0) /* && (sc_time_stamp() > SC_ZERO_TIME)*/) {
+            if (lastCallTime != sc_time_stamp()) {
+                isSnapshotHead = true;                
+            }
+
+            //Get pointer on file               
+            ofstream* file;
+            bool isOverWrite = false;
+            auto it = mapFile.find(filePath.data());
+            if (it == mapFile.end()) {
+                file = new ofstream(filePath.c_str(), std::ofstream::out);
+                mapFile[filePath.data()] = file;
+                isOverWrite = true;
+            }
+            else {
+                file = it->second;
+            }
+
+
+            ss << endl;
+            if (isSnapshotHead == true) {
+                isSnapshotHead = false;
+                lastCallTime = sc_time_stamp();
+
+                //Head title for printing
+                ss << "*****************************" << endl;
+                ss << "curr time: " << timestamp.to_string() << endl << endl;
+            }
+
+
+            //Text for printing                
+            ss << "node: " << nodeAddr.toNodeAddress() << endl;
+            if (cwFingers.size() > 0)
+                ss << "succ: " << cwFingers.at(0).toStrIDonly() << endl;
+            if (ccwFingers.size() > 0)
+                ss << "pred: " << ccwFingers.at(0).toStrIDonly() << endl;
+
+            for (uint i = 0; i < cwFingers.size(); ++i) {
+                ss << "cw finger[" << to_string(i) << "] : " << cwFingers.at(i).toStrIDonly() << endl;
+            }
+            
+            for (uint i = 0; i < ccwFingers.size(); ++i) {
+                ss << "ccw finger[" << to_string(i) << "] : " << ccwFingers.at(i).toStrIDonly() << endl;
+            }
+            
+
+
+            if (!isOverWrite) {
+                *file << ss.str() << std::endl;
+            }
+
+            if (isOverWrite) {
+                file->close();
+                file->open(filePath.data(), std::ofstream::app);
+                *file << ss.str() << std::endl;
+            }
+        }
+    }
+
+
+    void log::snapshotLogJSON(const json& j) {
+        static sc_time lastCallTime = SC_ZERO_TIME;
+        static bool isSnapshotHead = true;
+        string filePath = m_logSnapshotPath;
+        std::stringstream ss;
+
+        if ((m_isEnabled) && (filePath.size() > 0) /* && (sc_time_stamp() > SC_ZERO_TIME)*/) {
+            if (lastCallTime != sc_time_stamp()) {
+                isSnapshotHead = true;
+            }
+
+            //Get pointer on file               
+            ofstream* file;
+            bool isOverWrite = false;
+            auto it = mapFile.find(filePath.data());
+            if (it == mapFile.end()) {
+                file = new ofstream(filePath.c_str(), std::ofstream::out);
+                mapFile[filePath.data()] = file;
+                isOverWrite = true;
+            }
+            else {
+                file = it->second;
+            }
+
+            
+            if (isSnapshotHead == true) {
+                ss << "*****************************" << endl;
+                ss << setw(4) << j;
+
+                isSnapshotHead = false;
+                lastCallTime = sc_time_stamp();
+            }
+
+
+            if (!isOverWrite) {
+                *file << ss.str() << std::endl;
+            }
+
+            if (isOverWrite) {
+                file->close();
+                file->open(filePath.data(), std::ofstream::app);
+                *file << ss.str() << std::endl;
+            }
+        }
+    }
+
+    /*void log::snapshotLog(const string& filePath, const node_address_latency& nodeAddr, const vector<node_address_latency>& cwFingers, const vector<node_address_latency>& ccwFingers) {
+        static map<uint160, vector<node_address_latency> > copyCwFingers;
+        static map<uint160, vector<node_address_latency> > copyCcwFingers;
+        static sc_time lastCallTime = SC_ZERO_TIME;
+        const char spacetab[] = "    ";
+        const char fq[] = "\""; //first quote
+        const char lq[] = "\""; //last quote
+        const char colon[] = "\" : \"";
+        static bool needsPrint = true;
+
+        if (m_isEnabled) {
+            if (lastCallTime < sc_time_stamp()) {
+                if (needsPrint) {
+                    needsPrint = false;
+
+                    //Now is next timetick, print fingers                
+                    std::stringstream ss;
+
+                    ofstream* file;
+                    bool isOverWrite = false;
+                    auto it = mapFile.find(filePath.data());
+                    if (it == mapFile.end()) {
+                        file = new ofstream(filePath.c_str(), std::ofstream::out);
+
+                        mapFile[filePath.data()] = file;
+                        isOverWrite = true;
+                    }
+                    else {
+                        file = it->second;
+                    }
+
+
+                    //ss << "{" << endl;
+                    //ss << spacetab << fq << "nodeid" << colon << nodeAddr.id.to_string() << lq << endl;
+                    //ss << spacetab << fq << "cwfingers\" : [" << endl;
+                    //for (uint i = 0; i < cwFingers.size(); ++i) {
+                    //    ss << "[" << to_string(i) << "] : \"" << cwFingers[i].id.to_string();
+                    //}
+                    //ss << spacetab << "]" << endl;                    
+                    //ss << "}";
+
+                    ss << "node: " << nodeAddr.toNodeAddress() << endl;
+                    for (uint i = 0; i < cwFingers.size(); ++i) {
+                        ss << cwFingers[i].toStrFinger() << endl;
+                    }
+
+                    for (uint i = 0; i < ccwFingers.size(); ++i) {
+                        ss << ccwFingers[i].toStrFinger() << endl;
+                    }
+
+
+                    if (!isOverWrite) {
+                        *file << ss.str() << std::endl;
+                    }
+
+                    if (isOverWrite) {
+                        file->close();
+                        file->open(filePath.data(), std::ofstream::app);
+                        *file << ss.str() << std::endl;
+                    }
+                }
+                
+            }    
+            else if (lastCallTime == sc_time_stamp()) {
+                copyCwFingers[nodeAddr.id] = cwFingers;
+                copyCcwFingers[nodeAddr.id] = ccwFingers;
+            }
+
+            //save new
+            //copyCwFingers.clear();
+            //auto fingersIt = copyCwFingers.find(nodeID);
+            //if (fingersIt == copyCwFingers.end())
+                //copyCwFingers[nodeAddr.id] = cwFingers;
+
+            //copyCcwFingers.clear();
+            //fingersIt = copyCcwFingers.find(nodeID);
+            //if (fingersIt == copyCcwFingers.end())
+                //copyCcwFingers[nodeAddr.id] = ccwFingers;
+            lastCallTime = sc_time_stamp();
+        }
+    }*/
 
    
 

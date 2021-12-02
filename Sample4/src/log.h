@@ -49,9 +49,13 @@ namespace P2P_MODEL
         bool m_isEnabled;
         int m_maxLenMethodName;
         int m_maxLenTime;
+        static std::map<std::string, std::ofstream*> mapFile;
+        
+
 
     protected:
         string m_logPath;
+        string m_logSnapshotPath;
         log_mode m_logMode;
         string m_logText;
 
@@ -62,6 +66,7 @@ namespace P2P_MODEL
         
         void setMaxLengthMethodAndTimeLog(const int methodNameLen, const int timeLen);
         void setPathLog(const string& pathLog);
+        void setSnapshotPathLog(const string& pathLog);
         void setLogMode(const log_mode& logMode);
         void setDisabledLog();
         void setEnabledLog();
@@ -81,6 +86,10 @@ namespace P2P_MODEL
         string logText(const char logRxTx[]
                                 , const char logInOut[]
                                 , const string& text);
+       
+       void snapshotLog(const uint activeNodes, const node_address_latency& nodeID, const vector<node_address_latency>& cwFingers, const vector<node_address_latency>& ccwFingers, const sc_time& timestamp);
+       void snapshotLogJSON(const json& j);
+       
     };
 }
 

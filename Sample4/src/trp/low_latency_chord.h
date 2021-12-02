@@ -59,6 +59,8 @@ namespace P2P_MODEL
         uint                 m_currSeed;
         vector<node_address> m_seedAddrs;
         sc_event     m_eventCore;
+        sc_event     m_eventMakeSnapshot;
+
 
         finite_state       m_state;
         vector< message_buffer<chord_message> > m_buffer;
@@ -76,7 +78,7 @@ namespace P2P_MODEL
         node_address_latency m_successor;
         vector<node_address_latency>  m_cwFingers;      //clock wise fingers
         vector<node_address_latency>  m_ccwFingers;     //counter clock wise fingers
-        map<uint, sc_time>    m_latency;        
+        //map<uint, sc_time>    m_latency;        
         chord_conf_parameters m_confParams; 
         map<uint160, sc_time> m_isAcked;
 
@@ -216,7 +218,8 @@ namespace P2P_MODEL
         bool findPrevAliveFinger(const bool isClockWise, const uint forThisFingerIndex, node_address_latency& prevFinger);
         void tryAddNewSeed(const node_address& newSeed);
 
-        //bool makeSnapshot();
+        void makeSnapshot();
+        void makeSnapshotJSON();
     };
 }
 #endif
