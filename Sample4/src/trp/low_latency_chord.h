@@ -129,6 +129,10 @@ namespace P2P_MODEL
         void setConfParameters(const chord_conf_parameters& params);
         void pushNewMessage(const chord_message& mess, const bool toBack = true);   
 
+        const vector<node_address_latency>* cw_fingers_pointer() const;
+        const vector<node_address_latency>* ccw_fingers_pointer() const;
+        node_address node_addr() const;
+
     private:
         void preinit();
         void core();        
@@ -192,8 +196,11 @@ namespace P2P_MODEL
         string logHeadStateString(const chord_message& mess, const bool existMess);
         uint   nextUniqueMessageID();
 
+        bool forceUpdateFingerTable(const chord_message& rxMess);
+
         void setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setCopyPreviousAliveFinger();
+        bool setPredecessorThanSuccessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const string& motive);
         bool setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         bool setSuccessorStabilize(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);

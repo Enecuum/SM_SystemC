@@ -12,6 +12,7 @@
 #include <xstring>
 #include <cstdlib> // needs for rand() and srand()
 #include <ctime>   // needs for time() for rand
+#include <math.h> 
 
 #include <systemc.h>
 #include "trp/sha1.hpp"
@@ -20,8 +21,7 @@
 using namespace std;
 using json = nlohmann::json;
 
-namespace P2P_MODEL {
-
+namespace P2P_MODEL {    
     typedef sc_biguint<161>    uint161;
     typedef sc_biguint<11>     uint160;    
     typedef unsigned int       uint;
@@ -32,6 +32,9 @@ namespace P2P_MODEL {
     typedef vector<byte>       byte_array;
     typedef data_type          data_unit;
 
+    extern uint MAX_SMALL_UINT;
+    extern sc_time MONITOR_PERIOD_CHECK_FINGERS;
+
     const uint DENIED = 0;
     const int NONE = -1;
     const uint PID  = 0x01;    //PROTOCOL IDENTIFIER
@@ -41,7 +44,17 @@ namespace P2P_MODEL {
     const uint NEEDS_ACK = 1;   
     const uint MAX_UINT = 0xffffffff;
     const sc_time DEFAULT_LATENCY = sc_time(10, SC_SEC);
-    extern uint MAX_SMALL_UINT;
+    
+
+    //String constanst for `motive` field of `node_address_latency` class
+    const string MOTIVE_DEFAULT = "default";
+    const string MOTIVE_PERIOD_RET_SUCC = "period";
+    const string MOTIVE_FORCE_UPDATE = "forceupd";
+    const string MOTIVE_STABILIZE = "stab";
+    const string MOTIVE_NOTIFY = "notify";
+    const string MOTIVE_COPY = "copy";
+    const string MOTIVE_JOIN = "join";
+    const string MOTIVE_PRED_SUCC = "succ<node"; //"succ less node"
     
     uint genRand(uint Min, uint Max);
     string decToHex(const uint dec);
@@ -204,6 +217,10 @@ namespace P2P_MODEL {
     };
 
 
+
+
+
+
          
     class network_address {
     private:
@@ -322,35 +339,30 @@ namespace P2P_MODEL {
             return *this;
         }
 
-        string toStr(const bool isSmalluint = true) const {
+        string toStr(const bool isDec = true) const {
             string str;
-            
-            if (isSmalluint == true) {
-                //str = network_address::toStr() + " ";
-                //string hex = decToHex(id.to_uint());
+            //str = network_address::toStr() + " ";
+            if (isDec == true) {
                 string hex = id.to_string(SC_DEC);
-                str += "@" + hex /*+ (isNone() ? string(" None") : string(""))*/;
+                str += "@" + hex + (isNone() ? string(" None") : string(""));
             }
             else {
-                str = network_address::toStr() + " ";
                 string hex = id.to_string(SC_HEX_US);
-                str += "@" + hex.erase(0, 4) /*+ (isNone() ? string(" None") : string(""))*/;
+                str += "@" + hex.erase(0, 4) + (isNone() ? string(" None") : string(""));
             }
             return str;
         }
 
-        string toStrIDonly(const bool isSmalluint = true) const {
+        string toStrIDonly(const bool isDec = true) const {
             string str;
 
-            if (isSmalluint == true) {
-                //str = network_address::toStr() + " ";
-                //string hex = decToHex(id.to_uint());
+            if (isDec == true) {
                 string hex = id.to_string(SC_DEC);
-                str += "@" + hex /*+ (isNone() ? string(" None") : string(""))*/;
+                str += "@" + hex + (isNone() ? string(" None") : string(""));
             }
             else {
                 string hex = id.to_string(SC_HEX_US);
-                str += "@" + hex.erase(0, 4) /*+ (isNone() ? string(" None") : string(""))*/;
+                str += "@" + hex.erase(0, 4) + (isNone() ? string(" None") : string(""));
             }
             return str;
         }
@@ -368,14 +380,14 @@ namespace P2P_MODEL {
         friend bool     operator== (const node_address& l, const node_address& r);
 
     private:    
-        uint160 sha1(const string& str, const bool isSmalluint = true) {
+        uint160 sha1(const string& str, const bool isDec = true) {
             static map<string, uint160> ip2id;
             static uint160 uniqueID = 0;
             uint160 res;
 
             auto it = ip2id.find(str);
             if (it == ip2id.end()) {
-                if (isSmalluint == true) {
+                if (isDec == true) {
                     res = uniqueID;
                     uniqueID++;
                 }
@@ -496,7 +508,8 @@ namespace P2P_MODEL {
         uint fingerIndex;
         bool isUpdated;
         sc_time updateTime;
-        bool isClockWise;                
+        bool isClockWise; 
+        string motive;
 
         node_address_latency() {
             clear();
@@ -507,10 +520,12 @@ namespace P2P_MODEL {
         }
 
         node_address_latency(const node_address& src): isUpdated(false), isClockWise(true){
+            motive = MOTIVE_DEFAULT;
             *this = src;
         }
 
         node_address_latency(const network_address& src): isUpdated(false), isClockWise(true) {                       
+            motive = MOTIVE_DEFAULT;
             *this = src;
         }
 
@@ -521,6 +536,7 @@ namespace P2P_MODEL {
             isClockWise = true;
             isUpdated = false;
             updateTime = SC_ZERO_TIME;
+            motive = MOTIVE_DEFAULT;
         }
 
         void setCopy(const node_address_latency& src) {
@@ -532,6 +548,7 @@ namespace P2P_MODEL {
             isClockWise = src.isClockWise;
             isUpdated = src.isUpdated;
             updateTime = src.updateTime;
+            motive = src.motive;
         }
 
         node_address_latency& operator= (const node_address_latency& src) {
@@ -542,7 +559,8 @@ namespace P2P_MODEL {
             this->id = src.id;
             this->latency = src.latency;
             this->isUpdated = src.isUpdated;
-            this->updateTime = src.updateTime;
+            this->updateTime = src.updateTime;            
+            this->motive = src.motive;
             return *this;
         }
 
@@ -570,21 +588,35 @@ namespace P2P_MODEL {
         }
 
         string toStr() const {            
-            string str = node_address::toStr() + /*string(", latency ") + latency.to_string() +*/ string(", index ") + to_string(fingerIndex) + (isClockWise ? string(" cw") : string(" ccw")) + (isUpdated ? string(" upd time ") : string(" old time ")) + updateTime.to_string();
+            string str = node_address::toStrIDonly() + /*string(", latency ") + latency.to_string() +*/ string(", index ") + to_string(fingerIndex) + (isClockWise ? string(" cw") : string(" ccw")) + (isUpdated ? string(" upd time ") : string(" old time ")) + updateTime.to_string();
             return str;
         }
 
+        string toStrIDmotive(bool isDec = true) const {
+            string str;
 
-        string toStrFinger(const bool shortPrint = false) const {
+            if (isDec == true) {
+                string hex = id.to_string(SC_DEC);
+                str += /*"@" +*/ hex + (isNone() ? string(" None ") : string(" ")) + motive + string("   ") + this->updateTime.to_string();
+            }
+            else {
+                string hex = id.to_string(SC_HEX_US);
+                str += /*"@" +*/ hex.erase(0, 4) + (isNone() ? string(" None ") : string(" ")) + motive + string("   ") + this->updateTime.to_string();
+            }
+            return str;
+            
+        }
+
+        string toStrFinger(const bool allParams = false) const {
             stringstream str;
             if (this->isClockWise) {
-                str << "cwfinger" << to_string(fingerIndex) << " " << node_address::toStr();
-                if (shortPrint != true)
+                str << "cwfinger" << to_string(fingerIndex) << " " << node_address::toStrIDonly();
+                if (allParams == true)
                     str << (isUpdated ? string(", upd ") : string(", old ")) << updateTime.to_string() << (isNone() ? string(" None") : string(""))/* << ", latency " << latency.to_string()*/;
             }
             else {
-                str << "ccwfinger" << to_string(fingerIndex) << " " << node_address::toStr();                
-                if (shortPrint != true)
+                str << "ccwfinger" << to_string(fingerIndex) << " " << node_address::toStrIDonly();
+                if (allParams == true)
                     str << (isUpdated ? string(", upd ") : string(", old ")) << updateTime.to_string() << (isNone() ? string(" None") : string(""))/* << ", latency " << latency.to_string()*/;
             }
             return str.str();

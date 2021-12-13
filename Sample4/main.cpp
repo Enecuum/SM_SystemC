@@ -6,14 +6,17 @@
 #include "app/application.h"
 #include "trp/transport_plus.h"
 #include "net/network.h"
+#include "mntr/monitor.h"
 
 using namespace P2P_MODEL;
 using namespace std;
 
 
 
-const uint NODES = 3;
-uint P2P_MODEL::MAX_SMALL_UINT = NODES;
+const uint NODES = 10;
+uint P2P_MODEL::MAX_SMALL_UINT                  = uint160(-1).to_uint();
+sc_time P2P_MODEL::MONITOR_PERIOD_CHECK_FINGERS = sc_time(1, SC_MS);
+
 
 
 
@@ -36,7 +39,8 @@ int main(int argc, char* argv[])
     uint nodes = NODES;
     application*    applications[NODES];
     transport_plus* transports[NODES];
-    network         network1("netw", nodes);
+    network*        network1 = nullptr;    
+    monitor*        monitor1 = nullptr;
     string str;
 
 
@@ -50,7 +54,8 @@ int main(int argc, char* argv[])
     mess.amount = 1;
     mess.firstDelay = sc_time(0, SC_MS);
 
-
+    network1 = new network("netw", nodes);
+    monitor1 = new monitor("monitor", nodes);
     for (uint i = 0; i < nodes; ++i) {
         str = string("app") + to_string(i);
         applications[i] = new application(str.c_str());
@@ -58,8 +63,10 @@ int main(int argc, char* argv[])
         transports[i] = new transport_plus(str.c_str());
 
         applications[i]->trp_port.bind( *(transports[i]) );
-        transports[i]->network_port.bind(network1);
-        network1.trp_ports[i]->bind( *(transports[i]) );
+        transports[i]->network_port.bind(*network1);
+        network1->trp_ports[i]->bind( *(transports[i]) );
+        monitor1->trp_ports[i]->bind( *(transports[i]) );
+
 
         applications[i]->setEnabledLog();
         applications[i]->setLogMode(ALL_LOG);        
@@ -76,12 +83,13 @@ int main(int argc, char* argv[])
         transports[i]->msgLog(transports[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
         
         applications[i]->pushSimulatingMess(mess);
-        mess.firstDelay += sc_time(0, SC_SEC);
+        mess.firstDelay += sc_time(10, SC_SEC);
 
         chord_conf_parameters params;
-        str = string("192.168.0.") + to_string( i);
+        str = string("192.168.0.") + to_string(i);
         params.netwAddr.set(str.c_str(), 1111, 2222);
         params.setDefaultTimersCountersFingersSize();
+        params.fingersSize = (uint) ceil(log10(nodes) / log10(2));
 
         addrs.push_back(params.netwAddr);
         
@@ -89,6 +97,7 @@ int main(int argc, char* argv[])
             params.seed.push_back(addrs.at(0));
         }
         transports[i]->setConfParameters(params);
+        monitor1->setPeriodCheckFingers(MONITOR_PERIOD_CHECK_FINGERS);
     }
     
     //mess.clear();
@@ -104,14 +113,73 @@ int main(int argc, char* argv[])
     //mess.firstDelay = sc_time(30, SC_SEC);
     //applications[1]->pushSimulatingMess(mess);
 
-    network1.setEnabledLog();
-    network1.setLogMode(ALL_LOG);
-    network1.setPathLog("./log/net.txt");
+    network1->setEnabledLog();
+    network1->setLogMode(ALL_LOG);
+    network1->setPathLog("./log/net.txt");
+
+    monitor1->setEnabledLog();
+    monitor1->setLogMode(ALL_LOG);
+    monitor1->setPathLog("./log/snapshot.txt");
 
     //Set configuration parameters of Network model (simplified simulation model of TCP/UDP network) 
-    network1.setNodeAddressList(addrs);
-    network1.setRandomLatencyTable(10, 10, 0);
-    network1.msgLog(network1.name(), LOG_TXRX, LOG_INFO, string("latencies, ms: \n") + network1.latencyTableToStr(), ALL_LOG);
+    network1->setNodeAddressList(addrs);
+    network1->setRandomLatencyTable(10, 10, 0);
+    network1->msgLog(network1->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
+    network1->msgLog(network1->name(), LOG_TXRX, LOG_INFO, string("latencies, ms: \n") + network1->latencyTableToStr(), ALL_LOG);
+
+    //Set configuration parameters of Monitor
+    monitor1->setPeriodCheckFingers(MONITOR_PERIOD_CHECK_FINGERS);
+    monitor1->msgLog(monitor1->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
+
+    //Set valid reference clockwise fingers for every node
+    vector<node_address> fingers;
+    uint index;
+    fingers.resize(DEFAULT_FINGERS_SIZE, node_address());
+
+    index = 0;
+    fingers[index].id = 1; ++index;
+    fingers[index].id = 2; ++index;
+    monitor1->setReferenceCwFingers(0, fingers);
+
+    index = 0;
+    fingers[index].id = 2; ++index;
+    fingers[index].id = 3; ++index;
+    monitor1->setReferenceCwFingers(1, fingers);
+
+    index = 0;
+    fingers[index].id = 3; ++index;
+    fingers[index].id = 3; ++index;
+    monitor1->setReferenceCwFingers(2, fingers);
+
+    index = 0;
+    fingers[index].id = 0; ++index;
+    fingers[index].id = 2; ++index;
+    monitor1->setReferenceCwFingers(3, fingers);
+
+
+    //Set valid reference counter clockwise fingers for every node
+    index = 0;
+    fingers[index].id = 3; ++index;
+    fingers[index].id = 3; ++index;
+    monitor1->setReferenceCcwFingers(0, fingers);
+
+    index = 0;
+    fingers[index].id = 0; ++index;
+    fingers[index].id = 3; ++index;
+    monitor1->setReferenceCcwFingers(1, fingers);
+
+    index = 0;
+    fingers[index].id = 1; ++index;
+    fingers[index].id = 0; ++index;
+    monitor1->setReferenceCcwFingers(2, fingers);
+
+    index = 0;
+    fingers[index].id = 2; ++index;
+    fingers[index].id = 1; ++index;
+    monitor1->setReferenceCcwFingers(3, fingers);
+
+
+
     
     //Run simulation
     cout << endl << "Run simulation" << endl;
@@ -123,22 +191,29 @@ int main(int argc, char* argv[])
 
     //Free memory layer-by-layer
     char c;
-    cout << endl << "*** Prepare to free memory used by applications. Press 'y': "; //cin >> c;
+    cout << endl << "*** Prepare to free memory used by applications. Enter 'y': "; //cin >> c;
     cout << endl;
     for (uint i = 0; i < nodes; ++i) {
         delete applications[i];
+        applications[i] = nullptr;
     }
     
-    cout << "*** Prepare to free memory used by low_latency_chord. Press 'y': "; //cin >> c;
+    cout << "*** Prepare to free memory used by low_latency_chord. Enter 'y': "; //cin >> c;
     cout << endl;
     for (uint i = 0; i < nodes; ++i) {
         delete transports[i];
+        transports[i] = nullptr;
     }
     
-    cout << "*** Prepare to free memory used by network. Press 'y': "; //cin >> c;
-    cout << endl;   
+    cout << "*** Prepare to free memory used by network. Enter 'y': "; //cin >> c;
+    cout << endl;
+    delete network1;
+    network1 = nullptr;
+
+    delete monitor1;
+    monitor1 = nullptr;
     
-    cout << "*** Press 'y' to exit: "; cin >> c;
+    cout << "*** Enter 'y' to exit: "; //cin >> c;
     return 0;
 }
 

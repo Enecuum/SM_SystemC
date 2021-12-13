@@ -92,8 +92,10 @@ namespace P2P_MODEL
                             const log_mode &secondary, const string& logRxTx,
                             const string& logInOut,
                             const string& text)
-    {        
+    {                
         if (m_isEnabled) {
+            m_ssLog = stringstream(); //clear variable to default value
+
             char c;
             std::stringstream ss;
             uint isMatched = primary & secondary;
@@ -114,7 +116,7 @@ namespace P2P_MODEL
                     file = new ofstream(filePath.c_str(), std::ofstream::out);                                        
                     
                     if (file->bad()) {
-                        cout << "log file `" << filePath.data() << "` not openned. Press 'y' to abort simulating...";
+                        cout << "log file `" << filePath.data() << "` not openned. Enter 'y' to abort simulating...";
                         cin >> c; //getchar();
                         exit(-1);
                     }
@@ -134,7 +136,7 @@ namespace P2P_MODEL
                     file->close();
                     file->open(filePath.data(), std::ofstream::app);
                     if (file->bad()) {
-                        cout << "log file `" << filePath.data() << "` not re-openned. Press 'y' to abort simulating...";
+                        cout << "log file `" << filePath.data() << "` not re-openned. Enter 'y' to abort simulating...";
                         cin >> c; //getchar();
                         exit(-1);
                     }
@@ -196,11 +198,11 @@ namespace P2P_MODEL
                 ss << "pred: " << ccwFingers.at(0).toStrIDonly() << endl;
 
             for (uint i = 0; i < cwFingers.size(); ++i) {
-                ss << "cw finger[" << to_string(i) << "] : " << cwFingers.at(i).toStrIDonly() << endl;
+                ss << "cw finger[" << to_string(i) << "] : " << cwFingers.at(i).toStrFinger()/*toStrIDonly()*/ << endl;
             }
             
             for (uint i = 0; i < ccwFingers.size(); ++i) {
-                ss << "ccw finger[" << to_string(i) << "] : " << ccwFingers.at(i).toStrIDonly() << endl;
+                ss << "ccw finger[" << to_string(i) << "] : " << ccwFingers.at(i).toStrFinger()/*toStrIDonly()*/ << endl;
             }
             
 
@@ -263,89 +265,6 @@ namespace P2P_MODEL
             }
         }
     }
-
-    /*void log::snapshotLog(const string& filePath, const node_address_latency& nodeAddr, const vector<node_address_latency>& cwFingers, const vector<node_address_latency>& ccwFingers) {
-        static map<uint160, vector<node_address_latency> > copyCwFingers;
-        static map<uint160, vector<node_address_latency> > copyCcwFingers;
-        static sc_time lastCallTime = SC_ZERO_TIME;
-        const char spacetab[] = "    ";
-        const char fq[] = "\""; //first quote
-        const char lq[] = "\""; //last quote
-        const char colon[] = "\" : \"";
-        static bool needsPrint = true;
-
-        if (m_isEnabled) {
-            if (lastCallTime < sc_time_stamp()) {
-                if (needsPrint) {
-                    needsPrint = false;
-
-                    //Now is next timetick, print fingers                
-                    std::stringstream ss;
-
-                    ofstream* file;
-                    bool isOverWrite = false;
-                    auto it = mapFile.find(filePath.data());
-                    if (it == mapFile.end()) {
-                        file = new ofstream(filePath.c_str(), std::ofstream::out);
-
-                        mapFile[filePath.data()] = file;
-                        isOverWrite = true;
-                    }
-                    else {
-                        file = it->second;
-                    }
-
-
-                    //ss << "{" << endl;
-                    //ss << spacetab << fq << "nodeid" << colon << nodeAddr.id.to_string() << lq << endl;
-                    //ss << spacetab << fq << "cwfingers\" : [" << endl;
-                    //for (uint i = 0; i < cwFingers.size(); ++i) {
-                    //    ss << "[" << to_string(i) << "] : \"" << cwFingers[i].id.to_string();
-                    //}
-                    //ss << spacetab << "]" << endl;                    
-                    //ss << "}";
-
-                    ss << "node: " << nodeAddr.toNodeAddress() << endl;
-                    for (uint i = 0; i < cwFingers.size(); ++i) {
-                        ss << cwFingers[i].toStrFinger() << endl;
-                    }
-
-                    for (uint i = 0; i < ccwFingers.size(); ++i) {
-                        ss << ccwFingers[i].toStrFinger() << endl;
-                    }
-
-
-                    if (!isOverWrite) {
-                        *file << ss.str() << std::endl;
-                    }
-
-                    if (isOverWrite) {
-                        file->close();
-                        file->open(filePath.data(), std::ofstream::app);
-                        *file << ss.str() << std::endl;
-                    }
-                }
-                
-            }    
-            else if (lastCallTime == sc_time_stamp()) {
-                copyCwFingers[nodeAddr.id] = cwFingers;
-                copyCcwFingers[nodeAddr.id] = ccwFingers;
-            }
-
-            //save new
-            //copyCwFingers.clear();
-            //auto fingersIt = copyCwFingers.find(nodeID);
-            //if (fingersIt == copyCwFingers.end())
-                //copyCwFingers[nodeAddr.id] = cwFingers;
-
-            //copyCcwFingers.clear();
-            //fingersIt = copyCcwFingers.find(nodeID);
-            //if (fingersIt == copyCcwFingers.end())
-                //copyCcwFingers[nodeAddr.id] = ccwFingers;
-            lastCallTime = sc_time_stamp();
-        }
-    }*/
-
    
 
     string log::logText(const char logRxTx[], const char logInOut[], const string &text)

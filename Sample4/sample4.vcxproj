@@ -142,6 +142,7 @@
     <ClCompile Include="src\app\application.cpp" />
     <ClCompile Include="src\inc.cpp" />
     <ClCompile Include="src\log.cpp" />
+    <ClCompile Include="src\mntr\monitor.cpp" />
     <ClCompile Include="src\net\network.cpp" />
     <ClCompile Include="src\trp\broadcast.cpp" />
     <ClCompile Include="src\trp\low_latency_chord.cpp" />
@@ -153,6 +154,8 @@
     <ClInclude Include="src\app\application_if.h" />
     <ClInclude Include="src\inc.h" />
     <ClInclude Include="src\log.h" />
+    <ClInclude Include="src\mntr\monitor.h" />
+    <ClInclude Include="src\mntr\monitor_trp_if.h" />
     <ClInclude Include="src\net\network.h" />
     <ClInclude Include="src\net\network_trp_if.h" />
     <ClInclude Include="src\trp\broadcast.h" />
@@ -163,6 +166,7 @@
     <ClInclude Include="src\trp\trp_application_if.h" />
     <ClInclude Include="src\trp\transport_plus.h" />
     <ClInclude Include="src\trp\trp_llchord_if.h" />
+    <ClInclude Include="src\trp\trp_monitor_if.h" />
     <ClInclude Include="src\trp\trp_network_if.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -141,6 +141,9 @@ namespace P2P_MODEL
     void low_latency_chord::setConfParameters(const chord_conf_parameters& params) {
         m_confParams = params;
         m_nodeAddr.set(m_confParams.netwAddr);
+        m_seedAddrs.clear();
+        for (uint i = 0; i < m_confParams.seed.size(); ++i)
+            m_seedAddrs.push_back( node_address(m_confParams.seed.at(i)) );
     }
 
 
@@ -547,7 +550,7 @@ namespace P2P_MODEL
                     if (mess.type == CHORD_RX_SUCCESSOR) {                
                         if (checkMessage(mess, timer, m_errCode) != ERROR) {                                                      
                             if (m_isSuccessorSet == false) {
-                                setSuccessorRemoveTimers(mess, timer);     
+                                setSuccessorRemoveTimers(mess, timer);                                
                                 m_updateType = setNextFingerToUpdate();
                             }
                             else {
@@ -555,7 +558,7 @@ namespace P2P_MODEL
                                 m_updateType = setNextFingerToUpdate();
                             }
     
-                            if (m_cwFingerIndex < m_confParams.fillFingersMinQty)
+                            if ((m_cwFingerIndex < m_confParams.fillFingersMinQty) && /*(m_isPredecessorSet == false) &&*/ (m_cwFingers.at(m_cwFingerIndex).updateTime < sc_time_stamp()))
                                 issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);                  
                             else {
                                 setNextState(STATE_IDLE);
@@ -657,8 +660,8 @@ namespace P2P_MODEL
         if (m_isPaused == false) {
             
             chord_timer_message timer;
-            bool isIssueSuccess;
-            bool isRepeatSuccess;
+            //bool isIssueSuccess;
+            //bool isRepeatSuccess;
 
             low_latency_chord::FP funcPointer = nullptr;
             event_type evType = eventType(mess, existMess);
@@ -739,8 +742,9 @@ if (sc_time_stamp() >= sc_time(10.95, SC_SEC))
                                 setNextState(STATE_SERVICE);
                             }
 
+                           
 //DEBUG
-if ((name() == string("trp2.llchord")) && (mess.type == CHORD_RX_FIND_SUCCESSOR) && (sc_time_stamp() >= sc_time(6.5, SC_SEC))) {
+if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(60.0, SC_SEC))) {
     int tmp = 0;
 }
 //DEBUG
@@ -748,10 +752,18 @@ if ((name() == string("trp2.llchord")) && (mess.type == CHORD_RX_FIND_SUCCESSOR)
                             issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);            
 
                             chord_action action = findSuccessor(mess.searchedNodeIDwithSocket.id, mess.srcNodeIDwithSocket.id, mess.initiatorNodeIDwithSocket.id, lookupAddr);
-                            if (action == DO_REPLY)
+                            
+                            if (action == DO_REPLY) {
+                                if ((lookupAddr.id == m_nodeAddr.id) || (mess.type == CHORD_RX_JOIN))
+                                    forceUpdateFingerTable(mess);
+
                                 issueMessagePushTimers(CHORD_TX_SUCCESSOR, false, 0, mess, chord_timer_message(), DO_REPLY, lookupAddr);
-                            else if (action == DO_FORWARD)
-                                issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0, mess, chord_timer_message(), DO_FORWARD, lookupAddr);
+                                
+                            }
+                            else if (action == DO_FORWARD) {
+                                forceUpdateFingerTable(mess);
+                                issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0, mess, chord_timer_message(), DO_FORWARD, lookupAddr);                                
+                            }
                         }
                     }
                     else if (mess.type == CHORD_RX_FIND_PREDECESSOR) {
@@ -799,7 +811,7 @@ if ((name() == string("trp2.llchord")) && (mess.type == CHORD_RX_FIND_SUCCESSOR)
             return;
         
 //DEBUG
-if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(44, SC_SEC)))
+if ((name() == string("trp1.llchord")) && (sc_time_stamp() >= sc_time(20, SC_SEC)))
     int herebreakpoint = 0;
 //DEBUG
 
@@ -814,8 +826,8 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(44, SC_SEC
             chord_timer_message timer;
 
             //m_canTakeDelayedTimers = false;
-
-            switch (eventType(mess, existMess)) {
+            event_type evType = eventType(mess, existMess);
+            switch (evType) {
                 case INACCESSIBLE_NODE: {
                     pushInaccessibleFinger(mess);
                     //pushNewTimer(mess, false);
@@ -878,12 +890,14 @@ if (sc_time_stamp() >= sc_time(44, SC_SEC))
 
                 case TIMER_EXPIRED: {                   //Timer was expired, analysing
                     timer = mess;
-                    if (mess.type == CHORD_TIMER_RX_ACK) {
-                        if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
+
 //DEBUG
-if (name() == string("trp2.llchord")) 
+if (name() == string("trp0.llchord"))
     int tmp = 0;
 //DEBUG
+                    if (mess.type == CHORD_TIMER_RX_ACK) {
+                        if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
+
                             removeTimer(CHORD_TIMER_RX_SUCCESSOR, CHORD_TX_FIND_SUCCESSOR, mess.retryMess.messageID);                        
                             isIssueSuccess = issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, true, timer.requestCounter, mess.retryMess, timer, DO_REQUEST, mess.retryMess.searchedNodeIDwithSocket);
                             if (isIssueSuccess == false) {
@@ -941,7 +955,7 @@ if (name() == string("trp2.llchord"))
                                 chord_conf_message reset;
                                 reset.type = CHORD_HARD_RESET;
                                 pushNewMessage(reset);
-                            }
+                            }                            
                         }
                     }
                     else if (mess.type == CHORD_TIMER_UPDATE) {                    
@@ -949,7 +963,7 @@ if (name() == string("trp2.llchord"))
                         
 //DEBUG
 string strTime = sc_time_stamp().to_string();
-if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(8.0, SC_SEC)))
+if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_SEC)))
     int tmp = 0;
 //DEBUG
 
@@ -973,9 +987,11 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(8.0, SC_SE
             }        
 
             msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("isNowUpdate = ") + LOG_BOOL(m_isNowUpdate), DEBUG_LOG | INTERNAL_LOG);
-            setNextState(STATE_IDLE);            
-        }
-        //makeSnapshot();        
+            setNextState(STATE_IDLE);    
+            
+            if ((mess.type != CHORD_RX_ACK) && (evType != TX_MESS_SHOULD_SEND))
+                makeSnapshotJSON();
+        }        
     }
 
     
@@ -1173,13 +1189,15 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(8.0, SC_SE
 
     node_address low_latency_chord::closestPrecedingNode(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID) {
         node_address_latency found1, found2;       
-        uint160 n  = m_nodeAddr.id < searchedID ? m_nodeAddr.id : searchedID;
-        uint160 id = m_nodeAddr.id > searchedID ? m_nodeAddr.id : searchedID;
-        if (isClockWiseDirection(id)) {
+        //uint160 n  = m_nodeAddr.id < searchedID ? m_nodeAddr.id : searchedID;
+        //uint160 id = m_nodeAddr.id > searchedID ? m_nodeAddr.id : searchedID;
+
+        if (isClockWiseDirection(searchedID)) {
             if (m_cwFingers.size() > 0) {
                 for (int i = (int)m_cwFingers.size()-1; i >= 0; --i) {
-
-                    if (((n < m_cwFingers[i].id) && (m_cwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) &&
+                    
+                    //if (((n < m_cwFingers[i].id) && (m_cwFingers[i].id < id) && (m_cwFingers[i].isNone() != true)) &&
+                    if ((isInRange(m_cwFingers[i].id, m_nodeAddr.id, false, searchedID, true)) && (m_cwFingers[i].isNone() != true) &&
                         (m_cwFingers[i].id != senderID) && (m_cwFingers[i].id != initiatorID))
                     {
                         found1.setCopy(m_cwFingers.at(i));
@@ -1198,7 +1216,8 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(8.0, SC_SE
         else {
             if (m_ccwFingers.size() > 0) {
                 for (int i = (int) m_ccwFingers.size()-1; i >= 0; --i) {
-                    if (((n < m_ccwFingers[i].id) && (m_ccwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) &&
+                    //if (((n < m_ccwFingers[i].id) && (m_ccwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) &&
+                    if ((isInRange(m_ccwFingers[i].id, m_nodeAddr.id, false, searchedID, true)) && (m_ccwFingers[i].isNone() != true) &&
                         (m_ccwFingers[i].id != senderID) && (m_ccwFingers[i].id != initiatorID))
                     {
                         found1.setCopy(m_ccwFingers.at(i));
@@ -1222,8 +1241,8 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(8.0, SC_SE
     chord_action low_latency_chord::findSuccessor(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID, node_address& found) {
         found.clear();
 //DEBUG
-if ((name() == string("trp0.llchord")) && (searchedID == 3)) 
-    int tmp = 0;
+if ((name() == string("trp5.llchord")) && (searchedID == 3) && (sc_time_stamp() >= sc_time(299.0, SC_SEC))) 
+    int herebreakpoint = 0;
 //DEBUG
         
 
@@ -1237,24 +1256,73 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         //    }
         //}
 
+
+
         //Chord: Comparising with successor, Chord
-        if ((m_predecessor.isNone() != true) && (m_predecessor.isUpdated) && (isInRange(searchedID, m_predecessor.id, false, m_nodeAddr.id, true))) {
+        if ((m_predecessor.id == searchedID) && (m_predecessor.isUpdated) && (m_predecessor.isNone() != true)) {
+            found = m_predecessor;
+
+            //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_FORWARD sID " << searchedID.to_string(SC_DEC) << " = pred " << m_predecessor.toStrIDonly() << " => " << found.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            //
+            return DO_FORWARD;
+        }
+        //else if ((m_predecessor.isNone() != true) && (isInRange(searchedID, m_predecessor.id, false, m_nodeAddr.id, true))) {
+        else if (m_nodeAddr.id == searchedID) {
             found = m_nodeAddr;
+            
+            //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_REPLY sID " << searchedID.to_string(SC_DEC) << " = (pred " << m_predecessor.toStrIDonly() << "; node " << m_nodeAddr.toStrIDonly() << "] => " << found.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            //
+
             return DO_REPLY;
         }
-        else if (isInRange(searchedID, m_nodeAddr.id, false, m_successor.id, true) && (m_successor.isUpdated)) {
+        //else if (isInRange(searchedID, m_nodeAddr.id, false, m_successor.id, true) && (m_successor.isUpdated)) {            
+        else if ((m_successor.id == searchedID) && (m_successor.isUpdated) && (m_successor.isNone() != true)) {            
             found = m_successor;  
-            if ((found.id == senderID) || (found.id == initiatorID))
-                found = m_nodeAddr;
-            return DO_REPLY;
-        }
-        else {
-            found = closestPrecedingNode(searchedID, senderID, initiatorID);
+            
+            //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << ".......... sID " << searchedID.to_string(SC_DEC) << " = (node " << m_nodeAddr.toStrIDonly() << "; " << m_successor.toStrIDonly() << ") => " << found.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            //
+
+
             if ((found.id == senderID) || (found.id == initiatorID))
                 found = m_nodeAddr;
 
-            if (found.id == m_nodeAddr.id)
+            //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_FORWARD sID " << searchedID.to_string(SC_DEC) << " = (node " << m_nodeAddr.toStrIDonly() << "; " << m_successor.toStrIDonly() << ") => " << found.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            return DO_FORWARD;
+        }
+        else {
+//DEBUG
+if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC)))
+    int tmp = 0;
+//DEBUG
+
+
+            found = closestPrecedingNode(searchedID, senderID, initiatorID);
+            //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << ".......... sID " << searchedID.to_string(SC_DEC) << " = closestPrecedingNode => " << found.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            //LOG
+
+            if ((found.id == senderID) || (found.id == initiatorID))
+                found = m_nodeAddr;
+
+            if (found.id == m_nodeAddr.id) {
+                //LOG
+                m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_REPLY sID " << searchedID.to_string(SC_DEC) << " = closestPrecedingNode => " << found.toStrIDonly();
+                msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
                 return DO_REPLY;
+            }
+
+            //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_FORWARD sID " << searchedID.to_string(SC_DEC) << " = closestPrecedingNode => " << found.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
             return DO_FORWARD;
         }
     }
@@ -1289,7 +1357,12 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
             includeL = includeB;
         }
         
-        if ((includeF == true) && (includeL == false)) {
+        if ((includeF == false) && (includeL == false)) {
+            if ((first < id) && (id < last))
+                return true;
+            return false;
+        }
+        else if ((includeF == true) && (includeL == false)) {
             if ((first <= id) && (id < last))
                 return true;
             return false;
@@ -1425,7 +1498,7 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
         newMess.srcNodeIDwithSocket = m_nodeAddr;
-        //newMess.initiatorNodeIDwithSocket = m_nodeAddr;
+        newMess.initiatorNodeIDwithSocket = m_nodeAddr;
         newMess.searchedNodeIDwithSocket = m_nodeAddr;
         newMess.messageID = m_messageID;
         newMess.type = CHORD_TX_NOTIFY;
@@ -1441,6 +1514,7 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
         newMess.srcNodeIDwithSocket = m_nodeAddr;
+        newMess.initiatorNodeIDwithSocket = m_nodeAddr;
         newMess.type = CHORD_TX_ACK;
         newMess.messageID = messageID;
         newMess.flags.bitMessType = CHORD_BYTE_ACK;
@@ -1476,7 +1550,7 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
         newMess.srcNodeIDwithSocket = m_nodeAddr;
-        //newMess.initiatorNodeIDwithSocket = m_nodeAddr;
+        newMess.initiatorNodeIDwithSocket = m_nodeAddr;
         newMess.type = CHORD_TX_SUCCESSOR;
         newMess.messageID = messageID;
         newMess.searchedNodeIDwithSocket = fingerAddr;
@@ -1507,6 +1581,7 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
         newMess.destNodeIDwithSocket = dest;
         newMess.srcNodeIDwithSocket = m_nodeAddr;
+        newMess.initiatorNodeIDwithSocket = m_nodeAddr;
         newMess.type = CHORD_TX_PREDECESSOR;
         newMess.messageID = messageID;
         newMess.searchedNodeIDwithSocket = fingerAddr;
@@ -1656,12 +1731,15 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
                         whatId = whatId+m_fingerMask[currFinger];
 
                         if (m_cwFingerIndex == 0) {
-                            if ((m_predecessor.isUpdated) && (m_predecessor.isNone() == false) && (m_predecessor.id != m_nodeAddr.id))
-                                fingerPast.setCopy(m_predecessor);
-                            else {                            
-                                node_address_latency addr;
-                                addr.set(m_seedAddrs.at(m_currSeed));
-                                fingerPast.setCopy(addr);
+                            //if ((m_predecessor.isUpdated) && (m_predecessor.isNone() == false) && (m_predecessor.id != m_nodeAddr.id))
+                            //    fingerPast.setCopy(m_predecessor);
+                            //else 
+                            {   
+                                if (m_currSeed < m_seedAddrs.size()) {
+                                    node_address_latency addr;        
+                                    addr.set(m_seedAddrs.at(m_currSeed));
+                                    fingerPast.setCopy(addr);
+                                }
                             }
                         }
                         else {
@@ -1681,12 +1759,15 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
                         whatId = whatId-m_fingerMask[currFinger];                    
 
                         if (m_ccwFingerIndex == 0) {                        
-                            if ((m_successor.isUpdated) && (m_successor.isNone() == false) && (m_successor.id != m_nodeAddr.id))
-                                fingerPast.setCopy(m_successor);                        
-                            else {
-                                node_address_latency addr;
-                                addr.set(m_seedAddrs.at(m_currSeed));
-                                fingerPast.setCopy(addr);
+                            //if ((m_successor.isUpdated) && (m_successor.isNone() == false) && (m_successor.id != m_nodeAddr.id))
+                            //    fingerPast.setCopy(m_successor);                        
+                            //else
+                            {
+                                if (m_currSeed < m_seedAddrs.size()) {
+                                    node_address_latency addr;
+                                    addr.set(m_seedAddrs.at(m_currSeed));
+                                    fingerPast.setCopy(addr);
+                                }
                             }
                         }
                         else {                        
@@ -1862,16 +1943,68 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
     }
 
 
+    bool low_latency_chord::setPredecessorThanSuccessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const string& motive) {
+        if ((rxMess.searchedNodeIDwithSocket.id < m_nodeAddr.id) && (m_cwFingerIndex == 0)) {
+            //oberon5962's modificated actions for valid Chord operations
+            m_predecessor = rxMess.searchedNodeIDwithSocket;
+            m_predecessor.isUpdated = true;
+            m_predecessor.updateTime = sc_time_stamp();
+            m_predecessor.motive = motive + LOG_SPACE + MOTIVE_PRED_SUCC;
+
+            if (m_ccwFingers.size() > 0)
+                m_ccwFingers[0] = m_predecessor;
+            m_isPredecessorSet = true;
+
+            //LOG
+            m_ssLog << state2str(m_state) + LOG_TAB + string("setPredecessorThanSuccessor sID ") << rxMess.searchedNodeIDwithSocket.toStrIDonly() << " < " << m_nodeAddr.toStrIDonly() << " => predecessor ccwfinger0 " << rxMess.searchedNodeIDwithSocket.toStrIDonly();
+            msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            //LOG
+
+            m_successor = timer.retryMess.destNodeIDwithSocket;
+            m_successor.isUpdated = true;
+            m_successor.updateTime = sc_time_stamp();
+            m_successor.motive = motive + LOG_SPACE + MOTIVE_PRED_SUCC;
+            
+            if (m_cwFingers.size() > 0)
+                m_cwFingers[0] = m_successor;
+            m_isSuccessorSet = true;            
+
+            //LOG
+            m_ssLog << state2str(m_state) + LOG_TAB + string("setPredecessorThanSuccessor sID ") << rxMess.searchedNodeIDwithSocket.toStrIDonly() << " < " << m_nodeAddr.toStrIDonly() << " => successor ccfinger0 " << timer.retryMess.destNodeIDwithSocket.toStrIDonly();
+            msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            //LOG
+
+            return true;
+        }
+        else if (rxMess.searchedNodeIDwithSocket.id > m_nodeAddr.id) {
+            return false;
+        }
+        else { 
+            if (rxMess.searchedNodeIDwithSocket.id == m_nodeAddr.id) {
+                //ERROR
+                m_ssLog << state2str(m_state) << LOG_TAB << "sID " << timer.retryMess.searchedNodeIDwithSocket.toStrIDonly() << " = node " << m_nodeAddr.toStrIDonly() << LOG_SPACE << LOG_ERROR_INVALID_SEARCHED_ID;
+                msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);                            
+            }
+            return false;
+        }
+    }
+
+
     bool low_latency_chord::setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
         bool needsFillFingersMinQty = false;
         if (m_isSuccessorSet == false) {
-            m_successor = rxMess.searchedNodeIDwithSocket;
-            m_successor.isUpdated = true;
-            m_successor.updateTime = sc_time_stamp();
-            m_cwFingerIndex++;
-            if (m_cwFingers.size() > 0)
-                m_cwFingers[0] = m_successor;            
-            m_isSuccessorSet = true;
+
+            if (setPredecessorThanSuccessor(rxMess, timer, MOTIVE_JOIN) == false) {
+                //Set predecessor via classical Chord algorithm
+                m_successor = rxMess.searchedNodeIDwithSocket;
+                m_successor.isUpdated = true;
+                m_successor.updateTime = sc_time_stamp();
+                m_successor.motive = MOTIVE_JOIN;
+                m_cwFingerIndex++;
+                if (m_cwFingers.size() > 0)
+                    m_cwFingers[0] = m_successor;
+                m_isSuccessorSet = true;
+            }            
 
             //Remove timers        
             vector<chord_timer_message_type> timerTypes = {CHORD_TIMER_RX_ACK, CHORD_TIMER_RX_SUCCESSOR_ON_JOIN};
@@ -1888,12 +2021,17 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
                 needsFillFingersMinQty = true;
         }
         else {
-            m_successor = rxMess.searchedNodeIDwithSocket;
-            m_successor.isUpdated = true;
-            m_successor.updateTime = sc_time_stamp();
-            m_cwFingerIndex++;
-            if (m_cwFingers.size() > 0)
-                m_cwFingers[0] = m_successor;
+            if (setPredecessorThanSuccessor(rxMess, timer, MOTIVE_JOIN) == false) {
+                //Set predecessor via classical Chord algorithm
+                m_successor = rxMess.searchedNodeIDwithSocket;
+                m_successor.isUpdated = true;
+                m_successor.updateTime = sc_time_stamp();
+                m_successor.motive = MOTIVE_JOIN;
+                m_cwFingerIndex++;
+                if (m_cwFingers.size() > 0)
+                    m_cwFingers[0] = m_successor;
+                m_isSuccessorSet = true;
+            }
 
             //Remove timers        
             vector<chord_timer_message_type> timerTypes = { CHORD_TIMER_RX_ACK, CHORD_TIMER_RX_SUCCESSOR };
@@ -1926,10 +2064,16 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         
         bool isSuccess = false;
         m_predecessor.isUpdated = true;
-        m_predecessor.updateTime = sc_time_stamp();
-        //m_ccwFingerIndex = 0;
-        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) || (isInRange(rxMess.searchedNodeIDwithSocket.id, m_predecessor.id, false, m_nodeAddr.id, false))) {
+        m_predecessor.updateTime = sc_time_stamp();        
+
+//DEBUG
+if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llchord"))) {
+    int tmp = 0;
+}
+//DEBUG
+        if ((m_predecessor.isNone() == true) || (isInRange(rxMess.searchedNodeIDwithSocket.id, m_predecessor.id, false, m_nodeAddr.id, false))) {
             m_predecessor = rxMess.searchedNodeIDwithSocket;
+            m_predecessor.motive = MOTIVE_NOTIFY;
             m_ccwFingers[0] = m_predecessor;
             isSuccess = true;
 
@@ -1941,7 +2085,7 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
             msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Notify setPredecessor new predecessor = ") + m_predecessor.toStrIDonly(), DEBUG_LOG | INTERNAL_LOG);
         else {
             stringstream ss;
-            ss << state2str(m_state) << LOG_TAB << ("Notify setPredecessor not changed: addr ") + rxMess.searchedNodeIDwithSocket.toStrIDonly() << " != (" << m_predecessor.toStrIDonly() << "; " << m_nodeAddr.toStrIDonly() << ")";
+            ss << state2str(m_state) << LOG_TAB << ("Notify setPredecessor not changed: addr ") + rxMess.searchedNodeIDwithSocket.toStrIDonly() << " != (pred " << m_predecessor.toStrIDonly() << "; node " << m_nodeAddr.toStrIDonly() << ")";
             msgLog(name(), LOG_TXRX, LOG_INFO, ss.str().c_str(), DEBUG_LOG | INTERNAL_LOG);
         }
 
@@ -1962,10 +2106,11 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
         m_isNowStabilize = false;
         bool isSuccess = false;
         m_successor.isUpdated = true;
-        m_successor.updateTime = sc_time_stamp();        
-        //m_cwFingerIndex = 1;
-        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) && (isInRange(rxMess.searchedNodeIDwithSocket.id, m_nodeAddr.id, false, m_successor.id, true))) {
+        m_successor.updateTime = sc_time_stamp();                
+        
+        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) && (isInRange(rxMess.searchedNodeIDwithSocket.id, m_nodeAddr.id, false, m_successor.id, false))) {
             m_successor = rxMess.searchedNodeIDwithSocket;
+            m_successor.motive = MOTIVE_STABILIZE;
             m_cwFingers[0] = m_successor;
             isSuccess = true;
             //tryAddNewSeed(m_successor);
@@ -1986,7 +2131,7 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
             msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Stabilize setSuccessor new successor = cwfinger0 ") + m_successor.toStrIDonly(), DEBUG_LOG | INTERNAL_LOG);
         else {
             stringstream ss;
-            ss << state2str(m_state) << LOG_TAB << ("Stabilize setSuccessor not changed: addr ") << rxMess.searchedNodeIDwithSocket.toStrIDonly() + (" != (") << m_nodeAddr.toStrIDonly() << ("; ") << m_successor.toStrIDonly() << "]";
+            ss << state2str(m_state) << LOG_TAB << ("Stabilize setSuccessor not changed: addr ") << rxMess.searchedNodeIDwithSocket.toStrIDonly() + (" != (node ") << m_nodeAddr.toStrIDonly() << ("; succ ") << m_successor.toStrIDonly() << ")";
             msgLog(name(), LOG_TXRX, LOG_INFO, ss.str().c_str(), DEBUG_LOG | INTERNAL_LOG);
         }
         
@@ -2003,12 +2148,138 @@ if ((name() == string("trp0.llchord")) && (searchedID == 3))
     }
 
 
+
+    bool low_latency_chord::forceUpdateFingerTable(const chord_message& rxMess) {
+        int i = ((int)m_cwFingers.size())-1;
+        uint prevI = i;
+        --i;
+        bool success = false;
+        
+        if (i < 0) {
+            if (((m_nodeAddr.id+m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) ||
+                ((m_nodeAddr.id < rxMess.initiatorNodeIDwithSocket.id) && (rxMess.initiatorNodeIDwithSocket.id < m_nodeAddr.id+m_fingerMask.at(prevI)))) &&
+                (m_nodeAddr.id+m_fingerMask.at(prevI) != m_cwFingers.at(prevI).id))
+            {
+                m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << prevI << LOG_SPACE << m_cwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                m_cwFingers[prevI] = rxMess.initiatorNodeIDwithSocket;
+                m_cwFingers[prevI].isUpdated = true;
+                m_cwFingers[prevI].updateTime = sc_time_stamp();
+                m_cwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
+                success = true;
+
+                if (prevI == 0) {
+                    m_successor = m_cwFingers[prevI];
+                }
+            }
+        }
+        else {
+            while (i >= 0) {
+                uint tmp = (m_nodeAddr.id + m_fingerMask.at(prevI)).to_uint();
+                if ((m_nodeAddr.id+m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) && (m_nodeAddr.id+m_fingerMask.at(prevI) != m_cwFingers.at(prevI).id)) {
+                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << prevI << LOG_SPACE << m_cwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                    m_cwFingers[prevI] = rxMess.initiatorNodeIDwithSocket;
+                    m_cwFingers[prevI].isUpdated = true;
+                    m_cwFingers[prevI].updateTime = sc_time_stamp();
+                    m_cwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
+                    success = true;
+                }
+                else if ((isInRange(rxMess.initiatorNodeIDwithSocket.id, m_nodeAddr.id+m_fingerMask.at(i), true, m_nodeAddr.id+m_fingerMask.at(prevI), false)) &&
+                         (m_nodeAddr.id + m_fingerMask.at(i) != m_cwFingers.at(i).id)) {
+                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << i << LOG_SPACE << m_cwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                    m_cwFingers[i] = rxMess.initiatorNodeIDwithSocket;
+                    m_cwFingers[i].isUpdated = true;
+                    m_cwFingers[i].updateTime = sc_time_stamp();
+                    m_cwFingers[i].motive = MOTIVE_FORCE_UPDATE;
+                    success = true;
+
+                    if (i == 0) {
+                        m_successor = m_cwFingers[i];
+                    }
+                }
+                prevI = i;
+                --i;            
+            }
+        }
+
+        if (success)
+            return success;
+
+        i = ((int) m_ccwFingers.size()) - 1;
+        prevI = i;
+        --i;
+
+        if (i < 0) {
+            if (((m_nodeAddr.id-m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) ||
+                ((m_nodeAddr.id < rxMess.initiatorNodeIDwithSocket.id) && (rxMess.initiatorNodeIDwithSocket.id > m_nodeAddr.id-m_fingerMask.at(prevI))) ||
+                ((m_nodeAddr.id > rxMess.initiatorNodeIDwithSocket.id) && (rxMess.initiatorNodeIDwithSocket.id < m_nodeAddr.id-m_fingerMask.at(prevI)))) && 
+                (m_nodeAddr.id-m_fingerMask.at(prevI) != m_ccwFingers.at(prevI).id))
+            {
+                m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << prevI << LOG_SPACE << m_ccwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                m_ccwFingers[prevI] = rxMess.initiatorNodeIDwithSocket;
+                m_ccwFingers[prevI].isUpdated = true;
+                m_ccwFingers[prevI].updateTime = sc_time_stamp();
+                m_ccwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
+                success = true;
+
+                if (prevI == 0) {
+                    m_predecessor = m_ccwFingers[prevI];
+                }
+            }
+        }
+        else {
+            while (i >= 0) {
+
+                if ((m_nodeAddr.id-m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) &&
+                    (m_nodeAddr.id-m_fingerMask.at(prevI) != m_ccwFingers.at(prevI).id)) {
+                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << prevI << LOG_SPACE << m_ccwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                    m_ccwFingers[prevI] = rxMess.initiatorNodeIDwithSocket;
+                    m_ccwFingers[prevI].isUpdated = true;
+                    m_ccwFingers[prevI].updateTime = sc_time_stamp();
+                    m_ccwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
+                    success = true;
+                }
+                else if ((isInRange(rxMess.initiatorNodeIDwithSocket.id, m_nodeAddr.id-m_fingerMask.at(i), true, m_nodeAddr.id-m_fingerMask.at(prevI), false) &&
+                         (m_nodeAddr.id-m_fingerMask.at(i) != m_ccwFingers.at(i).id))) {
+                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << i << LOG_SPACE << m_ccwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                    m_ccwFingers[i] = rxMess.initiatorNodeIDwithSocket;
+                    m_ccwFingers[i].isUpdated = true;
+                    m_ccwFingers[i].updateTime = sc_time_stamp();
+                    m_ccwFingers[i].motive = MOTIVE_FORCE_UPDATE;
+                    success = true;
+
+                    if (i == 0) {
+                        m_predecessor = m_ccwFingers[i];
+                    }
+                }
+                prevI = i;
+                --i;
+            }
+        }
+        return success;
+    }
+
+
+
     void low_latency_chord::setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {  
 //DEBUG
-if (name() == string("trp0.llchord"))
+if (name() == string("trp1.llchord"))
     int tmp = 0;
-//DEBUG        
-        
+//DEBUG 
+
+
+        node_address_latency updatedFinger;
         if (m_isClockWise) {
             if (m_cwFingerIndex >= m_cwFingers.size()) {
                 cout << sc_time_stamp().to_string() << " !!!! Press enter" << endl;
@@ -2016,15 +2287,20 @@ if (name() == string("trp0.llchord"))
                 msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("setFinger") + LOG_SPACE + LOG_ERROR_INVALID_RANGE, ALL_LOG);
                 return;
             }
-                       
-            m_cwFingers[m_cwFingerIndex] = rxMess.searchedNodeIDwithSocket;
-            m_cwFingers[m_cwFingerIndex].isUpdated = true;
-            m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
-            if (m_cwFingerIndex == 0) {
-                m_successor = m_cwFingers[m_cwFingerIndex];
-                //m_isSuccessorSet = true;
-            }    
-            m_cwFingerIndex++;
+
+            if (setPredecessorThanSuccessor(rxMess, timer, MOTIVE_PERIOD_RET_SUCC) == false) {
+                //Set successor via classical Chord algorithm
+                m_cwFingers[m_cwFingerIndex] = rxMess.searchedNodeIDwithSocket;
+                m_cwFingers[m_cwFingerIndex].isUpdated = true;
+                m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
+                m_cwFingers[m_cwFingerIndex].motive = MOTIVE_PERIOD_RET_SUCC;
+                if (m_cwFingerIndex == 0) {
+                    m_successor = m_cwFingers[m_cwFingerIndex];
+                    //m_isSuccessorSet = true;
+                }    
+                //m_cwFingerIndex++;
+            }
+            updatedFinger.setCopy(m_cwFingers.at(m_cwFingerIndex));
         }
         else {
             if (m_ccwFingerIndex >= m_ccwFingers.size()) {
@@ -2037,12 +2313,17 @@ if (name() == string("trp0.llchord"))
             m_ccwFingers[m_ccwFingerIndex] = rxMess.searchedNodeIDwithSocket;
             m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
             m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
+            m_ccwFingers[m_ccwFingerIndex].motive = MOTIVE_PERIOD_RET_SUCC;
+
             if (m_ccwFingerIndex == 0) {
                 m_predecessor = m_ccwFingers[m_ccwFingerIndex];
                 //m_isPredecessorSet = true;
             }            
-            m_ccwFingerIndex++;
-        }        
+            //m_ccwFingerIndex++;
+            updatedFinger.setCopy(m_ccwFingers.at(m_ccwFingerIndex));
+        } 
+        
+       
 
         //Remove timers        
         vector<chord_timer_message_type> timerTypes = {CHORD_TIMER_RX_ACK, CHORD_TIMER_RX_SUCCESSOR};
@@ -2053,9 +2334,13 @@ if (name() == string("trp0.llchord"))
         if ((sc_time_stamp() >= timer.creatingTime) && (timer.retryMess.type == CHORD_TX_FIND_SUCCESSOR))
             eraseTxMess(CHORD_TX_FIND_SUCCESSOR);
 
-        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setFinger ") +
-                (m_isClockWise ? string("cwfinger") + to_string(m_cwFingerIndex-1) + (m_cwFingerIndex == 1 ? string(" successor") : string("")) :
-                    string("ccwfinger") + to_string(m_ccwFingerIndex-1) + (m_ccwFingerIndex == 1 ? string(" predecessor") : string(""))) + LOG_SPACE + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
+        m_ssLog << state2str(m_state) << LOG_TAB << "setFinger " << (updatedFinger.isClockWise ? string("cwfinger") : string("ccwfinger"))
+                << updatedFinger.fingerIndex << ((updatedFinger.fingerIndex == 0) && (updatedFinger.isClockWise) ? string(" successor") :
+                   ((updatedFinger.fingerIndex == 0) && (updatedFinger.isClockWise == false) ? string(" predecessor") : string(""))) << LOG_SPACE << updatedFinger.toStrIDonly();
+        msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+        //msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setFinger ") +
+        //        (m_isClockWise ? string("cwfinger") + to_string(m_cwFingerIndex-1) + (m_cwFingerIndex == 1 ? string(" successor") : string("")) :
+        //            string("ccwfinger") + to_string(m_ccwFingerIndex-1) + (m_ccwFingerIndex == 1 ? string(" predecessor") : string(""))) + LOG_SPACE + rxMess.searchedNodeIDwithSocket.toStr(), DEBUG_LOG | INTERNAL_LOG);
 
         //tryAddNewSeed(rxMess.searchedNodeIDwithSocket);
 
@@ -2105,6 +2390,7 @@ if (name() == string("trp0.llchord"))
             m_cwFingers[m_cwFingerIndex] = prevAddr;
             m_cwFingers[m_cwFingerIndex].isUpdated = true;
             m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
+            m_cwFingers[m_cwFingerIndex].motive = MOTIVE_COPY;
             if (m_cwFingerIndex == 0)
                 m_successor = m_cwFingers[m_cwFingerIndex];            
             newAddr = m_cwFingers[m_cwFingerIndex];
@@ -2121,6 +2407,7 @@ if (name() == string("trp0.llchord"))
             m_cwFingers[m_ccwFingerIndex] = prevAddr;
             m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
             m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
+            m_ccwFingers[m_ccwFingerIndex].motive = MOTIVE_COPY;
             if (m_cwFingerIndex == 0)
                 m_successor = m_ccwFingers[m_ccwFingerIndex];
             newAddr = m_ccwFingers[m_ccwFingerIndex];
@@ -2658,6 +2945,23 @@ if (name() == string("trp0.llchord"))
     }
 
 
+    const vector<node_address_latency>* low_latency_chord::cw_fingers_pointer() const {
+        return &m_cwFingers;    
+    }
+
+
+
+    const vector<node_address_latency>* low_latency_chord::ccw_fingers_pointer() const {
+        return &m_ccwFingers;
+    }
+
+
+    node_address low_latency_chord::node_addr() const {
+        return m_nodeAddr.toNodeAddress();
+    }
+
+
+
     void low_latency_chord::makeSnapshot() {  
         sc_time period = sc_time(1, SC_SEC);
         static map<uint160, vector<node_address_latency>* > copyCwFingers;
@@ -2708,26 +3012,32 @@ string nameStr = name();
 
     void low_latency_chord::makeSnapshotJSON() {
         string str;
-        sc_time period = sc_time(1, SC_SEC);
+        sc_time period = SNAPSHOT_PERIOD;
         static map<uint160, vector<node_address_latency>* > copyCwFingers;
         static map<uint160, vector<node_address_latency>* > copyCcwFingers;
         static map<uint160, node_address_latency > copyNodeAddrs;
         static sc_time lastCallTime = SC_ZERO_TIME;
-        static bool singlePrint = true;
+        static bool doPrint = true;
 
 //DEBUG
 string timeStr = sc_time_stamp().to_string();
 string nameStr = name();
+if (sc_time_stamp() >= sc_time(20, SC_SEC))
+    int herebreakpoint = 0;
 //DEBUG
 
+
         if (lastCallTime != sc_time_stamp()) {
-            singlePrint = true;
+            doPrint = true;
         }
 
-        if (singlePrint == true) {
-            json J;
+        if (doPrint == true) {
+            
 
-            J["curr time"] = sc_time_stamp().to_string();
+            json J;
+            string currTime = sc_time_stamp().to_string(); //to_string(sc_time_stamp().to_seconds()) + string(" s");
+            //std::replace(currTime.begin(), currTime.end(), ',', '.');
+            J["curr time"] = currTime;
 
             uint active = 0;
             for (auto it = copyCwFingers.begin(); it != copyCwFingers.end(); ++it) {
@@ -2741,8 +3051,8 @@ string nameStr = name();
             auto ccwIt = copyCcwFingers.begin();
             auto cwIt = copyCwFingers.begin();
             while ((cwIt != copyCwFingers.end()) &&
-                (ccwIt != copyCcwFingers.end()) &&
-                (nodeAddrIt != copyNodeAddrs.end()))
+                   (ccwIt != copyCcwFingers.end()) &&
+                   (nodeAddrIt != copyNodeAddrs.end()))
             {
                 json j;  
                 if (cwIt->second->size() > 0) {
@@ -2754,11 +3064,11 @@ string nameStr = name();
                         j[" cw fing"] = "null";
                     }
                     else {
-                        j["succ"] = cwIt->second->at(0).toStrIDonly().erase(0, 1);
+                        j["succ"] = cwIt->second->at(0).id.to_uint64();     //toStrIDonly().erase(0, 1);
 
                         for (uint i = 0; i < cwIt->second->size(); ++i) {
                             str = string(" cw fing[") + to_string(i) + string("]");
-                            j[str] = cwIt->second->at(i).toStrIDonly().erase(0, 1);
+                            j[str] = cwIt->second->at(i).toStrIDmotive();    ///*toStrFinger()*/toStrIDonly().erase(0,1);
                         }
                     }
 
@@ -2767,11 +3077,11 @@ string nameStr = name();
                         j["ccw fing"] = "null";
                     }
                     else {
-                        j["pred"] = ccwIt->second->at(0).toStrIDonly().erase(0, 1);
+                        j["pred"] = ccwIt->second->at(0).id.to_uint64(); //toStrIDonly().erase(0, 1);
 
-                        for (uint i = 0; i < ccwIt->second->size(); ++i) {
+                        for (uint i = 0; (i < ccwIt->second->size()) /*&& (i < 1)*/; ++i) {
                             str = string("ccw fing[") + to_string(i) + string("]");
-                            j[str] = ccwIt->second->at(i).toStrIDonly().erase(0, 1);
+                            j[str] = ccwIt->second->at(i).toStrIDmotive();  ///*toStrFinger()*/toStrIDonly().erase(0,1);
                         }
                     }
                     
@@ -2785,18 +3095,14 @@ string nameStr = name();
             }
             log::snapshotLogJSON(J);
 
+            //copyCwFingers.clear();
+            //copyCcwFingers.clear();
+            //copyNodeAddrs.clear();
             
-
-            copyCwFingers.clear();
-            copyCcwFingers.clear();
-            copyNodeAddrs.clear();
-            
-            singlePrint = false;
+            doPrint = false;
             lastCallTime = sc_time_stamp();
         }
-
-
-        //for (auto it = m_cwFingers.begin(); it != m_cwFingers.end(); ++it)
+       
         copyCwFingers[m_nodeAddr.id] = &m_cwFingers;
         copyCcwFingers[m_nodeAddr.id] = &m_ccwFingers;
         copyNodeAddrs[m_nodeAddr.id] = m_nodeAddr;
@@ -2807,102 +3113,3 @@ string nameStr = name();
 
 
 }
-
-
-
-
-
-
-
-
-/*
-    json j;
-    if ((cwFingers.size() > 0) && (ccwFingers.size() > 0)) {
-        j =
-        {
-            {"active", activeNodes},
-            {"nodes", {
-                          {
-                              {"id", nodeAddr.toNodeAddress().toStrIDonly()},
-                              {"succ", cwFingers.at(0).toStrIDonly()},
-                              {"pred", ccwFingers.at(0).toStrIDonly()},
-                          }
-                      }
-            }
-        };
-    }
-
-    ss << std::setw(4) << j << endl;
-    cout << ss.str().c_str() << endl;
-    */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-        switch (eventType(mess, existMess)) {
-            case CALLED_BY_ANOTHER_STATE: {           
-            }
-            break;
-
-            case TX_MESS_SHOULD_SEND: {
-
-            }
-            break;
-
-            case RX_MESS_RECEIVED: {               //RX Message was received       
-                if (mess.type == CHORD_RX_ACK) {
-                    if (checkMessage(mess, timer, m_errCode) != ERROR) {
-                        switch (timer.issuedState) {
-                            case STATE_SERVICE:    goStateService(mess, true);    break;
-                            case STATE_UPDATE:     goStateUpdate(mess, true);     break;
-                            case STATE_APPREQUEST: goStateApprequest(mess, true); break;
-                            case STATE_INDATA:     goStateIndata(mess, true);     break;
-                            case STATE_JOIN:       goStateJoin(mess, true);       break;
-                        }                        
-                    }
-                }
-                else {
-                    //uint match
-                }
-                
-                
-                if ((mess.type == CHORD_RX_FIND_SUCCESSOR) ||
-                         (mess.type == CHORD_RX_FIND_PREDECESSOR) ||
-                         (mess.type == CHORD_RX_JOIN))
-                {
-                    goStateService(mess, true);
-                }
-                
-            }
-            break;
-
-            case TIMER_EXPIRED:{                     //Timer was expired, analysing
-                
-                timer = mess;
-                switch (timer.issuedState) {
-                    case STATE_SERVICE:    goStateService(mess, true);    break;
-                    case STATE_UPDATE:     goStateUpdate(mess, true);     break;
-                    case STATE_APPREQUEST: goStateApprequest(mess, true); break;
-                    case STATE_INDATA:     goStateIndata(mess, true);     break;
-                    default: {
-                        if (timer.type == CHORD_TIMER_UPDATE)
-                            goStateUpdate(mess, true);
-                    }
-                }
-            }
-            break;
-        }
-*/

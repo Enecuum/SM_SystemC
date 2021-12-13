@@ -7,6 +7,7 @@
 #include "trp/trp_application_if.h"
 #include "trp/trp_network_if.h"
 #include "trp/trp_llchord_if.h"
+#include "trp/trp_monitor_if.h"
 #include "net/network_trp_if.h"
 
 
@@ -20,7 +21,8 @@ namespace P2P_MODEL
                            public log,
                            public trp_application_if,
                            public trp_network_if,
-                           public trp_llchord_if
+                           public trp_llchord_if,
+                           public trp_monitor_if
     {
     public:
         sc_port<network_trp_if> network_port;        
@@ -39,6 +41,9 @@ namespace P2P_MODEL
         void mess_req(const app_message& mess);
         void send_mess(const chord_byte_message& mess);
         void receive_mess(const chord_byte_message& mess);
+        const vector<node_address_latency>* cw_fingers_pointer() const;
+        const vector<node_address_latency>* ccw_fingers_pointer() const;
+        node_address node_addr() const;
 
         void setNetworkAddress(const network_address& addr);
         network_address& getNetworkAddress();

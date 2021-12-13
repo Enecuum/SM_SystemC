@@ -66,6 +66,21 @@ namespace P2P_MODEL
     }
 
 
+    const vector<node_address_latency>* transport_plus::cw_fingers_pointer() const {
+        return m_llchord.cw_fingers_pointer();
+    }
+
+
+    const vector<node_address_latency>* transport_plus::ccw_fingers_pointer() const {
+        return m_llchord.ccw_fingers_pointer();
+    }
+
+    
+    node_address transport_plus::node_addr() const {
+        return m_llchord.node_addr();
+    }
+
+
     void transport_plus::setNetworkAddress(const network_address& netwAddr) {
         m_llchord.setNetworkAddress(netwAddr);
     }

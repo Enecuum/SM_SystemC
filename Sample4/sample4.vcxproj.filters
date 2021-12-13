@@ -26,6 +26,9 @@
     <ClCompile Include="src\trp\transport_plus.cpp">
       <Filter>src\trp</Filter>
     </ClCompile>
+    <ClCompile Include="src\mntr\monitor.cpp">
+      <Filter>src\mntr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -39,6 +42,9 @@
     </Filter>
     <Filter Include="src\trp">
       <UniqueIdentifier>{7e23d726-5040-4812-b6da-6cf32ab1c3a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\mntr">
+      <UniqueIdentifier>{15c3db90-c944-4429-8ee9-c7a1017da887}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -86,6 +92,15 @@
     </ClInclude>
     <ClInclude Include="src\trp\trp_llchord_if.h">
       <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mntr\monitor.h">
+      <Filter>src\mntr</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_monitor_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mntr\monitor_trp_if.h">
+      <Filter>src\mntr</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

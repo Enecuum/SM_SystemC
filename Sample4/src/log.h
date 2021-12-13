@@ -19,10 +19,11 @@ namespace P2P_MODEL
     const string LOG_ERROR_OVERFLOW       = string("OVERFLOW BUFFER");
     const string LOG_ERROR_NO_ADDR        = string("NO ADDR");
     const string LOG_ERROR_NULLPTR        = string("NULLPTR");
-    const string LOG_ERROR_NOT_RECOGNIZED = string("UNKNOWN, NOT RECOGNIZED");
+    const string LOG_ERROR_NOT_RECOGNIZED = string("UNKNOWN, NOT RECOGNIZED");    
     const string LOG_ERROR_INVALID_RANGE  = string("OUT OF RANGE");
     const string LOG_ERROR_INVALID_ADDR   = string("DROP MESS, UNKNOWN ADDR");
     const string LOG_ERROR_INVALID_MESS_ID = string("DROP MESS, UNKNOWN MESS ID");    
+    const string LOG_ERROR_INVALID_SEARCHED_ID = string("DROP MESS, INVALID SEARCHED ID");
 
 
     #define LOG_MESS(m)  string("m");
@@ -58,6 +59,7 @@ namespace P2P_MODEL
         string m_logSnapshotPath;
         log_mode m_logMode;
         string m_logText;
+        stringstream m_ssLog;
 
     public:
         
