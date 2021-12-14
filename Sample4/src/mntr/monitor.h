@@ -9,7 +9,8 @@
 namespace P2P_MODEL
 {
 
-    class monitor: public sc_module,
+    class monitor: public monitor_trp_if,
+                   public sc_module,
                    public log
     {
     public:
@@ -22,11 +23,14 @@ namespace P2P_MODEL
         map<uint160, vector<node_address> > m_id2refCwFingers;
         map<uint160, vector<node_address> > m_id2refCcwFingers;
         
+       
         
+        map<uint160, node_snapshot> m_copySnapshot;
         
-        map<uint160, const vector<node_address_latency>* > m_copyCwFingers;
-        map<uint160, const vector<node_address_latency>* > m_copyCcwFingers;
-        
+        //map<uint160, const vector<node_address_latency>* > m_copyCwFingers;
+        //map<uint160, const vector<node_address_latency>* > m_copyCcwFingers;
+        //map<uint160, node_address> m_copyNodeAddrs;
+
         map<uint160, sc_time> m_howLongValidFingers;
         map<uint160, bool> m_isValidFingers;
 
@@ -44,15 +48,19 @@ namespace P2P_MODEL
 
         void setCwFingersUnderTest(const uint160 id,  const vector<node_address_latency>* fingers);
         void setCcwFingersUnderTest(const uint160 id, const vector<node_address_latency>* fingers);
+        void setFiniteStateUnderTest(const uint160 id, const finite_state* state);
+        void setNodeAddrUnderTest(const uint160 id, const node_address& addr);
+        void setSnapshotUnderTest(const node_snapshot& snapshot);
 
         void setPeriodCheckFingers(const sc_time period);
 
 
+
         void checkFingersPeriodically();
 
-        bool check_fingers(const uint160 id, vector<node_address_latency>& invalidFingers);
+        void check_fingers(const node_address&  addr,     vector<node_address_latency>& invalidFingers);
+        void check_fingers(const node_snapshot& snapshot, vector<node_address_latency>& invalidFingers);
 
-        //bool checkCwFingers 
 
     };
 }

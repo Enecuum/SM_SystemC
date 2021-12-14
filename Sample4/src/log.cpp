@@ -33,6 +33,7 @@ namespace P2P_MODEL
     void log::setPathLog(const string& pathLog)
     {
         m_logPath = pathLog;
+        m_logSnapshotPath = pathLog;
     }
 
 

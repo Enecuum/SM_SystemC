@@ -132,6 +132,8 @@ namespace P2P_MODEL
         const vector<node_address_latency>* cw_fingers_pointer() const;
         const vector<node_address_latency>* ccw_fingers_pointer() const;
         node_address node_addr() const;
+        const finite_state* finite_state_pointer() const;
+        node_snapshot snapshot_pointers();
 
     private:
         void preinit();
@@ -224,9 +226,8 @@ namespace P2P_MODEL
 
         bool findPrevAliveFinger(const bool isClockWise, const uint forThisFingerIndex, node_address_latency& prevFinger);
         void tryAddNewSeed(const node_address& newSeed);
-
+        
         void makeSnapshot();
-        void makeSnapshotJSON();
     };
 }
 #endif

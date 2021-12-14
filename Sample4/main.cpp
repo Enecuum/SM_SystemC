@@ -13,9 +13,9 @@ using namespace std;
 
 
 
-const uint NODES = 10;
+const uint NODES = 3;
 uint P2P_MODEL::MAX_SMALL_UINT                  = uint160(-1).to_uint();
-sc_time P2P_MODEL::MONITOR_PERIOD_CHECK_FINGERS = sc_time(1, SC_MS);
+sc_time P2P_MODEL::MONITOR_PERIOD_CHECK_FINGERS = sc_time(1, SC_SEC);
 
 
 
@@ -64,9 +64,9 @@ int main(int argc, char* argv[])
 
         applications[i]->trp_port.bind( *(transports[i]) );
         transports[i]->network_port.bind(*network1);
+        transports[i]->monitor_port.bind(*monitor1);
         network1->trp_ports[i]->bind( *(transports[i]) );
-        monitor1->trp_ports[i]->bind( *(transports[i]) );
-
+        monitor1->trp_ports[i]->bind( *(transports[i]) );        
 
         applications[i]->setEnabledLog();
         applications[i]->setLogMode(ALL_LOG);        
@@ -90,14 +90,15 @@ int main(int argc, char* argv[])
         params.netwAddr.set(str.c_str(), 1111, 2222);
         params.setDefaultTimersCountersFingersSize();
         params.fingersSize = (uint) ceil(log10(nodes) / log10(2));
-
         addrs.push_back(params.netwAddr);
         
         if (i >= 1) {
             params.seed.push_back(addrs.at(0));
         }
         transports[i]->setConfParameters(params);
-        monitor1->setPeriodCheckFingers(MONITOR_PERIOD_CHECK_FINGERS);
+       
+
+        monitor1->setSnapshotUnderTest(transports[i]->snapshot_pointers());
     }
     
     //mess.clear();
@@ -190,7 +191,7 @@ int main(int argc, char* argv[])
 
 
     //Free memory layer-by-layer
-    char c;
+    char c = 'y';
     cout << endl << "*** Prepare to free memory used by applications. Enter 'y': "; //cin >> c;
     cout << endl;
     for (uint i = 0; i < nodes; ++i) {

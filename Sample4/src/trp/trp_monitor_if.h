@@ -10,6 +10,8 @@ namespace P2P_MODEL {
         virtual const vector<node_address_latency>* cw_fingers_pointer() const = 0;
         virtual const vector<node_address_latency>* ccw_fingers_pointer() const  = 0;
         virtual node_address node_addr() const = 0;
+        virtual const finite_state* finite_state_pointer() const = 0;
+        virtual node_snapshot snapshot_pointers() = 0;
     };
 }
 

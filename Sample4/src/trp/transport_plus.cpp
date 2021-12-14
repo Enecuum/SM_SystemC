@@ -81,6 +81,25 @@ namespace P2P_MODEL
     }
 
 
+    const finite_state* transport_plus::finite_state_pointer() const {
+        return m_llchord.finite_state_pointer();
+    }
+
+
+    node_snapshot transport_plus::snapshot_pointers() {
+        return m_llchord.snapshot_pointers();
+    }
+
+
+    void transport_plus::check_fingers(const node_address& addr, vector<node_address_latency>& invalidFingers) {
+        monitor_port->check_fingers(addr, invalidFingers);
+    }
+
+    void transport_plus::check_fingers(const node_snapshot& snapshot, vector<node_address_latency>& invalidFingers) {
+        monitor_port->check_fingers(snapshot, invalidFingers);
+    }
+
+
     void transport_plus::setNetworkAddress(const network_address& netwAddr) {
         m_llchord.setNetworkAddress(netwAddr);
     }

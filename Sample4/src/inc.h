@@ -1422,6 +1422,20 @@ namespace P2P_MODEL {
     };
 
 
+    struct node_snapshot {
+        vector<node_address_latency>*  pCwFingers;
+        vector<node_address_latency>* pCcwFingers;
+        finite_state* pFiniteState;
+        node_address nodeAddr;
 
+        node_snapshot(): pCwFingers(nullptr), pCcwFingers(nullptr), pFiniteState(nullptr)
+        {    };
+
+        node_snapshot(vector<node_address_latency>* pCwFing,
+                        vector<node_address_latency>* pCcwFing,
+                        finite_state* pState,
+                        const node_address& addr): pCwFingers(pCwFing), pCcwFingers(pCcwFing), pFiniteState(pState), nodeAddr(addr)
+        {    };
+    };
 }
 #endif

@@ -9,6 +9,7 @@
 #include "trp/trp_llchord_if.h"
 #include "trp/trp_monitor_if.h"
 #include "net/network_trp_if.h"
+#include "mntr/monitor_trp_if.h"
 
 
 
@@ -22,10 +23,12 @@ namespace P2P_MODEL
                            public trp_application_if,
                            public trp_network_if,
                            public trp_llchord_if,
-                           public trp_monitor_if
+                           public trp_monitor_if,
+                           public monitor_trp_if
     {
     public:
-        sc_port<network_trp_if> network_port;        
+        sc_port<network_trp_if> network_port;  
+        sc_port<monitor_trp_if> monitor_port;
 
     private:
         low_latency_chord m_llchord;
@@ -44,6 +47,11 @@ namespace P2P_MODEL
         const vector<node_address_latency>* cw_fingers_pointer() const;
         const vector<node_address_latency>* ccw_fingers_pointer() const;
         node_address node_addr() const;
+        const finite_state* finite_state_pointer() const;
+        node_snapshot snapshot_pointers();
+
+        void check_fingers(const node_address& addr, vector<node_address_latency>& invalidFingers);
+        void check_fingers(const node_snapshot& snapshot, vector<node_address_latency>& invalidFingers);
 
         void setNetworkAddress(const network_address& addr);
         network_address& getNetworkAddress();

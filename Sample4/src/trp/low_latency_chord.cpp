@@ -7,7 +7,7 @@ namespace P2P_MODEL
         dont_initialize();
         sensitive << m_eventCore;
 
-        SC_METHOD(makeSnapshotJSON);
+        SC_METHOD(makeSnapshot);
         //dont_initialize();
         sensitive << m_eventMakeSnapshot;        
 
@@ -534,7 +534,8 @@ namespace P2P_MODEL
             bool isIssueSuccess;
             bool isRepeatSuccess;
 
-            switch (eventType(mess, existMess)) {
+            event_type evType = eventType(mess, existMess);
+            switch (evType) {
                 case CALLED_BY_ANOTHER_STATE: {           
                     issueMessagePushTimers(CHORD_TX_JOIN, false, 0);                                         //First call this state, message wasn't received, timer wasn't expired               
                 }
@@ -646,6 +647,9 @@ namespace P2P_MODEL
                 break;
             }        
             setNextState(STATE_IDLE);
+
+            if ((mess.type != CHORD_RX_ACK) && (evType != TX_MESS_SHOULD_SEND))
+                makeSnapshot();
         }
     }
 
@@ -990,7 +994,7 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
             setNextState(STATE_IDLE);    
             
             if ((mess.type != CHORD_RX_ACK) && (evType != TX_MESS_SHOULD_SEND))
-                makeSnapshotJSON();
+                makeSnapshot();
         }        
     }
 
@@ -2950,7 +2954,6 @@ if (name() == string("trp1.llchord"))
     }
 
 
-
     const vector<node_address_latency>* low_latency_chord::ccw_fingers_pointer() const {
         return &m_ccwFingers;
     }
@@ -2961,8 +2964,31 @@ if (name() == string("trp1.llchord"))
     }
 
 
+    const finite_state* low_latency_chord::finite_state_pointer() const {
+        return &m_state;
+    }
 
-    void low_latency_chord::makeSnapshot() {  
+
+    node_snapshot low_latency_chord::snapshot_pointers() {
+        node_snapshot snapshot(&m_cwFingers, &m_ccwFingers, &m_state, m_nodeAddr.toNodeAddress());
+        return snapshot;
+    }
+
+
+    void low_latency_chord::makeSnapshot() {
+        vector<node_address_latency> invalidFingers;
+        trp_port->check_fingers(m_nodeAddr.toNodeAddress(), invalidFingers);        
+
+        sc_time period = MONITOR_PERIOD_CHECK_FINGERS;
+        m_eventMakeSnapshot.notify(period);
+    }
+}
+
+
+
+
+/*
+    void low_latency_chord::makeSnapshotTxt() {
         sc_time period = sc_time(1, SC_SEC);
         static map<uint160, vector<node_address_latency>* > copyCwFingers;
         static map<uint160, vector<node_address_latency>* > copyCcwFingers;
@@ -2987,7 +3013,7 @@ string nameStr = name();
                     (ccwIt != copyCcwFingers.end()) &&
                     (nodeAddrIt != copyNodeAddrs.end()))
             {
-                log::snapshotLog((uint) copyNodeAddrs.size(), nodeAddrIt->second, *(cwIt->second), *(ccwIt->second), sc_time_stamp()/*-period*/);
+                log::snapshotLog((uint) copyNodeAddrs.size(), nodeAddrIt->second, *(cwIt->second), *(ccwIt->second), sc_time_stamp());     //-period);
                 nodeAddrIt++;
                 ccwIt++;
                 cwIt++;
@@ -2999,117 +3025,13 @@ string nameStr = name();
             singlePrint = false;
             lastCallTime = sc_time_stamp();
         }
-        
-        
+
+
         //for (auto it = m_cwFingers.begin(); it != m_cwFingers.end(); ++it)
-        copyCwFingers[m_nodeAddr.id] = &m_cwFingers; 
-        copyCcwFingers[m_nodeAddr.id] = &m_ccwFingers;
-        copyNodeAddrs[m_nodeAddr.id] = m_nodeAddr;
-
-        m_eventMakeSnapshot.notify(period);
-    }
-
-
-    void low_latency_chord::makeSnapshotJSON() {
-        string str;
-        sc_time period = SNAPSHOT_PERIOD;
-        static map<uint160, vector<node_address_latency>* > copyCwFingers;
-        static map<uint160, vector<node_address_latency>* > copyCcwFingers;
-        static map<uint160, node_address_latency > copyNodeAddrs;
-        static sc_time lastCallTime = SC_ZERO_TIME;
-        static bool doPrint = true;
-
-//DEBUG
-string timeStr = sc_time_stamp().to_string();
-string nameStr = name();
-if (sc_time_stamp() >= sc_time(20, SC_SEC))
-    int herebreakpoint = 0;
-//DEBUG
-
-
-        if (lastCallTime != sc_time_stamp()) {
-            doPrint = true;
-        }
-
-        if (doPrint == true) {
-            
-
-            json J;
-            string currTime = sc_time_stamp().to_string(); //to_string(sc_time_stamp().to_seconds()) + string(" s");
-            //std::replace(currTime.begin(), currTime.end(), ',', '.');
-            J["curr time"] = currTime;
-
-            uint active = 0;
-            for (auto it = copyCwFingers.begin(); it != copyCwFingers.end(); ++it) {
-                if (it->second->size() > 0)
-                    active++;
-            }
-
-            J["active"] = active;
-
-            auto nodeAddrIt = copyNodeAddrs.begin();
-            auto ccwIt = copyCcwFingers.begin();
-            auto cwIt = copyCwFingers.begin();
-            while ((cwIt != copyCwFingers.end()) &&
-                   (ccwIt != copyCcwFingers.end()) &&
-                   (nodeAddrIt != copyNodeAddrs.end()))
-            {
-                json j;  
-                if (cwIt->second->size() > 0) {
-                    j["node_id"] = (nodeAddrIt->second).toStrIDonly().erase(0,1);
-
-                
-                    if (cwIt->second->size() == 0) {                
-                        j["succ"] = "null";
-                        j[" cw fing"] = "null";
-                    }
-                    else {
-                        j["succ"] = cwIt->second->at(0).id.to_uint64();     //toStrIDonly().erase(0, 1);
-
-                        for (uint i = 0; i < cwIt->second->size(); ++i) {
-                            str = string(" cw fing[") + to_string(i) + string("]");
-                            j[str] = cwIt->second->at(i).toStrIDmotive();    ///*toStrFinger()*/toStrIDonly().erase(0,1);
-                        }
-                    }
-
-                    if (ccwIt->second->size() == 0) {
-                        j["pred"] = "null";
-                        j["ccw fing"] = "null";
-                    }
-                    else {
-                        j["pred"] = ccwIt->second->at(0).id.to_uint64(); //toStrIDonly().erase(0, 1);
-
-                        for (uint i = 0; (i < ccwIt->second->size()) /*&& (i < 1)*/; ++i) {
-                            str = string("ccw fing[") + to_string(i) + string("]");
-                            j[str] = ccwIt->second->at(i).toStrIDmotive();  ///*toStrFinger()*/toStrIDonly().erase(0,1);
-                        }
-                    }
-                    
-
-                    J["nodes"] += j;                               
-                }
-
-                nodeAddrIt++;
-                ccwIt++;
-                cwIt++;
-            }
-            log::snapshotLogJSON(J);
-
-            //copyCwFingers.clear();
-            //copyCcwFingers.clear();
-            //copyNodeAddrs.clear();
-            
-            doPrint = false;
-            lastCallTime = sc_time_stamp();
-        }
-       
         copyCwFingers[m_nodeAddr.id] = &m_cwFingers;
         copyCcwFingers[m_nodeAddr.id] = &m_ccwFingers;
         copyNodeAddrs[m_nodeAddr.id] = m_nodeAddr;
 
         m_eventMakeSnapshot.notify(period);
     }
-
-
-
-}
+*/
