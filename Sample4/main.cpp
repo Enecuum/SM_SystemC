@@ -13,10 +13,17 @@ using namespace std;
 
 
 
-const uint NODES = 3;
-uint P2P_MODEL::MAX_SMALL_UINT                  = uint160(-1).to_uint();
-sc_time P2P_MODEL::MONITOR_PERIOD_CHECK_FINGERS = sc_time(1, SC_SEC);
+const uint NODES                                = 10;
+const bool LOOKS_MOTIVE                         = false;
+const uint FINGERS_SIZE                         = (uint) ceil(log10(NODES) / log10(2));
+const sc_time DELAY_TURN_ON                     = sc_time(1/*FINGERS_SIZE * 1 + 10*/, SC_SEC);
+const sc_time ADD_SIM_TIME                      = sc_time(300, SC_SEC);
+const sc_time SIM_TIME                          = NODES*DELAY_TURN_ON + ADD_SIM_TIME;
 
+
+//Definition for exter variables from inc.h
+uint P2P_MODEL::MAX_SMALL_UINT                  = uint160(-1).to_uint();
+sc_time P2P_MODEL::TRP_PERIOD_SNAPSHOTS = sc_time(1, SC_SEC);
 
 
 
@@ -37,6 +44,7 @@ int main(int argc, char* argv[])
     }
     
     uint nodes = NODES;
+    uint fingersSize = FINGERS_SIZE;
     application*    applications[NODES];
     transport_plus* transports[NODES];
     network*        network1 = nullptr;    
@@ -55,7 +63,7 @@ int main(int argc, char* argv[])
     mess.firstDelay = sc_time(0, SC_MS);
 
     network1 = new network("netw", nodes);
-    monitor1 = new monitor("monitor", nodes);
+    monitor1 = new monitor("monitor", nodes, fingersSize, LOOKS_MOTIVE);
     for (uint i = 0; i < nodes; ++i) {
         str = string("app") + to_string(i);
         applications[i] = new application(str.c_str());
@@ -83,13 +91,13 @@ int main(int argc, char* argv[])
         transports[i]->msgLog(transports[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
         
         applications[i]->pushSimulatingMess(mess);
-        mess.firstDelay += sc_time(10, SC_SEC);
+        mess.firstDelay += DELAY_TURN_ON;                   //sc_time(10, SC_SEC);
 
         chord_conf_parameters params;
         str = string("192.168.0.") + to_string(i);
         params.netwAddr.set(str.c_str(), 1111, 2222);
         params.setDefaultTimersCountersFingersSize();
-        params.fingersSize = (uint) ceil(log10(nodes) / log10(2));
+        params.fingersSize = fingersSize;
         addrs.push_back(params.netwAddr);
         
         if (i >= 1) {
@@ -97,7 +105,6 @@ int main(int argc, char* argv[])
         }
         transports[i]->setConfParameters(params);
        
-
         monitor1->setSnapshotUnderTest(transports[i]->snapshot_pointers());
     }
     
@@ -128,8 +135,7 @@ int main(int argc, char* argv[])
     network1->msgLog(network1->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
     network1->msgLog(network1->name(), LOG_TXRX, LOG_INFO, string("latencies, ms: \n") + network1->latencyTableToStr(), ALL_LOG);
 
-    //Set configuration parameters of Monitor
-    monitor1->setPeriodCheckFingers(MONITOR_PERIOD_CHECK_FINGERS);
+    //Set configuration parameters of Monitor    
     monitor1->msgLog(monitor1->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
 
     //Set valid reference clockwise fingers for every node
@@ -186,7 +192,7 @@ int main(int argc, char* argv[])
     cout << endl << "Run simulation" << endl;
 
     
-    sc_start(300, SC_SEC);
+    sc_start(SIM_TIME);
     cout << endl << "Read results" << endl;
 
 

@@ -881,11 +881,6 @@ if ((name() == string("trp1.llchord")) && (sc_time_stamp() >= sc_time(20, SC_SEC
                     else if (mess.type == CHORD_RX_NOTIFY) {
                         if ((checkMessage(mess, timer, m_errCode) != ERROR) && (m_confParams.needsACK == NEEDS_ACK)) {                        
                             issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);
-
-//DEBUG
-if (sc_time_stamp() >= sc_time(44, SC_SEC))
-    int tmp = 0;
-//DEBUG
                             setPredecessor(mess, timer);
                         }
                     }
@@ -895,10 +890,6 @@ if (sc_time_stamp() >= sc_time(44, SC_SEC))
                 case TIMER_EXPIRED: {                   //Timer was expired, analysing
                     timer = mess;
 
-//DEBUG
-if (name() == string("trp0.llchord"))
-    int tmp = 0;
-//DEBUG
                     if (mess.type == CHORD_TIMER_RX_ACK) {
                         if (mess.retryMess.type == CHORD_TX_FIND_SUCCESSOR) {
 
@@ -1948,7 +1939,10 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
 
 
     bool low_latency_chord::setPredecessorThanSuccessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const string& motive) {
+
         if ((rxMess.searchedNodeIDwithSocket.id < m_nodeAddr.id) && (m_cwFingerIndex == 0)) {
+            return false;
+
             //oberon5962's modificated actions for valid Chord operations
             m_predecessor = rxMess.searchedNodeIDwithSocket;
             m_predecessor.isUpdated = true;
@@ -2157,12 +2151,24 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
         int i = ((int)m_cwFingers.size())-1;
         uint prevI = i;
         --i;
+
         bool success = false;
-        
+        uint160 cwExpectedIDprevI, cwExpectedIDi;
+        uint160 ccwExpectedIDprevI, ccwExpectedIDi;
+        uint160 transitID = rxMess.initiatorNodeIDwithSocket.id;
+
         if (i < 0) {
-            if (((m_nodeAddr.id+m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) ||
-                ((m_nodeAddr.id < rxMess.initiatorNodeIDwithSocket.id) && (rxMess.initiatorNodeIDwithSocket.id < m_nodeAddr.id+m_fingerMask.at(prevI)))) &&
-                (m_nodeAddr.id+m_fingerMask.at(prevI) != m_cwFingers.at(prevI).id))
+            cwExpectedIDprevI = m_nodeAddr.id + m_fingerMask.at(prevI);
+            
+            //New code:
+            if ((transitID < m_cwFingers.at(prevI).id) &&
+                (transitID > m_nodeAddr.id) &&
+                (cwExpectedIDprevI != m_cwFingers.at(prevI).id))
+            //Old code
+            //if (
+            //    ((cwExpectedIDprevI == transitID) || (isInRange(transitID, m_nodeAddr.id, false, cwExpectedIDprevI, false))  ) &&    // nodeAddr.id < transitID < cwExpectedIDprevI or successor.id
+            //    (cwExpectedIDprevI != m_cwFingers.at(prevI).id) 
+            //   )
             {
                 m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << prevI << LOG_SPACE << m_cwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
                 msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
@@ -2180,8 +2186,19 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
         }
         else {
             while (i >= 0) {
-                uint tmp = (m_nodeAddr.id + m_fingerMask.at(prevI)).to_uint();
-                if ((m_nodeAddr.id+m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) && (m_nodeAddr.id+m_fingerMask.at(prevI) != m_cwFingers.at(prevI).id)) {
+                cwExpectedIDprevI = m_nodeAddr.id + m_fingerMask.at(prevI);
+                cwExpectedIDi     = m_nodeAddr.id + m_fingerMask.at(i);
+
+                //New code
+                if (
+                    ((m_cwFingers.at(prevI).id == m_nodeAddr.id) && (transitID >= cwExpectedIDprevI)) ||
+                    ((isInRange(transitID, cwExpectedIDprevI, true, m_cwFingers[prevI].id, false)) &&
+                     (cwExpectedIDprevI != m_cwFingers.at(prevI).id))
+                   )
+                //Old code
+                //if ((cwExpectedIDprevI == transitID) &&
+                //    (cwExpectedIDprevI != m_cwFingers.at(prevI).id))
+                {
                     m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << prevI << LOG_SPACE << m_cwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
                     msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
 
@@ -2191,8 +2208,16 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
                     m_cwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
                     success = true;
                 }
-                else if ((isInRange(rxMess.initiatorNodeIDwithSocket.id, m_nodeAddr.id+m_fingerMask.at(i), true, m_nodeAddr.id+m_fingerMask.at(prevI), false)) &&
-                         (m_nodeAddr.id + m_fingerMask.at(i) != m_cwFingers.at(i).id)) {
+                //New code
+                else if (
+                         ((m_cwFingers.at(i).id == m_nodeAddr.id) && (transitID >= cwExpectedIDi)) ||
+                         ((isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false)) &&
+                         (cwExpectedIDi != m_cwFingers.at(i).id))
+                        )
+                //Old code
+                //else if ((isInRange(transitID, cwExpectedIDi, true, cwExpectedIDprevI, false)) &&
+                //         (cwExpectedIDi != m_cwFingers.at(i).id))
+                {
                     m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << i << LOG_SPACE << m_cwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
                     msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
 
@@ -2219,10 +2244,13 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
         --i;
 
         if (i < 0) {
-            if (((m_nodeAddr.id-m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) ||
-                ((m_nodeAddr.id < rxMess.initiatorNodeIDwithSocket.id) && (rxMess.initiatorNodeIDwithSocket.id > m_nodeAddr.id-m_fingerMask.at(prevI))) ||
-                ((m_nodeAddr.id > rxMess.initiatorNodeIDwithSocket.id) && (rxMess.initiatorNodeIDwithSocket.id < m_nodeAddr.id-m_fingerMask.at(prevI)))) && 
-                (m_nodeAddr.id-m_fingerMask.at(prevI) != m_ccwFingers.at(prevI).id))
+            ccwExpectedIDprevI = m_nodeAddr.id - m_fingerMask.at(prevI);
+
+            if ( ((ccwExpectedIDprevI == transitID) ||
+                 ((m_nodeAddr.id < transitID) && (transitID > ccwExpectedIDprevI)) ||
+                 ((m_nodeAddr.id > transitID) && (transitID < ccwExpectedIDprevI))) &&
+                 (ccwExpectedIDprevI != m_ccwFingers.at(prevI).id)
+               )
             {
                 m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << prevI << LOG_SPACE << m_ccwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
                 msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
@@ -2240,9 +2268,11 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
         }
         else {
             while (i >= 0) {
+                ccwExpectedIDprevI = m_nodeAddr.id - m_fingerMask.at(prevI);
+                ccwExpectedIDi = m_nodeAddr.id - m_fingerMask.at(i);
 
-                if ((m_nodeAddr.id-m_fingerMask.at(prevI) == rxMess.initiatorNodeIDwithSocket.id) &&
-                    (m_nodeAddr.id-m_fingerMask.at(prevI) != m_ccwFingers.at(prevI).id)) {
+                if ((ccwExpectedIDprevI == transitID) &&
+                    (ccwExpectedIDprevI != m_ccwFingers.at(prevI).id)) {
                     m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << prevI << LOG_SPACE << m_ccwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
                     msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
 
@@ -2252,8 +2282,8 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
                     m_ccwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
                     success = true;
                 }
-                else if ((isInRange(rxMess.initiatorNodeIDwithSocket.id, m_nodeAddr.id-m_fingerMask.at(i), true, m_nodeAddr.id-m_fingerMask.at(prevI), false) &&
-                         (m_nodeAddr.id-m_fingerMask.at(i) != m_ccwFingers.at(i).id))) {
+                else if ((isInRange(transitID, ccwExpectedIDi, true, ccwExpectedIDprevI, false) &&
+                         (ccwExpectedIDi != m_ccwFingers.at(i).id))) {
                     m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << i << LOG_SPACE << m_ccwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
                     msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
 
@@ -2278,7 +2308,7 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
 
     void low_latency_chord::setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {  
 //DEBUG
-if (name() == string("trp1.llchord"))
+if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC_SEC)))
     int tmp = 0;
 //DEBUG 
 
@@ -2979,7 +3009,7 @@ if (name() == string("trp1.llchord"))
         vector<node_address_latency> invalidFingers;
         trp_port->check_fingers(m_nodeAddr.toNodeAddress(), invalidFingers);        
 
-        sc_time period = MONITOR_PERIOD_CHECK_FINGERS;
+        sc_time period = TRP_PERIOD_SNAPSHOTS;
         m_eventMakeSnapshot.notify(period);
     }
 }

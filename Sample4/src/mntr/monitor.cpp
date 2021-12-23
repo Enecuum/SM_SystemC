@@ -2,13 +2,16 @@
 
 namespace P2P_MODEL
 {
-    monitor::monitor(sc_module_name _name, const uint nodes): sc_module(_name) {        
+    monitor::monitor(sc_module_name _name, const uint nodes, const uint fingersSize, const bool looksMotive): sc_module(_name) {
         createPorts(nodes);
+        setVerifyMode(AUTO_VERIFY);
 
-        SC_METHOD(checkFingersPeriodically);
-        dont_initialize();
-        sensitive << m_eventCheckFingers;
-
+        m_fingersSize = fingersSize;
+        m_nodes = nodes;
+        m_looksMotive = looksMotive;
+        //SC_METHOD(checkFingersPeriodically);
+        //dont_initialize();
+        //sensitive << m_eventCheckFingers;
     }
 
 
@@ -28,8 +31,6 @@ namespace P2P_MODEL
             }
             trp_ports.clear();
         }
-
-
     }
 
 
@@ -96,13 +97,119 @@ namespace P2P_MODEL
     }
     
     
-    void monitor::setPeriodCheckFingers(const sc_time period) {
-        m_checkFingersPeriod = period;
-    }
+    //void monitor::setPeriodCheckFingers(const sc_time period) {
+    //    m_checkFingersPeriod = period;
+    //}
 
 
     void monitor::checkFingersPeriodically() {
-        m_eventCheckFingers.notify(m_checkFingersPeriod);
+        //m_eventCheckFingers.notify(m_checkFingersPeriod);
+    }
+
+    vector<node_address> monitor::genRefFingers(const vector<node_address>& addrs, const uint160 id, const bool isClockWise) {
+        node_address a; 
+        a.inSocket = 999;
+        a.outSocket = 999;
+        a.id = 999;
+        a.ip = "200.200.200.200";
+        vector<node_address> newRef(m_fingersSize, a);
+
+
+
+        return newRef;
+    }
+
+    bool monitor::verifyByRefFingers(const uint160 id, const vector<node_address_latency>& nodeFingers, const vector<node_address>& refFingers, vector<node_address_latency>& invalidFingers) {        
+        invalidFingers.clear();
+        bool success = true;
+        for (uint i = 0; i < nodeFingers.size(); ++i) {
+            if (nodeFingers.at(i).id != refFingers.at(i).id) {
+                node_address_latency bad;
+                bad.setCopy(nodeFingers.at(i));
+                invalidFingers.push_back(bad);
+                success = false;
+            }
+        }
+        
+        return success;
+    }
+
+
+    bool monitor::verifySnapshots(const vector<node_address>& addrs) {
+        bool success = false;
+
+        for (auto snapshotIt = m_copySnapshot.begin(); snapshotIt != m_copySnapshot.end(); ++snapshotIt)
+        {
+            node_snapshot& snapshot = snapshotIt->second;
+
+            if ((snapshot.pFiniteState == nullptr) ||
+                (snapshot.pCwFingers == nullptr) ||
+                (snapshot.pCcwFingers == nullptr))
+                continue;
+
+            if ((snapshot.pCwFingers->size() == 0) ||
+                (snapshot.pCcwFingers->size() == 0))
+                continue;
+
+            if ((STATE_OFF  <= *(snapshot.pFiniteState)) &&
+                (STATE_JOIN > *(snapshot.pFiniteState)))
+                continue;
+
+
+            map<uint160, vector<node_address>>::iterator cwRefIt; 
+            map<uint160, vector<node_address>>::iterator ccwRefIt;
+
+            if (m_verifyMode == AUTO_VERIFY) {
+                m_id2refCwFingers[snapshot.nodeAddr.id]  = genRefFingers(addrs, snapshot.nodeAddr.id, true);
+                m_id2refCcwFingers[snapshot.nodeAddr.id] = genRefFingers(addrs, snapshot.nodeAddr.id, false);
+            }
+            
+            cwRefIt = m_id2refCwFingers.find(snapshot.nodeAddr.id);
+            ccwRefIt = m_id2refCcwFingers.find(snapshot.nodeAddr.id);
+            
+
+
+            if (cwRefIt == m_id2refCwFingers.end()) {
+                //ERROR
+                m_ssLog << "NOT FOUND REF CW FINGERS FOR VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
+                msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
+                return false;
+            }
+
+            if (cwRefIt->second.size() != snapshot.pCwFingers->size()) {
+                //ERROR
+                m_ssLog << "MISMATCHED SIZES OF REF CW FINGERS AND FINGERS UNDER VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
+                msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
+                return false;
+            }
+
+            if (ccwRefIt == m_id2refCcwFingers.end()) {
+                //ERROR
+                m_ssLog << "NOT FOUND REF CCW FINGERS FOR VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
+                msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
+                return false;
+            }
+
+            if (ccwRefIt->second.size() != snapshot.pCcwFingers->size()) {
+                //ERROR
+                m_ssLog << "MISMATCHED SIZES OF REF CCW FINGERS AND FINGERS UNDER VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
+                msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
+                return false;
+            }
+
+            vector<node_address_latency> cwInvalid, ccwInvalid;
+            bool cwSuccess = true;
+            bool ccwSuccess = true;
+            cwSuccess  = verifyByRefFingers(snapshot.nodeAddr.id, *(snapshot.pCwFingers), cwRefIt->second, cwInvalid);
+            ccwSuccess = verifyByRefFingers(snapshot.nodeAddr.id, *(snapshot.pCwFingers), ccwRefIt->second, ccwInvalid);
+            success = cwSuccess & ccwSuccess;
+
+            if (success == false) {                
+                //Õ¿œŒÀÕ»“‹ m_id2invalidFingers
+
+            }
+        }
+        return success;             
     }
 
 
@@ -116,7 +223,7 @@ string nameStr = name();
         string str;
         static sc_time lastCallTime = SC_ZERO_TIME;
         static bool doPrint = true;
-        uint i;
+        uint i = 0;
 
 
         if (lastCallTime != sc_time_stamp()) {
@@ -124,18 +231,26 @@ string nameStr = name();
         }
 
         if (doPrint == true) {
-
-
             json J;
             string currTime = sc_time_stamp().to_string();                  //to_string(sc_time_stamp().to_seconds()) + string(" s");        //std::replace(currTime.begin(), currTime.end(), ',', '.');            
             J["curr time"] = currTime;
 
             uint active = 0; 
+            vector<node_address> addrs;
             for (auto it = m_copySnapshot.begin(); it != m_copySnapshot.end(); ++it) {
-                if ((STATE_OFF != *(it->second.pFiniteState)) && (STATE_UNKNOWN != *(it->second.pFiniteState))) {
+                if (it->second.pFiniteState == nullptr)
+                    continue;
+
+                if ((STATE_JOIN       <= *(it->second.pFiniteState)) &&
+                    (MAX_FINITE_STATE >  *(it->second.pFiniteState)))
+                {
                     ++active;
+                    addrs.push_back( it->second.nodeAddr );
                 }
             }
+
+            bool isInvalid = verifySnapshots(addrs);            
+
 
             J["active"] = active;
 
@@ -144,7 +259,8 @@ string nameStr = name();
             {
                 node_snapshot& snapshot = mapIt->second;
 
-                if ((STATE_OFF != *(snapshot.pFiniteState)) && (STATE_UNKNOWN  != *(snapshot.pFiniteState))) {
+                if ((STATE_JOIN       <= *(snapshot.pFiniteState)) &&
+                    (MAX_FINITE_STATE >  *(snapshot.pFiniteState))) {
                    
                     auto ccwIt = snapshot.pCcwFingers->begin();
 
@@ -164,7 +280,10 @@ string nameStr = name();
                             i = 0;
                             while (cwIt != snapshot.pCwFingers->end()) {
                                 str = string(" cw fing[") + to_string(i) + string("]");
-                                j[str] = cwIt->toStrIDmotive();                   ///*toStrFinger()*/toStrIDonly().erase(0,1);
+                                if (m_looksMotive == true)
+                                    j[str] = cwIt->toStrIDmotive();                   ///*toStrFinger()*/toStrIDonly().erase(0,1);
+                                else
+                                    j[str] = cwIt->id.to_uint64();
                                 cwIt++;
                                 i++;
                             }
@@ -181,7 +300,10 @@ string nameStr = name();
                             i = 0;
                             while (ccwIt != snapshot.pCcwFingers->end()) {
                                 str = string("ccw fing[") + to_string(i) + string("]");
-                                j[str] = ccwIt->toStrIDmotive();                   ///*toStrFinger()*/toStrIDonly().erase(0,1);
+                                if (m_looksMotive == true)
+                                    j[str] = ccwIt->toStrIDmotive();                   ///*toStrFinger()*/toStrIDonly().erase(0,1);
+                                else 
+                                    j[str] = ccwIt->id.to_uint64();
                                 ccwIt++;
                                 i++;
                             }
@@ -205,6 +327,9 @@ string nameStr = name();
     }
 
     
+    void monitor::setVerifyMode(const monitor_mode mode) {
+        m_verifyMode = mode;
+    }
 }
 
 

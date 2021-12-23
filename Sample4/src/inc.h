@@ -21,9 +21,9 @@
 using namespace std;
 using json = nlohmann::json;
 
-namespace P2P_MODEL {    
+namespace P2P_MODEL {     
     typedef sc_biguint<161>    uint161;
-    typedef sc_biguint<11>     uint160;    
+    typedef sc_biguint<11>     uint160;
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
@@ -33,7 +33,7 @@ namespace P2P_MODEL {
     typedef data_type          data_unit;
 
     extern uint MAX_SMALL_UINT;
-    extern sc_time MONITOR_PERIOD_CHECK_FINGERS;
+    extern sc_time TRP_PERIOD_SNAPSHOTS;
 
     const uint DENIED = 0;
     const int NONE = -1;
