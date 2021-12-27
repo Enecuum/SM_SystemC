@@ -287,8 +287,10 @@ namespace P2P_MODEL {
 
 
     class node_address : virtual public network_address {
-        //private:
-        //    network_address m_networkAddr;
+    private:
+        static map<string, uint160> ip2id;
+        static uint160 uniqueID;
+
     public:
         uint160 id;
 
@@ -324,10 +326,16 @@ namespace P2P_MODEL {
         void set(const string& ip, const uint inSocket, const uint outSocket) {
             network_address::set(ip, inSocket, outSocket);
 
-            string onlyNumbers = network_address::ip;
+            //string onlyNumbers = network_address::ip;
             //onlyNumbers.erase(remove(onlyNumbers.begin(), onlyNumbers.end(), '.'), onlyNumbers.end());
             //onlyNumbers.append(to_string(network_address::inSocket));
-            id = sha1(onlyNumbers);
+            this->id = genUnique160(ip);
+        }
+
+
+        void set(const uint160 id, const string& ip, const uint inSocket, const uint outSocket) {            
+            network_address::set(ip, inSocket, outSocket);
+            setUnique160(id, ip, inSocket, outSocket);
         }
 
         node_address& operator= (const node_address& src) {
@@ -380,9 +388,8 @@ namespace P2P_MODEL {
         friend bool     operator== (const node_address& l, const node_address& r);
 
     private:    
-        uint160 sha1(const string& str, const bool isDec = true) {
-            static map<string, uint160> ip2id;
-            static uint160 uniqueID = 0;
+        uint160 genUnique160(const string& str, const bool isDec = true) {
+           
             uint160 res;
 
             auto it = ip2id.find(str);
@@ -407,6 +414,11 @@ namespace P2P_MODEL {
             return res;
         }
 
+
+        uint160 setUnique160(const uint160 id, const string& ip, const uint inSocket, const uint outSocket) {
+            ip2id[ip] = id;
+        }
+        
 
         unsigned char crc8(const vector<unsigned char>& data, const uint from = 0)
         {

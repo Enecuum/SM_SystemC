@@ -13,10 +13,10 @@ using namespace std;
 
 
 
-const uint NODES                                = 10;
-const bool LOOKS_MOTIVE                         = false;
+const uint NODES                                = 5;
+const bool LOOKS_MOTIVE                         = true;
 const uint FINGERS_SIZE                         = (uint) ceil(log10(NODES) / log10(2));
-const sc_time DELAY_TURN_ON                     = sc_time(1/*FINGERS_SIZE * 1 + 10*/, SC_SEC);
+const sc_time DELAY_TURN_ON                     = sc_time(FINGERS_SIZE * 1 + 10, SC_SEC);
 const sc_time ADD_SIM_TIME                      = sc_time(300, SC_SEC);
 const sc_time SIM_TIME                          = NODES*DELAY_TURN_ON + ADD_SIM_TIME;
 
@@ -62,6 +62,8 @@ int main(int argc, char* argv[])
     mess.amount = 1;
     mess.firstDelay = sc_time(0, SC_MS);
 
+    bool testNonContinuosNumbers = true;
+
     network1 = new network("netw", nodes);
     monitor1 = new monitor("monitor", nodes, fingersSize, LOOKS_MOTIVE);
     for (uint i = 0; i < nodes; ++i) {
@@ -90,8 +92,23 @@ int main(int argc, char* argv[])
         transports[i]->setSnapshotPathLog(str);
         transports[i]->msgLog(transports[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
         
-        applications[i]->pushSimulatingMess(mess);
-        mess.firstDelay += DELAY_TURN_ON;                   //sc_time(10, SC_SEC);
+
+        if (testNonContinuosNumbers == true) {
+            switch (i) {
+            case 0:
+                mess.firstDelay = sc_time(0, SC_SEC);
+                break;
+
+            default:
+                mess.firstDelay = (SIM_TIME-ADD_SIM_TIME)-i*DELAY_TURN_ON;
+                break;
+            }
+            applications[i]->pushSimulatingMess(mess);
+        }
+        else {
+            applications[i]->pushSimulatingMess(mess);
+            mess.firstDelay += DELAY_TURN_ON;                   //sc_time(10, SC_SEC);
+        }
 
         chord_conf_parameters params;
         str = string("192.168.0.") + to_string(i);
@@ -107,6 +124,8 @@ int main(int argc, char* argv[])
        
         monitor1->setSnapshotUnderTest(transports[i]->snapshot_pointers());
     }
+
+
     
     //mess.clear();
     //mess.type = SIM_PAUSE;

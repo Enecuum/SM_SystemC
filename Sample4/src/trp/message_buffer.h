@@ -107,7 +107,7 @@ namespace P2P_MODEL
         }
         
         T mess(const size_t index) {
-            auto it = messIterator(index) 
+            auto it = messIterator(index); 
             if (it != messages.end())
                 return T();
             return *it;
