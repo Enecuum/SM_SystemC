@@ -21,9 +21,9 @@
 using namespace std;
 using json = nlohmann::json;
 
-namespace P2P_MODEL {     
-    typedef sc_biguint<161>    uint161;
-    typedef sc_biguint<11>     uint160;
+namespace P2P_MODEL {         
+    typedef sc_biguint<10>      uint160;
+    typedef sc_biguint<10+8>    uint168;
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;
@@ -34,6 +34,10 @@ namespace P2P_MODEL {
 
     extern uint MAX_SMALL_UINT;
     extern sc_time TRP_PERIOD_SNAPSHOTS;
+    extern uint160 MAX_UINT160;
+    extern bool RANDOM_IDS;
+    extern bool CCW_FINGERS_TURN_ON;
+    extern bool MAKE_SNAPSHOT_ALWAYS;
 
     const uint DENIED = 0;
     const int NONE = -1;
@@ -288,8 +292,8 @@ namespace P2P_MODEL {
 
     class node_address : virtual public network_address {
     private:
-        static map<string, uint160> ip2id;
-        static uint160 uniqueID;
+        static map<string, uint160> ip2id;       
+        static uint160 lastMaxID;
 
     public:
         uint160 id;
@@ -313,6 +317,7 @@ namespace P2P_MODEL {
         void clear() {
             network_address::clear();
             id = 0;
+            lastMaxID = id;
         }
 
         void set(const node_address& src) {
@@ -333,9 +338,9 @@ namespace P2P_MODEL {
         }
 
 
-        void set(const uint160 id, const string& ip, const uint inSocket, const uint outSocket) {            
+        void set(const uint160 id, const string& ip, const uint inSocket, const uint outSocket) {                        
             network_address::set(ip, inSocket, outSocket);
-            setUnique160(id, ip, inSocket, outSocket);
+            this->id = pushUnique160(id, ip, inSocket, outSocket);              
         }
 
         node_address& operator= (const node_address& src) {
@@ -346,6 +351,12 @@ namespace P2P_MODEL {
             this->id = src.id;
             return *this;
         }
+
+
+        //bool operator< (const node_address& src) const {
+        //    return this->id > src.id;            
+        //}
+
 
         string toStr(const bool isDec = true) const {
             string str;
@@ -395,8 +406,16 @@ namespace P2P_MODEL {
             auto it = ip2id.find(str);
             if (it == ip2id.end()) {
                 if (isDec == true) {
-                    res = uniqueID;
-                    uniqueID++;
+                    if (RANDOM_IDS) {
+                        res = rand()%MAX_SMALL_UINT;
+                    }
+                    else {
+                        //uint160 maxID = std::max_element(ip2id.begin(), ip2id.end(),
+                        //                [] (const pair<string, uint160>& a, const pair<string, uint160>& b)
+                        //                    { return a.second < b.second; });
+                        res = lastMaxID;
+                        lastMaxID++;
+                    }                    
                 }
                 else {
                     SHA1 checksum;
@@ -410,13 +429,17 @@ namespace P2P_MODEL {
             else {
                 res = it->second;
             }
-                                               
+              
             return res;
         }
 
 
-        uint160 setUnique160(const uint160 id, const string& ip, const uint inSocket, const uint outSocket) {
-            ip2id[ip] = id;
+        uint160 pushUnique160(const uint160 id_, const string& ip_, const uint inSocket_, const uint outSocket_) {           
+            ip2id[ip_] = id_;
+
+            if (id_ > lastMaxID)
+                lastMaxID = id_ + 1;
+            return id_;
         }
         
 
@@ -522,6 +545,8 @@ namespace P2P_MODEL {
         sc_time updateTime;
         bool isClockWise; 
         string motive;
+        uint160 from;
+        uint160 to;
 
         node_address_latency() {
             clear();
@@ -549,6 +574,8 @@ namespace P2P_MODEL {
             isUpdated = false;
             updateTime = SC_ZERO_TIME;
             motive = MOTIVE_DEFAULT;
+            from = 0;
+            to = 0;
         }
 
         void setCopy(const node_address_latency& src) {
@@ -561,6 +588,8 @@ namespace P2P_MODEL {
             isUpdated = src.isUpdated;
             updateTime = src.updateTime;
             motive = src.motive;
+            from = src.from;
+            to = src.to;
         }
 
         node_address_latency& operator= (const node_address_latency& src) {
@@ -573,6 +602,8 @@ namespace P2P_MODEL {
             this->isUpdated = src.isUpdated;
             this->updateTime = src.updateTime;            
             this->motive = src.motive;
+            this->from = src.from;
+            this->to = src.to;
             return *this;
         }
 
@@ -632,6 +663,48 @@ namespace P2P_MODEL {
                     str << (isUpdated ? string(", upd ") : string(", old ")) << updateTime.to_string() << (isNone() ? string(" None") : string(""))/* << ", latency " << latency.to_string()*/;
             }
             return str.str();
+        }
+
+        bool inRange(const uint160 id) {
+            
+            if (isClockWise) {
+                if (from <= to) {                    
+                    //Generic order, no over zero
+                    //[from; to]
+                    if ((id >= from) && (id <= to)) 
+                        return true;
+                    return false;
+                }
+                else {                    
+                    //Over zero
+                    //[from -> max; 0 -> to]
+                    if ((id >= from) && (id <= MAX_UINT160)) // [from; max]
+                        return true;
+                    if ((id >= 0) && (id <= to))             //[0; to]
+                        return true;
+                    return false;
+                }                
+            }
+            else {
+                if (from >= to) {  
+                    //Generic order, no over zero
+                    //[to; from]
+                    if ((id >= to) && (id <= from)) 
+                        return true;
+                    return false;
+                }
+                else {
+                    //Over zero,
+                    //[to -> max; 0 -> from]
+                    //[9; 15] OR  [0; 3]
+                    //
+                    if ((id >= to) && (id <= MAX_UINT160))        //[9; 15]   
+                        return true;
+                    if ((id >= 0) && (id <= from)) 
+                        return true;                   
+                    return false;
+                }
+            }            
         }
 
         friend ostream& operator<< (ostream& out, node_address_latency& r);
@@ -1051,6 +1124,10 @@ namespace P2P_MODEL {
         byte_array   payload;
         node_address searchedNodeIDwithSocket; //this should be into payload byte-array field       
         sc_time  netwokrStartTime;
+        bool isJoin;
+        node_address serviceAddr;
+        uint  retransmitCounter;
+
         
 
         chord_byte_message_fields() {
@@ -1083,6 +1160,9 @@ namespace P2P_MODEL {
             payload = src.payload;
             searchedNodeIDwithSocket = src.searchedNodeIDwithSocket;
             netwokrStartTime = src.netwokrStartTime;
+            isJoin = src.isJoin;
+            serviceAddr = src.serviceAddr;
+            retransmitCounter = src.retransmitCounter;
             return *this;
         }
 
@@ -1097,6 +1177,9 @@ namespace P2P_MODEL {
             payload.clear();
             searchedNodeIDwithSocket.clear(); 
             netwokrStartTime = SC_ZERO_TIME;
+            isJoin = false;
+            serviceAddr.clear();
+            retransmitCounter = 0;
         }
 
         string type2str(const int& type = NONE) const {
@@ -1147,7 +1230,8 @@ namespace P2P_MODEL {
             str += string("i ") + initiatorNodeIDwithSocket.toStr() + string(" ");           
             //string hex = searchedNodeIDwithSocket.to_string(SC_HEX_US); hex.erase(0, 4);
             str += string("sID ") + searchedNodeIDwithSocket.toStr() + string(" ");
-            str += string("pS ") + to_string(payload.size());
+            str += string("pS ") + to_string(payload.size()) + string(" ");
+            str += string("reTr ") + to_string(retransmitCounter);
             return str;
         }
 
@@ -1436,18 +1520,59 @@ namespace P2P_MODEL {
 
     struct node_snapshot {
         vector<node_address_latency>*  pCwFingers;
-        vector<node_address_latency>* pCcwFingers;
+        vector<node_address_latency>* pCcwFingers;        
+        node_address_latency* pSuccessor;
+        node_address_latency* pPredecessor;        
         finite_state* pFiniteState;
         node_address nodeAddr;
 
-        node_snapshot(): pCwFingers(nullptr), pCcwFingers(nullptr), pFiniteState(nullptr)
+        node_snapshot(): pCwFingers(nullptr), pCcwFingers(nullptr), pFiniteState(nullptr), pSuccessor(nullptr), pPredecessor(nullptr)
         {    };
 
         node_snapshot(vector<node_address_latency>* pCwFing,
-                        vector<node_address_latency>* pCcwFing,
+                        vector<node_address_latency>* pCcwFing,                        
                         finite_state* pState,
-                        const node_address& addr): pCwFingers(pCwFing), pCcwFingers(pCcwFing), pFiniteState(pState), nodeAddr(addr)
+                        node_address_latency* pSucc,
+                        node_address_latency* pPred,
+                        const node_address& addr): pCwFingers(pCwFing), pCcwFingers(pCcwFing), pFiniteState(pState), pSuccessor(pSucc), pPredecessor(pPred), nodeAddr(addr)
         {    };
     };
+
+
+
+
+    class time_progress: public sc_module {
+    private:
+        sc_event m_event;
+        sc_time m_sim;
+        sc_time m_step;
+        uint m_percentage;
+        uint m_percentageStep;
+    public:
+        SC_HAS_PROCESS(time_progress);
+
+        time_progress(const sc_time sim, const sc_time step, sc_module_name name = sc_gen_unique_name("time_progress")): sc_module(name) {
+            m_sim = sim;
+            m_step = step;
+            m_percentageStep = static_cast<uint>(sim.to_double()/step.to_double());
+            m_percentage = 0;
+
+            SC_METHOD(progress);
+            sensitive << m_event;
+        }
+
+        void progress() {
+            cout << "Run ............................. " << setprecision(0) << fixed << sc_time_stamp().to_seconds() << "/" << m_sim.to_seconds() << " sec, " << (m_percentage > 100 ? 100 : m_percentage) << "%" << endl;
+
+            m_percentage += m_percentageStep;
+            if (sc_time_stamp() + m_step >= m_sim)
+                m_event.notify(m_step - sc_time(1, SC_PS));
+            else
+                m_event.notify(m_step);
+        }
+    };
+
+
+
 }
 #endif

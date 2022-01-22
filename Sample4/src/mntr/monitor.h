@@ -9,8 +9,9 @@
 namespace P2P_MODEL
 {
     enum monitor_mode {
-        AUTO_VERIFY = 0,
-        REF_VERIFY,
+        NO_VERIFY = 0,
+        AUTO_VERIFY,
+        REF_VERIFY
     };
 
 
@@ -24,6 +25,7 @@ namespace P2P_MODEL
     private:
         //sc_event m_eventCheckFingers;
         sc_time  m_checkFingersPeriod;
+        sc_event m_eventMakeSnapshotFinal;
         monitor_mode m_verifyMode;
 
         map<uint160, vector<node_address> >  m_id2refCwFingers;
@@ -36,6 +38,7 @@ namespace P2P_MODEL
 
         uint m_fingersSize;
         uint m_nodes;
+        sc_time m_simTime;
 
         struct invalid_fingers_time_intervals {
             sc_time beginTime;
@@ -49,14 +52,15 @@ namespace P2P_MODEL
         };
 
         map<uint160, invalid_fingers_info> m_id2invalidFingers;
-        bool m_looksMotive;
+        bool m_showMotive;
+        bool m_showCcwFingers;
 
 
     public:
 
         SC_HAS_PROCESS(monitor);
 
-        monitor(sc_module_name _name, const uint nodes = 2, const uint fingersSize = 1, const bool looksMotive = true);
+        monitor(sc_module_name _name, const uint nodes = 2, const uint fingersSize = 1, const bool showMotive = true, const bool showCcwFingers = true, const monitor_mode mode = NO_VERIFY);
         ~monitor();        
 
         void createPorts(const uint nodes = 2);
@@ -69,17 +73,18 @@ namespace P2P_MODEL
         void setNodeAddrUnderTest(const uint160 id, const node_address& addr);
         void setSnapshotUnderTest(const node_snapshot& snapshot);
         void setVerifyMode(const monitor_mode mode);
+        void setSimTime(const sc_time simTime);
 
-        //void setPeriodCheckFingers(const sc_time period);
+        void makeSnapshotFinal();
 
         void checkFingersPeriodically();
-        void check_fingers(const node_address&  addr,     vector<node_address_latency>& invalidFingers);
+        void check_fingers(const node_address&  addr,     vector<node_address_latency>& invalidFingers, const bool mustPrint);
         void check_fingers(const node_snapshot& snapshot, vector<node_address_latency>& invalidFingers);
 
-        bool verifySnapshots(const vector<node_address>& addrs);
+        bool verifySnapshots(vector<node_address>& addrs);
         bool verifyByRefFingers(const uint160 id, const vector<node_address_latency>& nodeFingers, const vector<node_address>& refFingers, vector<node_address_latency>& invalidFingers);
 
-        vector<node_address> genRefFingers(const vector<node_address>& addrs, const uint160 id, const bool isClockWise);
+        vector<node_address> genRefFingers(vector<node_address>& addrs, const node_address& nodeAddr, const bool isClockWise);
     };
 }
 #endif

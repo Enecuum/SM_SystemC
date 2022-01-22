@@ -23,7 +23,8 @@ namespace P2P_MODEL
     const string LOG_ERROR_INVALID_RANGE  = string("OUT OF RANGE");
     const string LOG_ERROR_SIZE_MISMATCHED = string("OUT OF RANGE");
     const string LOG_ERROR_INVALID_ADDR    = string("DROP MESS, UNKNOWN ADDR");
-    const string LOG_ERROR_INVALID_MESS_ID = string("DROP MESS, UNKNOWN MESS ID");    
+    const string LOG_ERROR_INVALID_MESS_ID = string("DROP MESS, UNKNOWN MESS ID");   
+    const string LOG_ERROR_TOO_BIG_RETRANSMIT  = string("DROP MESS, TOO BIG RETRANSMIT");
     const string LOG_ERROR_INVALID_SEARCHED_ID = string("DROP MESS, INVALID SEARCHED ID");
 
 

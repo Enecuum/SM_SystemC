@@ -9,9 +9,9 @@ namespace P2P_MODEL {
     const int BUFFER_NOT_CHOOSEN = -1;
 
     const sc_time NO_TIMEOUT = SC_ZERO_TIME;
-    const sc_time SNAPSHOT_PERIOD = sc_time(1, SC_SEC);
+    //const sc_time SNAPSHOT_PERIOD = sc_time(1, SC_SEC);
     
-    const uint MAX_SIZE_MEMORY_LIST = 1000;
+    const uint MAX_SIZE_MEMORY_LIST = 100000;
 
 
     //Default constants to init buffers of low_latency_chord
@@ -29,16 +29,16 @@ namespace P2P_MODEL {
     
     //Default constants to init timers of low_latency_chord
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(400.0, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN/2;
-    const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = DEFAULT_TIMEOUT_RX_SUCCESSOR/3;
+    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR   = sc_time(5.0, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = sc_time(5.0, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1, SC_SEC);
-    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(100, SC_SEC);       
+    const sc_time DEFAULT_TIMEOUT_RX_ACK = sc_time(5, SC_SEC);       
     const sc_time DEFAULT_TIMEOUT_RX_DUPLE = 2*DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN;
 
     //Default constants to init retry counters of low_latency_chord
     const uint    DEFAULT_COUNTER_TX_JOIN = 1;
-    const uint    DEFAULT_COUNTER_TX_FIND_SUCC = 1;
-    const uint    DEFAULT_COUNTER_TX_RETRY = 1;
+    const uint    DEFAULT_COUNTER_TX_FIND_SUCC = 0;
+    const uint    DEFAULT_COUNTER_TX_RETRY = 0;
     const uint    DEFAULT_COUNTER_RX_DUPLE = 1;
     const uint    DEFAULT_FINGERS_SIZE = 3;
     const uint    DEFAULT_NEEDS_ACK = 1;   
@@ -83,7 +83,7 @@ namespace P2P_MODEL {
 
     class chord_conf_parameters {
     public:
-        network_address netwAddr;
+        node_address netwAddr;
         vector<network_address> seed;
         sc_time   TrxSuccOnJoin;
         sc_time   TrxSucc;
@@ -111,17 +111,17 @@ namespace P2P_MODEL {
             seed.clear();
             netwAddr.clear();
             TrxSuccOnJoin = NO_TIMEOUT;
-            TrxSucc     = NO_TIMEOUT;
-            TrxPred     = NO_TIMEOUT;
-            Tupdate         = NO_TIMEOUT;
-            TrxAck          = NO_TIMEOUT;
-            TrxDuple        = NO_TIMEOUT;
-            CtxJoin         = 0;
-            CtxFindSucc     = 0;
-            CtxRetry          = 0;
-            CrxDuple        = 0;
-            fingersSize     = 1;
-            needsACK = NO_ACK;
+            TrxSucc       = NO_TIMEOUT;
+            TrxPred       = NO_TIMEOUT;
+            Tupdate       = NO_TIMEOUT;
+            TrxAck        = NO_TIMEOUT;
+            TrxDuple      = NO_TIMEOUT;
+            CtxJoin       = 0;
+            CtxFindSucc   = 0;
+            CtxRetry      = 0;
+            CrxDuple      = 0;
+            fingersSize   = 1;
+            needsACK      = NO_ACK;
             fillFingersMinQty = 1;
         }
 
@@ -134,7 +134,7 @@ namespace P2P_MODEL {
             TrxDuple        = DEFAULT_TIMEOUT_RX_DUPLE;
             CtxJoin         = DEFAULT_COUNTER_TX_JOIN;
             CtxFindSucc     = DEFAULT_COUNTER_TX_FIND_SUCC;
-            CtxRetry          = DEFAULT_COUNTER_TX_RETRY;
+            CtxRetry        = DEFAULT_COUNTER_TX_RETRY;
             CrxDuple        = DEFAULT_COUNTER_RX_DUPLE;
             fingersSize     = DEFAULT_FINGERS_SIZE;
             needsACK        = DEFAULT_NEEDS_ACK;

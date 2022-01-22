@@ -13,11 +13,7 @@ using namespace std;
 
 
 namespace P2P_MODEL
-{
-    
-
-
-
+{    
     enum chord_action {
         DO_REPLY = 0,
         DO_FORWARD,
@@ -25,6 +21,7 @@ namespace P2P_MODEL
         DO_REQUEST,
         ACTION_UNKNOWN
     };
+
 
     enum event_type {
         MIN_EVENT_TYPE = 0,
@@ -53,7 +50,7 @@ namespace P2P_MODEL
         sc_port<trp_llchord_if> trp_port;
 
     private:
-        const uint160 MAX_UINT160 = -1;        
+        //const uint160 MAX_UINT160 = -1;        
 
         node_address_latency m_nodeAddr;                        
         uint                 m_currSeed;
@@ -75,6 +72,7 @@ namespace P2P_MODEL
         //map<uint, node_address> m_cwFingers;
         //map<uint, node_address> m_ccwFingers;
         node_address_latency m_predecessor;
+        node_address_latency m_predecessorOld;
         node_address_latency m_successor;
         vector<node_address_latency>  m_cwFingers;      //clock wise fingers
         vector<node_address_latency>  m_ccwFingers;     //counter clock wise fingers
@@ -85,7 +83,7 @@ namespace P2P_MODEL
         bool m_isSuccessorSet;
         bool m_isPredecessorSet;
         
-        vector<uint160> m_fingerMask;
+        vector<uint168> m_fingerMask;
         bool m_isClockWise;
         uint m_messageID;
 
@@ -127,6 +125,7 @@ namespace P2P_MODEL
 
         void setSeedNodes(const vector<network_address>& seed);
         void setConfParameters(const chord_conf_parameters& params);
+        void setNodeID(const uint160 id);
         void pushNewMessage(const chord_message& mess, const bool toBack = true);   
 
         const vector<node_address_latency>* cw_fingers_pointer() const;
@@ -176,11 +175,11 @@ namespace P2P_MODEL
 
         string state2str(const finite_state& state) const;
 
-        chord_action findSuccessor(const uint160& id, const uint160& senderID, const uint160& initiatorID, node_address& found);
+        chord_action findSuccessor(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID, node_address& found, const bool isJoin);
         chord_action findPredecessor(const uint160& searchedID, node_address& found);
         bool isClockWiseDirection(const uint160& id);
-        node_address closestPrecedingNode(const uint160& id, const uint160& senderID, const uint160& initiatorID);
-        bool isInRange(const uint160& id, const uint160& A, const bool includeA, const uint160& B, const bool includeB);
+        bool isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to);
+        bool isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to);
 
         chord_message createMessage(const chord_message& params);
 
@@ -188,7 +187,7 @@ namespace P2P_MODEL
         chord_message createJoinMessage(const node_address& dest);
         chord_message createNotifyMessage(const node_address& dest);
         chord_message createAckMessage(const node_address& dest, const uint messageID);
-        chord_message createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID, const int initialMessageID = NONE);
+        chord_message createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID, const bool isJoin, const int retransmitCounter, const int initialMessageID = NONE);
         chord_message createSuccessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
         chord_message createFindPredecessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID);
         chord_message createPredecessorMessage(const node_address& dest, const uint messageID, const node_address& foundIDwithSocket);
@@ -204,9 +203,12 @@ namespace P2P_MODEL
         bool setCopyPreviousAliveFinger();
         bool setPredecessorThanSuccessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const string& motive);
         bool setSuccessorRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
-        bool setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
+        bool setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const bool onJoin = false);        
         bool setSuccessorStabilize(const chord_byte_message_fields& rxMess, const chord_timer_message& timer);
         update_type setNextFingerToUpdate(const bool isTimerUpdateExpired = false, const node_address_latency badFinger = node_address_latency());
+        void findBigFinger(const vector<node_address_latency>& fingers, const vector<uint160>& forbidden, node_address_latency& result);
+        void find1stFingerNotForbidden(const vector<node_address_latency>& fingers, const vector<uint160>& forbidden, node_address_latency& result);
+        void findAlittleBigFinger(const uint160 searchedID, const vector<node_address_latency>& fingers, const vector<uint160>& forbidden, node_address_latency& result);
         
         bool issueMessagePushTimers(const chord_tx_message_type& type, const bool isRetry = false, const uint requestCounter = 0, const chord_byte_message_fields rxMess = chord_byte_message_fields(), const chord_timer_message expiredTimer = chord_timer_message(), const chord_action action = DO_REQUEST, const node_address fingerAddr = node_address());
         bool repeatMessage(const chord_tx_message_type& type, const chord_byte_message_fields& rxMess, const chord_timer_message& expiredTimer);
@@ -228,6 +230,17 @@ namespace P2P_MODEL
         void tryAddNewSeed(const node_address& newSeed);
         
         void makeSnapshot();
+
+
+        string action2str(const chord_action action) {
+            switch (action) {
+            case DO_REPLY:     return string("DO_REPLY");
+            case DO_FORWARD:   return string("DO_FORWARD");
+            case DROP_MESSAGE: return string("DROP_MESSAGE");
+            case DO_REQUEST:   return string("DO_REQUEST");
+            default:           return string("ACTION_UNKNOWN");
+            }
+        }
     };
 }
 #endif

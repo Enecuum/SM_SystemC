@@ -92,7 +92,7 @@ namespace P2P_MODEL
 
 
     void transport_plus::check_fingers(const node_address& addr, vector<node_address_latency>& invalidFingers) {
-        monitor_port->check_fingers(addr, invalidFingers);
+        monitor_port->check_fingers(addr, invalidFingers, false);
     }
 
     void transport_plus::check_fingers(const node_snapshot& snapshot, vector<node_address_latency>& invalidFingers) {
@@ -150,5 +150,14 @@ namespace P2P_MODEL
 
     void transport_plus::setConfParameters(const chord_conf_parameters& params) {
         m_llchord.setConfParameters(params);
+    }
+
+
+    void transport_plus::setNodeID(const uint160 id) {
+        m_llchord.setNodeID(id);
+    }
+
+    void transport_plus::setSimTime(const sc_time simTime) {
+        //m_llchord.setSimTime(simTime);
     }
 }

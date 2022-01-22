@@ -1,0 +1,21 @@
+{
+    "arrayID": [
+  631,
+  536,
+  127,
+  141,
+  329,
+  173,
+   44,
+  985,
+  796,
+  531,
+  525,
+  356,
+  166
+	],
+	"gen_random": true,
+	"nodes": 50, 		
+    "shuffle": false,       
+	"snapshot_period_sec": 999999999.0	
+}

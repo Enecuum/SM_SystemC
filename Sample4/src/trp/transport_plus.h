@@ -23,8 +23,8 @@ namespace P2P_MODEL
                            public trp_application_if,
                            public trp_network_if,
                            public trp_llchord_if,
-                           public trp_monitor_if,
-                           public monitor_trp_if
+                           public trp_monitor_if
+                          
     {
     public:
         sc_port<network_trp_if> network_port;  
@@ -72,6 +72,9 @@ namespace P2P_MODEL
         void setSeedNodes(const vector<network_address>& seed);
 
         void setConfParameters(const chord_conf_parameters& params);
+        void setNodeID(const uint160 id);
+
+        void setSimTime(const sc_time simTime);
 
 
     public:

@@ -8,10 +8,10 @@ namespace P2P_MODEL
         sensitive << m_eventCore;
 
         SC_METHOD(makeSnapshot);
-        //dont_initialize();
         sensitive << m_eventMakeSnapshot;        
 
-        preinit();        
+        preinit();  
+        
     }
 
 
@@ -91,23 +91,23 @@ namespace P2P_MODEL
         }
 
         //Print on screen info about buffers (priority...)
-        static bool printOnce = false;
-        if (printOnce == false) {
-            printOnce = true;
-            for (int i = 0; i < m_buffer.size(); ++i)
-                cout << m_buffer[i].toStr() << endl;
+        //static bool printOnce = false;
+        //if (printOnce == false) {
+        //    printOnce = true;
+        //    for (int i = 0; i < m_buffer.size(); ++i)
+        //        cout << m_buffer[i].toStr() << endl;
 
-            for (uint i = MIN_CHORD_BYTE_TYPE + 1; i < MAX_CHORD_BYTE_TYPE; ++i)
-                cout << chord_bits_flags().type2str(i) << LOG_TAB << i << endl;           
-            for (uint i = MIN_CHORD_TIMER_TYPE + 1; i < MAX_CHORD_TIMER_TYPE; ++i)
-                cout << chord_timer_message().type2str(i) << LOG_TAB << i << endl;
-            for (uint i = MIN_CHORD_APPTX_TYPE + 1; i < MAX_CHORD_APPTX_TYPE; ++i)
-                cout << chord_apptx_message().type2str(i) << LOG_TAB << i << endl;
-            for (uint i = MIN_CHORD_RX_TYPE + 1; i < MAX_CHORD_RX_TYPE; ++i)
-                cout << chord_byte_message_fields().type2str(i) << LOG_TAB << i << endl;
-            for (uint i = MIN_CHORD_TX_TYPE + 1; i < MAX_CHORD_TX_TYPE; ++i)
-                cout << chord_byte_message_fields().type2str(i) << LOG_TAB << i << endl;
-        }        
+        //    for (uint i = MIN_CHORD_BYTE_TYPE + 1; i < MAX_CHORD_BYTE_TYPE; ++i)
+        //        cout << chord_bits_flags().type2str(i) << LOG_TAB << i << endl;           
+        //    for (uint i = MIN_CHORD_TIMER_TYPE + 1; i < MAX_CHORD_TIMER_TYPE; ++i)
+        //        cout << chord_timer_message().type2str(i) << LOG_TAB << i << endl;
+        //    for (uint i = MIN_CHORD_APPTX_TYPE + 1; i < MAX_CHORD_APPTX_TYPE; ++i)
+        //        cout << chord_apptx_message().type2str(i) << LOG_TAB << i << endl;
+        //    for (uint i = MIN_CHORD_RX_TYPE + 1; i < MAX_CHORD_RX_TYPE; ++i)
+        //        cout << chord_byte_message_fields().type2str(i) << LOG_TAB << i << endl;
+        //    for (uint i = MIN_CHORD_TX_TYPE + 1; i < MAX_CHORD_TX_TYPE; ++i)
+        //        cout << chord_byte_message_fields().type2str(i) << LOG_TAB << i << endl;
+        //}        
         
         hardReset();
     }
@@ -144,6 +144,11 @@ namespace P2P_MODEL
         m_seedAddrs.clear();
         for (uint i = 0; i < m_confParams.seed.size(); ++i)
             m_seedAddrs.push_back( node_address(m_confParams.seed.at(i)) );
+    }
+
+
+    void low_latency_chord::setNodeID(const uint160 id) {
+        m_nodeAddr.set(id, m_nodeAddr.ip, m_nodeAddr.inSocket, m_nodeAddr.outSocket);
     }
 
 
@@ -313,7 +318,6 @@ namespace P2P_MODEL
         eraseFirstMess();              
 
         m_logText = "core" + LOG_TAB + mess.toStr();
-        //msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, DEBUG_LOG | INTERNAL_LOG);
 
         switch (m_state)
         {
@@ -383,17 +387,20 @@ namespace P2P_MODEL
         if (doResetFlushPauseIfMess(mess, existMess) == true)
             return;
 
+        m_messageID = nextUniqueMessageID();
         //Initializing of fingers, successor, precessor, latency by default values
         m_currSeed = 0;
         m_fingerMask.resize(m_confParams.fingersSize, 1);
-        for (uint i = 1; i < m_fingerMask.size(); ++i) 
+        for (uint i = 1; i < m_fingerMask.size(); ++i) {
             m_fingerMask[i] = m_fingerMask.at(i-1) << 1;
+        }
 
         if (m_confParams.fingersSize < 1) {
             //ERROR
             msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + LOG_ERROR_INVALID_RANGE, ALL_LOG);
         }
         
+        cout << "Run ... node " << m_nodeAddr.toStrIDonly() << LOG_SPACE << setprecision(0) << fixed << sc_time_stamp().to_seconds() << " sec" << endl;
 
         msgLog(name(), LOG_TXRX, LOG_INFO, m_confParams.netwAddr.toStr(), ALL_LOG);
         msgLog(name(), LOG_TXRX, LOG_INFO, m_nodeAddr.toStr(), ALL_LOG);
@@ -405,6 +412,14 @@ namespace P2P_MODEL
             
             m_ccwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr));
             for (uint i = 0; i < m_ccwFingers.size(); ++i) {
+                if (i == 0)
+                    m_ccwFingers[i].from = m_nodeAddr.id - 1;
+                else
+                    m_ccwFingers[i].from = m_ccwFingers[i - 1].to - 1;
+                m_ccwFingers[i].to = m_nodeAddr.id - m_fingerMask[i];
+                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : ccw [" << m_ccwFingers[i].from.to_uint() << ", " << m_ccwFingers[i].to.to_uint() << "]" << endl;
+                
+
                 m_ccwFingers[i].fingerIndex = i;
                 m_ccwFingers[i].isClockWise = false;
                 m_ccwFingers[i].isUpdated = false;
@@ -412,16 +427,28 @@ namespace P2P_MODEL
             
             m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr));
             for (uint i = 0; i < m_cwFingers.size(); ++i) {
+                if (i == 0) 
+                    m_cwFingers[i].from = m_nodeAddr.id + 1;
+                else
+                    m_cwFingers[i].from = m_cwFingers[i-1].to+1;
+                m_cwFingers[i].to = m_nodeAddr.id+m_fingerMask[i];
+                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : cw [" << m_cwFingers[i].from.to_uint() << ", " << m_cwFingers[i].to.to_uint() << "]" << endl;
+
                 m_cwFingers[i].fingerIndex = i;
                 m_cwFingers[i].isClockWise = true;
                 m_cwFingers[i].isUpdated = false;
             }
 
             m_predecessor.clear();
+            m_predecessor = m_nodeAddr;
             m_predecessor.isClockWise = false;
+            m_predecessor.from = m_nodeAddr.id-1;
+            m_predecessor.to = m_nodeAddr.id-1;
             m_predecessor.fingerIndex = 0;
             m_successor = m_nodeAddr;
             m_successor.fingerIndex = 0;
+            m_successor.from = m_nodeAddr.id+1;
+            m_successor.to = m_nodeAddr.id+1;
             m_isAcked.clear();
 
             if ((m_confParams.fillFingersMinQty > m_cwFingers.size()) || (m_cwFingers.size() == 0)) {
@@ -433,25 +460,44 @@ namespace P2P_MODEL
             
         }
         else {
-            m_ccwFingers.resize(m_confParams.fingersSize, node_address_latency(m_confParams.seed.front()));
+            m_ccwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr /*m_confParams.seed.front()*/));
             for (uint i = 0; i < m_ccwFingers.size(); ++i) {
+                if (i == 0)
+                    m_ccwFingers[i].from = m_nodeAddr.id - 1;
+                else
+                    m_ccwFingers[i].from = m_ccwFingers[i - 1].to - 1;
+                m_ccwFingers[i].to = m_nodeAddr.id - m_fingerMask[i];                
+                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : ccw [" << m_ccwFingers[i].from.to_uint() << ", " << m_ccwFingers[i].to.to_uint() << "]" << endl;
+
                 m_ccwFingers[i].fingerIndex = i;
                 m_ccwFingers[i].isClockWise = false;
                 m_ccwFingers[i].isUpdated = false;               
             }
 
-            m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_confParams.seed.front()));
+            m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr /*m_confParams.seed.front()*/));
             for (uint i = 0; i < m_cwFingers.size(); ++i) {
+                if (i == 0)
+                    m_cwFingers[i].from = m_nodeAddr.id + 1;
+                else
+                    m_cwFingers[i].from = m_cwFingers[i - 1].to + 1;
+                m_cwFingers[i].to = m_nodeAddr.id + m_fingerMask[i];
+                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : cw [" << m_cwFingers[i].from.to_uint() << ", " << m_cwFingers[i].to.to_uint() << "]" << endl;
+
                 m_cwFingers[i].fingerIndex = i;
                 m_cwFingers[i].isClockWise = true;
                 m_cwFingers[i].isUpdated = false;
             }
 
             m_predecessor.clear();
+            m_predecessor = m_nodeAddr;
             m_predecessor.isClockWise = false;
-            m_predecessor.fingerIndex = 0;
-            m_successor = m_confParams.seed.front();   
+            m_predecessor.from = m_nodeAddr.id - 1;
+            m_predecessor.to = m_nodeAddr.id - 1;
+            m_predecessor.fingerIndex = 0;            
+            m_successor = m_nodeAddr;
             m_successor.fingerIndex = 0;
+            m_successor.from = m_nodeAddr.id + 1;
+            m_successor.to = m_nodeAddr.id + 1;
             m_isAcked.clear();
 
             if ((m_confParams.fillFingersMinQty > m_cwFingers.size()) || (m_ccwFingers.size() == 0)) {
@@ -461,12 +507,25 @@ namespace P2P_MODEL
             }            
             goStateJoin(chord_message(), false);
         }
+
+        if (CCW_FINGERS_TURN_ON == false)
+            m_ccwFingers.resize(1);
     }
 
         
     bool low_latency_chord::isAddrValid(const chord_message& mess) {                
+        //NEW NEW NEW
+        if (mess.retransmitCounter > 2 * m_cwFingers.size()) {
+            //cout << LOG_ERROR_TOO_BIG_RETRANSMIT << getchar();
+            m_errCode = LOG_ERROR_TOO_BIG_RETRANSMIT;
+            msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + m_errCode, DEBUG_LOG | INTERNAL_LOG);
+            return false;
+        }
+        //NEW NEW NEW
+
         if (mess.destNodeIDwithSocket.id == m_nodeAddr.id)
             return true;
+
         return false;
     }
 
@@ -551,7 +610,16 @@ namespace P2P_MODEL
                     if (mess.type == CHORD_RX_SUCCESSOR) {                
                         if (checkMessage(mess, timer, m_errCode) != ERROR) {                                                      
                             if (m_isSuccessorSet == false) {
-                                setSuccessorRemoveTimers(mess, timer);                                
+                                //DEBUG
+                                if ((sc_time_stamp() >= sc_time(48020, SC_MS)) && (name() == string("trp10.llchord")))
+                                    int tmp = mess.messageID;
+                                //DEBUG
+                                
+                                chord_message m = mess;
+                                m.searchedNodeIDwithSocket = mess.serviceAddr;
+                                setPredecessor(m, chord_timer_message(), true);
+
+                                setSuccessorRemoveTimers(mess, timer); 
                                 m_updateType = setNextFingerToUpdate();
                             }
                             else {
@@ -647,16 +715,12 @@ namespace P2P_MODEL
                 break;
             }        
             setNextState(STATE_IDLE);
-
-            //if ((mess.type != CHORD_RX_ACK) && (evType != TX_MESS_SHOULD_SEND))
-            //    makeSnapshot();
         }
     }
 
 
     void low_latency_chord::goStateIdle(const chord_message& mess, const bool existMess) {
         m_state = STATE_IDLE;
-        //msgLog(name(), LOG_TXRX, LOG_INFO, logHeadStateString(mess, existMess), DEBUG_LOG|INTERNAL_LOG);
 
         if (doResetFlushPauseIfMess(mess, existMess) == true)
             return;
@@ -664,8 +728,6 @@ namespace P2P_MODEL
         if (m_isPaused == false) {
             
             chord_timer_message timer;
-            //bool isIssueSuccess;
-            //bool isRepeatSuccess;
 
             low_latency_chord::FP funcPointer = nullptr;
             event_type evType = eventType(mess, existMess);
@@ -743,26 +805,43 @@ if (sc_time_stamp() >= sc_time(10.95, SC_SEC))
                                 m_seedAddrs.push_back(mess.srcNodeIDwithSocket);
                                 setNextState(STATE_IDLE);
                                 pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());
-                                setNextState(STATE_SERVICE);
+                                setNextState(STATE_SERVICE);                                                                                                                              
                             }
 
                            
 //DEBUG
-if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(60.0, SC_SEC))) {
+if ((name() == string("trp14.llchord")) && (sc_time_stamp() >= sc_time(144.02, SC_SEC))) {
     int tmp = 0;
 }
 //DEBUG
 
                             issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);            
 
-                            chord_action action = findSuccessor(mess.searchedNodeIDwithSocket.id, mess.srcNodeIDwithSocket.id, mess.initiatorNodeIDwithSocket.id, lookupAddr);
-                            
-                            if (action == DO_REPLY) {
-                                if ((lookupAddr.id == m_nodeAddr.id) || (mess.type == CHORD_RX_JOIN))
-                                    forceUpdateFingerTable(mess);
+                            chord_action action = findSuccessor(mess.searchedNodeIDwithSocket.id, mess.srcNodeIDwithSocket.id, mess.initiatorNodeIDwithSocket.id, lookupAddr, mess.isJoin);
 
+                                                                                          
+                                                        
+                            if (action == DO_REPLY) {           
                                 issueMessagePushTimers(CHORD_TX_SUCCESSOR, false, 0, mess, chord_timer_message(), DO_REPLY, lookupAddr);
-                                
+
+
+                                //New node was connected. We got join as fwd_find_successor from boost node
+                                if (mess.isJoin) {
+                                    m_isNowStabilize = false;
+
+                                    chord_message m = mess;
+                                    m.searchedNodeIDwithSocket = mess.initiatorNodeIDwithSocket;
+                                    setPredecessor(m, chord_timer_message(), false);
+
+                                    if (m_successor.id == m_nodeAddr.id) //If node is alone in a network
+                                        setSuccessorRemoveTimers(m, chord_timer_message());
+
+                                    if (MAKE_SNAPSHOT_ALWAYS) makeSnapshot();
+                                }
+
+                                if ((lookupAddr.id == m_nodeAddr.id) || (mess.type == CHORD_RX_JOIN)) {
+                                    forceUpdateFingerTable(mess);
+                                }
                             }
                             else if (action == DO_FORWARD) {
                                 forceUpdateFingerTable(mess);
@@ -816,7 +895,7 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(60.0, SC_S
         
 //DEBUG
 string strTime = sc_time_stamp().to_string();
-if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_SEC)))
+if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(102.17, SC_SEC)))
     int herebreakpoint = 0;
 //DEBUG
 
@@ -835,7 +914,6 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
             switch (evType) {
                 case INACCESSIBLE_NODE: {
                     pushInaccessibleFinger(mess);
-                    //pushNewTimer(mess, false);
 
                     if (m_isNowUpdate == false) {
                         m_isNowUpdate = true;
@@ -900,13 +978,14 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
                                 isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                                 if (isRepeatSuccess == false) {
                                     m_isNowUpdate = false;
-                                    if (setCopyPreviousAliveFinger() == false) {
-                                        msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
-                                        chord_conf_message reset;
-                                        reset.type = CHORD_HARD_RESET;
-                                        pushNewMessage(reset);
-                                    }
-                                    
+
+                                    if (mess.retryMess.retransmitCounter == 0)
+                                        if (setCopyPreviousAliveFinger() == false) {
+                                            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                                            chord_conf_message reset;
+                                            reset.type = CHORD_HARD_RESET;
+                                            pushNewMessage(reset);
+                                        }                                    
                                 }     
                             }
                         }
@@ -934,7 +1013,7 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
                         isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                         if (isRepeatSuccess == false) {
                             m_isNowUpdate = false;
-                            if (setCopyPreviousAliveFinger() == true) {
+                            if (setCopyPreviousAliveFinger() == false) {
                                 msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
                                 chord_conf_message reset;
                                 reset.type = CHORD_HARD_RESET;
@@ -955,16 +1034,23 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
                         }
                     }
                     else if (mess.type == CHORD_TIMER_UPDATE) {                    
-                        pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());            
-                        
-
+                        pushNewTimer(CHORD_TIMER_UPDATE, 0, 0, chord_byte_message_fields());                                    
 
                         if (m_isNowUpdate == false) {
                             m_isNowUpdate = true;
 
+//DEBUG
+string strTime = sc_time_stamp().to_string();
+if ((name() == string("trp11.llchord")) && (sc_time_stamp() >= sc_time(100.03, SC_SEC)))
+    int herebreakpoint = 0;
+//DEBUG
+
+
                             m_updateType = setNextFingerToUpdate(true);
-                            if (m_updateType == STABILIZE_SUCCESSOR)
+                            if (m_updateType == STABILIZE_SUCCESSOR) {
+
                                 issueMessagePushTimers(CHORD_TX_FIND_PREDECESSOR, false, 0);                    
+                            }
                             else if (m_updateType == FIX_FINGER)
                                 issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);
                             else {
@@ -1098,8 +1184,7 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
         //Messages, timers are stored
         //Fingers, latency, precessor, successor are resetted
         m_cwFingers.clear();
-        m_ccwFingers.clear();        
-        //m_latency.clear();
+        m_ccwFingers.clear();                
         m_isAcked.clear();
         m_successor.clear();
         m_predecessor.clear();
@@ -1172,151 +1257,277 @@ if ((name() == string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40.01, SC_
                 }         
             }
 
-            if ((m_cwFingers.back().id < id) && (id < m_ccwFingers.back().id)) //Is situation: 6 < 7(id) AND 7(id) < 8  values on line: {..., 6} id {8, ...} 
+            if ((m_cwFingers.back().id < id) && (id < m_ccwFingers.back().id)) //Is situation: 6 < 7(id) AND 7(id) < 8  values on line: {..., 6} id here {8, ...} 
                 return true;
         }
+        
         return false;
     }
 
-
-    node_address low_latency_chord::closestPrecedingNode(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID) {
-        node_address_latency found1, found2;       
-        //uint160 n  = m_nodeAddr.id < searchedID ? m_nodeAddr.id : searchedID;
-        //uint160 id = m_nodeAddr.id > searchedID ? m_nodeAddr.id : searchedID;
-
-        if (isClockWiseDirection(searchedID)) {
-            if (m_cwFingers.size() > 0) {
-                for (int i = (int)m_cwFingers.size()-1; i >= 0; --i) {
-                    
-                    //if (((n < m_cwFingers[i].id) && (m_cwFingers[i].id < id) && (m_cwFingers[i].isNone() != true)) &&
-                    if ((isInRange(m_cwFingers[i].id, m_nodeAddr.id, false, searchedID, true)) && (m_cwFingers[i].isNone() != true) &&
-                        (m_cwFingers[i].id != senderID) && (m_cwFingers[i].id != initiatorID))
-                    {
-                        found1.setCopy(m_cwFingers.at(i));
-                        
-                        if (i-1 >= 0) {
-                            found2.setCopy(m_cwFingers.at(i-1));
-                            if (found1.latency > found2.latency)
-                                return found2;                
-                        }
-                        return found1;
-                    }
-                }  
-            }
-            return (m_nodeAddr);
-        }
-        else {
-            if (m_ccwFingers.size() > 0) {
-                for (int i = (int) m_ccwFingers.size()-1; i >= 0; --i) {
-                    //if (((n < m_ccwFingers[i].id) && (m_ccwFingers[i].id < id) && (m_cwFingers[i].isUpdated)) &&
-                    if ((isInRange(m_ccwFingers[i].id, m_nodeAddr.id, false, searchedID, true)) && (m_ccwFingers[i].isNone() != true) &&
-                        (m_ccwFingers[i].id != senderID) && (m_ccwFingers[i].id != initiatorID))
-                    {
-                        found1.setCopy(m_ccwFingers.at(i));
-
-                        if (i - 1 >= 0) {
-                            found2.setCopy(m_ccwFingers.at(i-1));
-                            if (found1.latency > found2.latency)
-                                return found2;
-                        }
-                        return found1;
-                    }
+    
+    void low_latency_chord::findBigFinger(const vector<node_address_latency>& fingers, const vector<uint160>& forbidden, node_address_latency& result) {
+        node_address_latency big;
+        big.id = 0;
+        for (const auto& i : fingers) {
+            bool accept = true;
+            for (const auto& j : forbidden) {
+                if (i.id == j) {
+                    accept = false;
+                    break;
                 }
             }
-            return m_nodeAddr;
+            
+            if ((i.id > big.id) && (accept))
+                big.setCopy(i);
+            
         }
-        
+        result.setCopy(big);
+    }
+
+
+    void low_latency_chord::findAlittleBigFinger(const uint160 searchedID, const vector<node_address_latency>& fingers, const vector<uint160>& forbidden, node_address_latency& result) {
+        static node_address_latency result_;
+        result.id = 0;
+
+        for (size_t i = 1; i < fingers.size(); ++i) {
+            bool accept = true;
+            for (const auto& j : forbidden) {
+                if (fingers.at(i).id == j) {
+                    accept = false;
+                    break;
+                }
+            }
+
+            if ((fingers.at(i-1).id <= searchedID) && (searchedID <= fingers.at(i).id) && (accept)) {
+                result.setCopy(fingers.at(i));
+                break;
+            }                
+        }
+        result.setCopy(result_);
+    }
+
+
+    void low_latency_chord::find1stFingerNotForbidden(const vector<node_address_latency>& fingers, const vector<uint160>& forbidden, node_address_latency& result) {
+        node_address_latency result_;
+        result_.id = 0;
+
+        for (const auto& i : fingers) {
+            bool accept = true;
+            for (const auto& j : forbidden) {
+                if (i.id == j) {
+                    accept = false;
+                    break;
+                }
+            }
+
+            if (accept) {
+                result_.setCopy(i);
+                break;
+            }
+        }
+        result.setCopy(result_);
     }
 
     
-                                          
-    chord_action low_latency_chord::findSuccessor(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID, node_address& found) {
+    chord_action low_latency_chord::findSuccessor(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID, node_address& found, const bool isJoin) {
+        //LOG
+        m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "........" << " sID " << searchedID.to_string(SC_DEC) << " ?? [pred " << m_predecessor.id.to_string(SC_DEC) << "; " << m_nodeAddr.id.to_string(SC_DEC) << ") node ";
+        m_ssLog << m_nodeAddr.id.to_string(SC_DEC) << " (" << m_nodeAddr.id.to_string(SC_DEC) << "; succ " << m_successor.id.to_string(SC_DEC) << "]";
+        msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+        for (const auto& finger : m_cwFingers) {            
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "........" << " sID " << searchedID.to_string(SC_DEC) << " ?? cw fing" << finger.fingerIndex << " " << finger.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+        }
+        //LOG
+
+        
         found.clear();
+        chord_action action = DO_REPLY;
+        node_address_latency foundFinger, foundFinger2;
+
 //DEBUG
-if ((name() == string("trp5.llchord")) && (searchedID == 3) && (sc_time_stamp() >= sc_time(299.0, SC_SEC))) 
-    int herebreakpoint = 0;
+if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC_SEC))) {
+    int herebreakpoint = foundFinger.id.to_int();
+}
 //DEBUG
         
-
-        //Comparising with addrs of seed nodes        
-        //for (uint i = 0; i < m_seedAddrs.size(); ++i) {
-        //    if (m_seedAddrs[i].isNone() == false) {
-        //        if (searchedID == m_seedAddrs[i].id) {
-        //            found = m_seedAddrs[i];
-        //            return DO_REPLY;
-        //        }
-        //    }
-        //}
-
-
-
-        //Chord: Comparising with successor, Chord
-        if ((m_predecessor.id == searchedID) && (m_predecessor.isUpdated) && (m_predecessor.isNone() != true)) {
-            found = m_predecessor;
-
-            //LOG
-            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_FORWARD sID " << searchedID.to_string(SC_DEC) << " = pred " << m_predecessor.toStrIDonly() << " => " << found.toStrIDonly();
-            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-            //
-            return DO_FORWARD;
-        }
-        //else if ((m_predecessor.isNone() != true) && (isInRange(searchedID, m_predecessor.id, false, m_nodeAddr.id, true))) {
-        else if (m_nodeAddr.id == searchedID) {
-            found = m_nodeAddr;
+        //Check curr node
+        if (searchedID == m_nodeAddr.id) {
+            action = DO_REPLY;
+            foundFinger.setCopy(m_nodeAddr);
+            found = foundFinger.toNodeAddress();
             
             //LOG
-            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_REPLY sID " << searchedID.to_string(SC_DEC) << " = (pred " << m_predecessor.toStrIDonly() << "; node " << m_nodeAddr.toStrIDonly() << "] => " << found.toStrIDonly();
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = node " << m_nodeAddr.id.to_string(SC_DEC) << " => node " << foundFinger.toStrIDonly();
             msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-            //
-
-            return DO_REPLY;
         }
-        //else if (isInRange(searchedID, m_nodeAddr.id, false, m_successor.id, true) && (m_successor.isUpdated)) {            
-        else if ((m_successor.id == searchedID) && (m_successor.isUpdated) && (m_successor.isNone() != true)) {            
-            found = m_successor;  
-            
-            //LOG
-            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << ".......... sID " << searchedID.to_string(SC_DEC) << " = (node " << m_nodeAddr.toStrIDonly() << "; " << m_successor.toStrIDonly() << ") => " << found.toStrIDonly();
-            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-            //
 
-
-            if ((found.id == senderID) || (found.id == initiatorID))
-                found = m_nodeAddr;
+        //Check predecessor
+        else if ((searchedID == m_predecessor.id) && (!m_predecessor.isNone())) {
+            action = DO_REPLY;
+            foundFinger.setCopy(m_predecessor);
+            found = foundFinger.toNodeAddress();
 
             //LOG
-            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_FORWARD sID " << searchedID.to_string(SC_DEC) << " = (node " << m_nodeAddr.toStrIDonly() << "; " << m_successor.toStrIDonly() << ") => " << found.toStrIDonly();
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = pred  " << m_predecessor.id.to_string(SC_DEC) << " => pred " << foundFinger.toStrIDonly();
             msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-            return DO_FORWARD;
         }
-        else {
-//DEBUG
-if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC)))
-    int tmp = 0;
-//DEBUG
-
-
-            found = closestPrecedingNode(searchedID, senderID, initiatorID);
+        
+        //Check behind curr node
+        else if ((isInRangeOverZero(searchedID, m_predecessor.id, m_nodeAddr.id)) && (!m_predecessor.isNone())) {
+            action = DO_REPLY;
+            foundFinger.setCopy(m_nodeAddr);                        
+            found = foundFinger.toNodeAddress();
+                                 
             //LOG
-            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << ".......... sID " << searchedID.to_string(SC_DEC) << " = closestPrecedingNode => " << found.toStrIDonly();
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = [pred  " << m_predecessor.id.to_string(SC_DEC) << "; node " << m_nodeAddr.id.to_string(SC_DEC) << "] => node " << foundFinger.toStrIDonly();
             msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+        }
+
+
+
+        //Check forward curr node
+        else if ((isInRangeOverZero(searchedID, m_nodeAddr.id, m_successor.id)) && (!m_successor.isNone())) {
+            action = DO_REPLY;
+
+            foundFinger.setCopy(m_successor);
+            found = foundFinger.toNodeAddress();
+
             //LOG
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = [node  " << m_nodeAddr.id.to_string(SC_DEC) << "; succ " << m_successor.id.to_string(SC_DEC) << "] => succ " << foundFinger.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+        }
 
-            if ((found.id == senderID) || (found.id == initiatorID))
-                found = m_nodeAddr;
+        //Check fingers
+        else 
+        {
+            //closest preceding  1
+            for (auto fingerIt = m_cwFingers.rbegin(); fingerIt != m_cwFingers.rend(); ++fingerIt) {
+                
+                bool biggerThanLimit = searchedID >= fingerIt->id;
+                bool notInitiator = fingerIt->id != initiatorID;
+                bool notSender = fingerIt->id != senderID;
+                bool inRangeFromTo = isInRangeOverZero(searchedID, fingerIt->from, fingerIt->to);
+                bool closestToTarget = isInRangeOverZero(fingerIt->id, m_nodeAddr.id, searchedID);
+                
+                if ((closestToTarget) && (notInitiator) && (notSender) && (fingerIt->id != m_nodeAddr.id))
+                {                                                            
+                    foundFinger.setCopy(*fingerIt);                                     
 
-            if (found.id == m_nodeAddr.id) {
-                //LOG
-                m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_REPLY sID " << searchedID.to_string(SC_DEC) << " = closestPrecedingNode => " << found.toStrIDonly();
-                msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-                return DO_REPLY;
+                    if (fingerIt+1 != m_cwFingers.rend()) {
+                        if (foundFinger.latency > (fingerIt+1)->latency) {
+                            foundFinger.setCopy(*(fingerIt+1));
+                        }
+                    }
+                    break;
+                }
             }
+            
+            found = foundFinger.toNodeAddress();
+            
+            //NEW NEW NEW
+            //if (found.isNone()) {
+            //    //closest preceding  2
+            //    for (auto fingerIt = m_cwFingers.rbegin(); fingerIt != m_cwFingers.rend(); ++fingerIt) {
+            //        bool notInitiator = fingerIt->id != initiatorID;
+            //        bool notSender = fingerIt->id != senderID;
+            //        bool closestToTarget = isInRangeOverZero(fingerIt->id, m_nodeAddr.id, searchedID);
+            //        if ((closestToTarget) && (notInitiator) && (notSender))
+            //        {
+            //            foundFinger.setCopy(*fingerIt);
+            //            if (fingerIt + 1 != m_cwFingers.rend()) {
+            //                if (foundFinger.latency > (fingerIt + 1)->latency) {
+            //                    foundFinger.setCopy(*(fingerIt + 1));
+            //                }
+            //            }
+            //            break;
+            //        }
+            //    }
+            //}
+            //found = foundFinger.toNodeAddress();
+            //NEW NEW NEW
+            
+            //We tried to find good finger, now the next steps will be
+            if (found.isNone()) {
+                
+                //foundFinger.setCopy(findBigFinger(m_cwFingers, {initiatorID, senderID, m_nodeAddr.id}));        //Try to send to the end of ring
 
-            //LOG
-            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << "DO_FORWARD sID " << searchedID.to_string(SC_DEC) << " = closestPrecedingNode => " << found.toStrIDonly();
-            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-            return DO_FORWARD;
-        }
+
+                find1stFingerNotForbidden(m_cwFingers, {initiatorID, senderID, m_nodeAddr.id}, foundFinger);      //Try to send to successor via ring
+                if (foundFinger.isNone()) {   
+                
+                    //Try to send back to predecessor, because above we have already checked successor without success
+                    if ((m_predecessor.id != senderID) && (m_predecessor.id != initiatorID) && (m_predecessor.id != m_nodeAddr.id)) {
+                        foundFinger.setCopy(m_predecessor);
+                        found = foundFinger.toNodeAddress();
+                        action = DO_FORWARD;
+
+                        //LOG
+                        m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = Not found finger => go to predecessor back " << found.toStrIDonly();
+                        msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+                    }
+                    else {
+                        //Go home
+                        foundFinger.setCopy(m_nodeAddr);                    
+                        found = foundFinger.toNodeAddress();
+                        action = DO_REPLY;
+
+                        //LOG
+                        m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = Not found finger => node " << found.toStrIDonly();
+                        msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+                    }
+                }
+                else { //Go through the ring
+                    found = foundFinger.toNodeAddress();
+                    action = DO_FORWARD;
+
+                    //LOG
+                    m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " = Not found finger => go to succ ring " << found.toStrIDonly();
+                    msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+                }
+                
+            }
+            else if ((found.id == senderID) || (found.id == initiatorID) || (found.id == m_nodeAddr.id)) {
+                node_address_latency closerToTarget; 
+                findAlittleBigFinger(searchedID, m_cwFingers, {senderID, initiatorID, m_nodeAddr.id}, closerToTarget);
+
+                if (closerToTarget.isNone()) {                    
+                    action = DO_REPLY;
+
+                    //LOG
+                    m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " >= cwfinger" << foundFinger.fingerIndex << " " << foundFinger.toStrIDonly();
+                    msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+                }
+                else {                   
+                    foundFinger.setCopy(closerToTarget);
+                    found = foundFinger.toNodeAddress();
+                    action = DO_FORWARD;
+
+                    //LOG
+                    m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " => go via ring closer " << foundFinger.fingerIndex << " " << foundFinger.toStrIDonly();
+                    msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+                }
+                
+            }
+            else {            
+                action = DO_FORWARD;
+
+                //LOG
+                m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " => cwfinger" << foundFinger.fingerIndex << " " << foundFinger.toStrIDonly();
+                msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            }            
+        } 
+        
+        if ((isJoin) && (action == DO_REPLY) && (foundFinger.id != m_nodeAddr.id)) {
+
+            action = DO_FORWARD;
+            //LOG                     D
+            m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " => " << foundFinger.toStrIDonly();
+            msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);            
+        }      
+
+        return action;
     }
 
 
@@ -1331,47 +1542,54 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
     }
 
 
-    bool low_latency_chord::isInRange(const uint160& id, const uint160& A, const bool includeA, const uint160& B, const bool includeB) {        
-        if ((A == B) && (id == A))
-            return true;
-
-        uint160 first = A;
-        bool includeF = includeA;
-        if (B < A) {
-            first = B;
-            includeF = includeB;
-        }
-
-        uint160 last = A;
-        bool includeL = includeA;
-        if (B > A) {
-            last = B;
-            includeL = includeB;
-        }
+    bool low_latency_chord::isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to) {
         
-        if ((includeF == false) && (includeL == false)) {
-            if ((first < id) && (id < last))
+        if (from <= to) {
+            //Generic order, no over zero
+            //[from; to]
+            if ((id >= from) && (id <= to))
                 return true;
             return false;
         }
-        else if ((includeF == true) && (includeL == false)) {
-            if ((first <= id) && (id < last))
+        else {
+            //Over zero
+            //[from -> max; 0 -> to]
+            uint168 maxValue = MAX_UINT160+to;
+            if ((id >= from) && (id <= maxValue)) // [from; max]
+                return true;
+
+            if ((id >= from) && (id <= MAX_UINT160)) // [from; MAX_UINT160]
+                return true;
+            if ((id >= 0) && (id <= to)) // [0; to]
                 return true;
             return false;
         }
-        else if ((includeF == false) && (includeL == true)) {
-            if ((first < id) && (id <= last))
-                return true;
-            return false;
-        }
-        else if ((includeF == true) && (includeL == true)) {
-            if ((first <= id) && (id <= last))
-                return true;
-            return false;
-        }
-        return false;
     }
 
+
+    bool low_latency_chord::isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to) {
+
+        if (from < to) {
+            //Generic order, no over zero
+            //[from; to]
+            if ((id > from) && (id < to))
+                return true;
+            return false;
+        }
+        else {
+            //Over zero
+            //[from -> max; 0 -> to]
+            uint168 maxValue = MAX_UINT160 + to;
+            if ((id > from) && (id < maxValue)) // [from; max]
+                return true;
+
+            if ((id > from) && (id <= MAX_UINT160)) // [from; MAX_UINT160]
+                return true;
+            if ((id >= 0) && (id < to)) // [0; to]
+                return true;
+            return false;
+        }
+    }
 
     string low_latency_chord::state2str(const finite_state& state) const {
         string res;
@@ -1480,6 +1698,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         newMess.type = CHORD_TX_JOIN;
         newMess.flags.bitMessType = CHORD_BYTE_JOIN;
         newMess.flags.needsACK = m_confParams.needsACK ? NEEDS_ACK : NO_ACK;
+        newMess.isJoin = true;
         m_messageID = nextUniqueMessageID();
         return newMess;
     }
@@ -1514,7 +1733,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         return newMess;
     }
 
-    chord_message low_latency_chord::createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID, const int initialMessageID) {
+    chord_message low_latency_chord::createFindSuccessorMessage(const node_address& dest, const node_address& whoInitiator, const uint160& whatID, const bool isJoin, const int retransmitCounter, const int initialMessageID) {
         chord_message newMess;
         newMess.clear();
         newMess.destNetwAddrs.push_back(network_address(dest.ip, dest.inSocket));
@@ -1532,7 +1751,8 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         }
         else 
             newMess.messageID = initialMessageID;
-
+        newMess.isJoin = isJoin; 
+        newMess.retransmitCounter = retransmitCounter;
         return newMess;
     }
 
@@ -1547,7 +1767,8 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         newMess.messageID = messageID;
         newMess.searchedNodeIDwithSocket = fingerAddr;
         newMess.flags.bitMessType = CHORD_BYTE_SUCCESSOR;
-        newMess.flags.needsACK = NO_ACK;
+        newMess.flags.needsACK = NO_ACK;        
+        newMess.serviceAddr = m_predecessor;
         return newMess;
     }
 
@@ -1609,6 +1830,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
             msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + m_errCode, DEBUG_LOG | INTERNAL_LOG);
             return ERROR;
         }
+
         m_errCode.clear();
         return NO_ERROR;
     }
@@ -1657,7 +1879,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         randValue = genRand(min, max);
         min = (min + step) % (limit - step);
         max = min + step;        
-        return randValue;
+        return (m_nodeAddr.id.to_uint() << 16) + randValue;
     }
 
 
@@ -1670,8 +1892,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
             case CHORD_TX_JOIN: {
                 if ((isRetry == false) /* || ((isRetry == true) && (expiredTimer.retryCounter >= m_confParams.CtxRetry) && (m_confParams.needsACK == NEEDS_ACK))*/) {
                     m_currSeed = (m_currSeed + 1) % (uint)(m_confParams.seed.size());
-                    //m_isClockWise = true;
-                    //m_ccwFingerIndex = 0;
+
                     newMess = createJoinMessage(m_confParams.seed.at(m_currSeed));
 
                     msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() + string(" mID ") + to_string(newMess.messageID) + string(" retryC ") + to_string(0) + string("(") + to_string(m_confParams.CtxRetry) + string(")"), DEBUG_LOG | INTERNAL_LOG);
@@ -1697,7 +1918,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                     else
                         return false;   //No possible to retry tx_join
                 }       
-                return true; //First transmisstion and retry further
+                return true;            //First transmisstion and retry further
             }
             break;
 
@@ -1710,32 +1931,50 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                 if (action == DO_REQUEST) {
                     //fingerPast = findPrevAliveFinger(m_isClockWise,0);
 
+
+
                     if (m_isClockWise) {
                         currFinger = m_cwFingerIndex;
+
+//DEBUG
+if ((sc_time_stamp() >= sc_time(1134.02, SC_SEC)) && (name() == string("trp329.llchord"))) {
+    int tmp = 0;
+}
+//DEBUG 
                         
                         if (currFinger >= m_cwFingers.size()) {
                             //ERROR
                             msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers currFinger >= cwFingers.size() ") + LOG_ERROR_INVALID_RANGE, DEBUG_LOG | INTERNAL_LOG);
                             return false;
                         }
+
+
                             
                         finger.setCopy(m_cwFingers[currFinger]);
                         whatId = whatId+m_fingerMask[currFinger];
 
-                        if (m_cwFingerIndex == 0) {
-                            //if ((m_predecessor.isUpdated) && (m_predecessor.isNone() == false) && (m_predecessor.id != m_nodeAddr.id))
-                            //    fingerPast.setCopy(m_predecessor);
-                            //else 
-                            {   
-                                if (m_currSeed < m_seedAddrs.size()) {
-                                    node_address_latency addr;        
-                                    addr.set(m_seedAddrs.at(m_currSeed));
-                                    fingerPast.setCopy(addr);
-                                }
-                            }
+                        if ((m_cwFingerIndex == 0)) {
+                            fingerPast.setCopy(m_cwFingers.at(0));
+                                                           
+                            //if (m_currSeed < m_seedAddrs.size()) {
+                            //    node_address_latency addr;        
+                            //    addr.set(m_seedAddrs.at(m_currSeed));
+                            //    fingerPast.setCopy(addr);
+                            //}
                         }
                         else {
-                            fingerPast.setCopy(m_cwFingers.at(currFinger-1));
+                            int i = -1;
+                            for (i = (int)currFinger-1; i >= 0; --i) {
+                                if (m_cwFingers.at(i).id != m_nodeAddr.id)
+                                    break;
+                            }
+                            if (i >= 0) 
+                                fingerPast.setCopy(m_cwFingers.at(i));
+                            else {
+                                node_address_latency addr;
+                                addr.set(m_seedAddrs.at(m_currSeed));
+                                fingerPast.setCopy(addr);
+                            }
                         }                                                           
                     }
                     else {
@@ -1751,29 +1990,37 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                         whatId = whatId-m_fingerMask[currFinger];                    
 
                         if (m_ccwFingerIndex == 0) {                        
-                            //if ((m_successor.isUpdated) && (m_successor.isNone() == false) && (m_successor.id != m_nodeAddr.id))
-                            //    fingerPast.setCopy(m_successor);                        
-                            //else
-                            {
-                                if (m_currSeed < m_seedAddrs.size()) {
-                                    node_address_latency addr;
-                                    addr.set(m_seedAddrs.at(m_currSeed));
-                                    fingerPast.setCopy(addr);
-                                }
-                            }
+                            fingerPast.setCopy(m_ccwFingers.at(0));
+
+                            //if (m_currSeed < m_seedAddrs.size()) {
+                            //    node_address_latency addr;
+                            //    addr.set(m_seedAddrs.at(m_currSeed));
+                            //    fingerPast.setCopy(addr);
+                            //}
                         }
                         else {                        
-                            fingerPast.setCopy(m_ccwFingers.at(currFinger-1));                        
+                            int i = -1;
+                            for (i = (int)currFinger - 1; i >= 0; --i) {
+                                if (m_ccwFingers.at(i).id != m_nodeAddr.id)
+                                    break;
+                            }
+                            if (i > 0)
+                                fingerPast.setCopy(m_ccwFingers.at(i));
+                            else {
+                                node_address_latency addr;
+                                addr.set(m_seedAddrs.at(m_currSeed));
+                                fingerPast.setCopy(addr);
+                            }
                         }                                        
                     }
                 }
             
                 if (isRetry == false) {
                     if (action == DO_FORWARD) {
-                        newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id, rxMess.messageID);
+                        newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id, rxMess.isJoin, rxMess.retransmitCounter+1, rxMess.messageID);
                     }
                     else if (action == DO_REQUEST) {                        
-                        newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, whatId);
+                        newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, whatId, false, 0);
                     }
 
                     msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + (action == DO_FORWARD ? string("FWD_") : string("")) + newMess.chord_byte_message_fields::type2str() + string(" mID ") +
@@ -1781,7 +2028,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                     
                     
                     if (newMess.destNodeIDwithSocket.id == m_nodeAddr.id) {
-                        //fingerPast = m_seedAddrs[m_currSeed];
+                        
                         msgLog(name(), LOG_TXRX, LOG_WARNING, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + newMess.chord_byte_message_fields::type2str() +
                             string(" d ") + node_address(fingerPast).toStr() + string(" dest addr = myAddr ") + node_address(m_nodeAddr).toStr() + string(" CANCELLED"), DEBUG_LOG | INTERNAL_LOG);
                         
@@ -1801,10 +2048,10 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                 else {
                     if ((expiredTimer.retryCounter < m_confParams.CtxRetry) && (m_confParams.needsACK == NEEDS_ACK)) {
                         if (action == DO_FORWARD) {
-                            newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id, rxMess.messageID);
+                            newMess = createFindSuccessorMessage(lookupAddr, rxMess.initiatorNodeIDwithSocket, rxMess.searchedNodeIDwithSocket.id, rxMess.isJoin, rxMess.retransmitCounter+1, rxMess.messageID);
                         }                        
                         else if (action == DO_REQUEST) {                            
-                            newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, m_nodeAddr.id + m_fingerMask[currFinger]);                            
+                            newMess = createFindSuccessorMessage(fingerPast, m_nodeAddr, m_nodeAddr.id + m_fingerMask[currFinger], false, 0);                            
                         }
 
                         msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers ") + (action == DO_FORWARD ? string("FWD_") : string("")) + newMess.chord_byte_message_fields::type2str() + string(" mID ") +
@@ -1831,13 +2078,14 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                         return true;      //Try retry
                     }
                     else {                   
-                        return false; //No possible to retry find_successor on this finger
+                        return false;     //No possible to retry find_successor on this finger
                     }             
                 }
             }   
             break;
 
             case CHORD_TX_FIND_PREDECESSOR: {
+
                 if (isRetry == false) {                   
                     newMess = createFindPredecessorMessage(m_successor, m_nodeAddr, m_successor.id-1);
 
@@ -1897,7 +2145,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
                         return true;    //Try retry
                     }
                     else
-                        return false;  //No possible to retry find_predecessor
+                        return false;   //No possible to retry find_predecessor
                 }
             }
             break;
@@ -1925,8 +2173,6 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
             }
             break;
 
-            
-
             default:
                 //ERROR
                 msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers") + LOG_SPACE + LOG_ERROR_NOT_RECOGNIZED, ALL_LOG);
@@ -1939,7 +2185,6 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
 
         if ((rxMess.searchedNodeIDwithSocket.id < m_nodeAddr.id) && (m_cwFingerIndex == 0)) {
             
-
             //oberon5962's modificated actions for valid Chord operations
             m_predecessor = rxMess.searchedNodeIDwithSocket;
             m_predecessor.isUpdated = true;
@@ -2039,7 +2284,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         }   
 
         //tryAddNewSeed(m_successor);
-        makeSnapshot();
+        if (MAKE_SNAPSHOT_ALWAYS) makeSnapshot();
     
         if (m_inaccessibleFingers.size() > 0) {
             if (timer.retryMess.destNodeIDwithSocket.id == m_inaccessibleFingers.at(0).timer.retryMess.destNodeIDwithSocket.id) {
@@ -2052,7 +2297,7 @@ if ((name()==string("trp0.llchord")) && (sc_time_stamp() >= sc_time(40, SC_SEC))
         return needsFillFingersMinQty;
     }
 
-    bool low_latency_chord::setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
+    bool low_latency_chord::setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const bool onJoin) {
 //DEBUG
 if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llchord"))) {
     int tmp = 0;
@@ -2062,26 +2307,34 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
         m_predecessor.isUpdated = true;
         m_predecessor.updateTime = sc_time_stamp();        
 
-        if ((m_predecessor.isNone() == true) || (isInRange(rxMess.searchedNodeIDwithSocket.id, m_predecessor.id, false, m_nodeAddr.id, false))) {
+        if ((m_predecessor.isNone() == true) || (m_predecessor.id == m_nodeAddr.id) || (isInRangeOverZeroNotInc(rxMess.searchedNodeIDwithSocket.id, m_predecessor.id, m_nodeAddr.id))) {
             m_predecessor = rxMess.searchedNodeIDwithSocket;
-            m_predecessor.motive = MOTIVE_NOTIFY;
+            m_predecessor.motive = MOTIVE_NOTIFY + LOG_SPACE + "mID " + to_string(rxMess.messageID);;
             m_ccwFingers[0] = m_predecessor;
             isSuccess = true;
 
             //tryAddNewSeed(m_predecessor);
 
-            makeSnapshot();
-        }        
+            if (MAKE_SNAPSHOT_ALWAYS) makeSnapshot();
+        }   
 
-        if (isSuccess)
-            msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Notify setPredecessor new predecessor = ") + m_predecessor.toStrIDonly(), DEBUG_LOG | INTERNAL_LOG);
+        if (isSuccess) {
+            if (onJoin)
+                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("on Join setPredecessor new predecessor = ") + m_predecessor.toStrIDonly(), DEBUG_LOG | INTERNAL_LOG);
+            else
+                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Notify setPredecessor new predecessor = ") + m_predecessor.toStrIDonly(), DEBUG_LOG | INTERNAL_LOG);
+        }
         else {
             stringstream ss;
-            ss << state2str(m_state) << LOG_TAB << ("Notify setPredecessor not changed: addr ") + rxMess.searchedNodeIDwithSocket.toStrIDonly() << " != (pred " << m_predecessor.toStrIDonly() << "; node " << m_nodeAddr.toStrIDonly() << ")";
+
+            if (onJoin)
+                ss << state2str(m_state) << LOG_TAB << ("on Join setPredecessor not changed: addr ") + rxMess.searchedNodeIDwithSocket.toStrIDonly() << " != (pred " << m_predecessor.toStrIDonly() << "; node " << m_nodeAddr.toStrIDonly() << ")";
+            else
+                ss << state2str(m_state) << LOG_TAB << ("Notify setPredecessor not changed: addr ") + rxMess.searchedNodeIDwithSocket.toStrIDonly() << " != (pred " << m_predecessor.toStrIDonly() << "; node " << m_nodeAddr.toStrIDonly() << ")";
             msgLog(name(), LOG_TXRX, LOG_INFO, ss.str().c_str(), DEBUG_LOG | INTERNAL_LOG);
         }
 
-        if (m_inaccessibleFingers.size() > 0) {
+        if ((m_inaccessibleFingers.size() > 0) && (onJoin == false)) {
             if (timer.retryMess.destNodeIDwithSocket.id == m_inaccessibleFingers.at(0).timer.retryMess.destNodeIDwithSocket.id) {
                 msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("Restore timer ") + chord_timer_message().type2str(m_inaccessibleFingers[0].timer.type) + LOG_SPACE + state2str(m_inaccessibleFingers[0].timer.issuedState), DEBUG_LOG | INTERNAL_LOG);
                 m_inaccessibleFingers[0].timer.isDelayed = false;
@@ -2094,19 +2347,22 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
     }
 
 
+
+
+
     bool low_latency_chord::setSuccessorStabilize(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {
-        m_isNowStabilize = false;
+        //m_isNowStabilize = false;
         bool isSuccess = false;
         m_successor.isUpdated = true;
         m_successor.updateTime = sc_time_stamp();                
         
-        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) && (isInRange(rxMess.searchedNodeIDwithSocket.id, m_nodeAddr.id, false, m_successor.id, false))) {
+        if ((rxMess.searchedNodeIDwithSocket.isNone() == false) && (isInRangeOverZeroNotInc(rxMess.searchedNodeIDwithSocket.id, m_nodeAddr.id, m_successor.id))) {
             m_successor = rxMess.searchedNodeIDwithSocket;
-            m_successor.motive = MOTIVE_STABILIZE;
+            m_successor.motive = MOTIVE_STABILIZE + LOG_SPACE + "mID " + to_string(rxMess.messageID);;
             m_cwFingers[0] = m_successor;
             isSuccess = true;
             //tryAddNewSeed(m_successor);
-            makeSnapshot();
+            if (MAKE_SNAPSHOT_ALWAYS) makeSnapshot();
         }
         m_isSuccessorSet = true;
         
@@ -2142,6 +2398,13 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
 
 
     bool low_latency_chord::forceUpdateFingerTable(const chord_message& rxMess) {
+    return true;
+
+//DEBUG
+if ((name() == string("trp2.llchord")) && (rxMess.searchedNodeIDwithSocket.id == 5) && (sc_time_stamp() >= sc_time(14.0, SC_SEC)))
+    int herebreakpoint = 0;
+//DEBUG
+        
         int i = ((int)m_cwFingers.size())-1;
         int prevI = i;
         
@@ -2150,67 +2413,42 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
         uint160 ccwExpectedIDi, cwExpectedIDi;
         uint160 transitID = rxMess.initiatorNodeIDwithSocket.id;
 
-  
         while (i >= 0) {
             cwExpectedIDi = m_nodeAddr.id + m_fingerMask.at(i);            
+            bool isFingerDefaultANDtransitBiggerExpected = (m_cwFingers.at(i).id == m_nodeAddr.id) && (transitID >= cwExpectedIDi) && (transitID < m_nodeAddr.id);
+            bool isFingerNotEqualedExpected = cwExpectedIDi != m_cwFingers.at(i).id;
+            //bool isTransitBiggerExpectedAndLessOldFingerANDexpectedNofFound = (isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false)) && (isFingerNotEqualedExpected);                       //(isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false);
+            bool isTransitBiggerExpectedAndFingerLessExpectedANDexpectedNotFound = (transitID >= cwExpectedIDi) && (m_cwFingers[i].id < cwExpectedIDi) && (isFingerNotEqualedExpected);
 
             //New code
-            if (
-                ((m_cwFingers.at(i).id == m_nodeAddr.id) && (transitID >= cwExpectedIDi)) ||
-                ((isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false)) &&
-                 (cwExpectedIDi != m_cwFingers.at(i).id))
-                )
-            {
-                m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << i << LOG_SPACE << m_cwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
-                msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+            bool needsForceUpdate = false;
+            if (isFingerDefaultANDtransitBiggerExpected)
+                needsForceUpdate = true;
+            
+            if (isTransitBiggerExpectedAndFingerLessExpectedANDexpectedNotFound)
+                needsForceUpdate = true;
 
-                m_cwFingers[i] = rxMess.initiatorNodeIDwithSocket;
-                m_cwFingers[i].isUpdated = true;
-                m_cwFingers[i].updateTime = sc_time_stamp();
-                m_cwFingers[i].motive = MOTIVE_FORCE_UPDATE;
-                if (i == 0) {
-                    m_successor = m_cwFingers[i];
+            if (needsForceUpdate)
+            {
+                //if (m_nodeAddr.id > transitID)
+                {                    
+                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << i << LOG_SPACE << m_cwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
+                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+
+                
+                    m_cwFingers[i] = rxMess.initiatorNodeIDwithSocket;
+                    m_cwFingers[i].isUpdated = true;
+                    m_cwFingers[i].updateTime = sc_time_stamp();
+                    m_cwFingers[i].motive = MOTIVE_FORCE_UPDATE;
+                    if (i == 0) {
+                        m_successor = m_cwFingers[i];
+                    }
+                    isSuccess = true;
                 }
-                isSuccess = true;
             }
 
             --i;            
         }
-
-        //if (success)
-        //    return success;
-
-        i = ((int) m_ccwFingers.size()) - 1;
-        
-
-        while (i >= 0) {
-            ccwExpectedIDi = m_nodeAddr.id - m_fingerMask.at(i);
-
-            //New code
-            if (
-                ((m_ccwFingers.at(i).id == m_nodeAddr.id) && (transitID >= ccwExpectedIDi)) ||
-                ((isInRange(transitID, ccwExpectedIDi, true, m_ccwFingers[i].id, false)) &&
-                    (ccwExpectedIDi != m_ccwFingers.at(i).id))
-                )
-            {
-                m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable ccwfinger") << i << LOG_SPACE << m_ccwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
-                msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-
-                m_ccwFingers[i] = rxMess.initiatorNodeIDwithSocket;
-                m_ccwFingers[i].isUpdated = true;
-                m_ccwFingers[i].updateTime = sc_time_stamp();
-                m_ccwFingers[i].motive = MOTIVE_FORCE_UPDATE;
-                if (i == 0) {
-                    m_predecessor = m_ccwFingers[i];
-                }
-                isSuccess = true;
-            }
-
-            --i;
-        }
-
-        if (isSuccess)
-            makeSnapshot();
 
         return isSuccess;
     }
@@ -2219,7 +2457,7 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
 
     void low_latency_chord::setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {  
 //DEBUG
-if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC_SEC)))
+if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(.08, SC_SEC)))
     int tmp = 0;
 //DEBUG 
 
@@ -2232,14 +2470,13 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
                 msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("setFinger") + LOG_SPACE + LOG_ERROR_INVALID_RANGE, ALL_LOG);
                 return;
             }
-
             
             //Set successor via classical Chord algorithm
             m_cwFingers[m_cwFingerIndex] = rxMess.searchedNodeIDwithSocket;
             m_cwFingers[m_cwFingerIndex].isUpdated = true;
             m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
-            m_cwFingers[m_cwFingerIndex].motive = MOTIVE_PERIOD_RET_SUCC;
-            if (m_cwFingerIndex == 0) {
+            m_cwFingers[m_cwFingerIndex].motive = MOTIVE_PERIOD_RET_SUCC + LOG_SPACE + "mID " + to_string(rxMess.messageID);
+            if ((m_cwFingerIndex == 0) && (m_cwFingers[m_cwFingerIndex].id != m_nodeAddr.id)) {
                 m_successor = m_cwFingers[m_cwFingerIndex];                    
             }                    
             
@@ -2256,15 +2493,15 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
             m_ccwFingers[m_ccwFingerIndex] = rxMess.searchedNodeIDwithSocket;
             m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
             m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
-            m_ccwFingers[m_ccwFingerIndex].motive = MOTIVE_PERIOD_RET_SUCC;
+            m_ccwFingers[m_ccwFingerIndex].motive = MOTIVE_PERIOD_RET_SUCC + LOG_SPACE + "mID " + to_string(rxMess.messageID);
 
-            if (m_ccwFingerIndex == 0) {
+            if ((m_ccwFingerIndex == 0) && (m_ccwFingers[m_ccwFingerIndex].id != m_nodeAddr.id)) {
                 m_predecessor = m_ccwFingers[m_ccwFingerIndex];                
             }                        
             updatedFinger.setCopy(m_ccwFingers.at(m_ccwFingerIndex));
         } 
         
-        makeSnapshot();
+        if (MAKE_SNAPSHOT_ALWAYS) makeSnapshot();
        
 
         //Remove timers        
@@ -2303,31 +2540,17 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
 
     bool low_latency_chord::setCopyPreviousAliveFinger() {
         uint fingerIndex = 0;
-        node_address newAddr, prevAddr;
+        node_address newAddr;
 
         node_address_latency aliveFinger;
-        
-
-        if ((aliveFinger.isNone() != true) && (aliveFinger.isUpdated)) {            
-            fingerIndex = aliveFinger.fingerIndex;            
-            if (aliveFinger.isClockWise) {
-                m_cwFingerIndex = fingerIndex;
-                m_cwFingerIndex++;
-            }
-            else {
-                m_ccwFingerIndex = fingerIndex;
-                m_ccwFingerIndex++;
-            }  
-        }
+       
         
         if (m_isClockWise) { 
             findPrevAliveFinger(m_isClockWise, m_cwFingerIndex, aliveFinger);
             if (aliveFinger.isNone())
                 return false;
             
-            prevAddr = aliveFinger;
-            m_cwFingerIndex = aliveFinger.fingerIndex;            
-            m_cwFingers[m_cwFingerIndex] = prevAddr;
+            m_cwFingers[m_cwFingerIndex].set(aliveFinger.toNodeAddress());
             m_cwFingers[m_cwFingerIndex].isUpdated = true;
             m_cwFingers[m_cwFingerIndex].updateTime = sc_time_stamp();
             m_cwFingers[m_cwFingerIndex].motive = MOTIVE_COPY;
@@ -2341,22 +2564,20 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
             findPrevAliveFinger(m_isClockWise, m_ccwFingerIndex, aliveFinger);
             if (aliveFinger.isNone())
                 return false;
-
-            prevAddr = aliveFinger;
-            m_ccwFingerIndex = aliveFinger.fingerIndex;
-            m_cwFingers[m_ccwFingerIndex] = prevAddr;
+            
+            m_ccwFingers[m_cwFingerIndex].set(aliveFinger.toNodeAddress());
             m_ccwFingers[m_ccwFingerIndex].isUpdated = true;
             m_ccwFingers[m_ccwFingerIndex].updateTime = sc_time_stamp();
             m_ccwFingers[m_ccwFingerIndex].motive = MOTIVE_COPY;
-            if (m_cwFingerIndex == 0)
-                m_successor = m_ccwFingers[m_ccwFingerIndex];
+            if (m_ccwFingerIndex == 0)
+                m_predecessor = m_ccwFingers[m_ccwFingerIndex];
             newAddr = m_ccwFingers[m_ccwFingerIndex];
             fingerIndex = m_ccwFingerIndex;
             m_ccwFingerIndex++;
         }
 
         msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + string("setCopyPreviousAliveFinger") + LOG_SPACE +
-            (m_isClockWise ? m_cwFingers.at(m_cwFingerIndex-1).toStrFinger() + string(" = "): m_ccwFingers.at(m_ccwFingerIndex-1).toStrFinger(true)) + string(" = ") + aliveFinger.toStrFinger(true), DEBUG_LOG | INTERNAL_LOG);
+            (m_isClockWise ? m_cwFingers.at(m_cwFingerIndex-1).toStrFinger() : m_ccwFingers.at(m_ccwFingerIndex-1).toStrFinger(true)) + string(" = ") + aliveFinger.toStrFinger(true), DEBUG_LOG | INTERNAL_LOG);
 
         if (m_inaccessibleFingers.size() > 0) {
             if ((fingerIndex == m_inaccessibleFingers.at(0).badFinger.fingerIndex) && (m_isClockWise == m_inaccessibleFingers.at(0).badFinger.isClockWise)) {
@@ -2468,11 +2689,32 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
             }
         }
 
+//DEBUG
+if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(339.08, SC_SEC)))
+    int tmp = 0;
+//DEBUG
+
+        //Lookup predecessor
+        //if (m_predecessor.isUpdated == false) {
+        //    m_ccwFingerIndex = 0;
+        //    m_isClockWise = false;
+        //    return FIX_FINGER;
+        //}
+
+        if (m_state != STATE_JOIN) {
+            if (isTimerUpdateExpired) {
+                if ((m_isNowStabilize == false)) {
+                    m_isNowStabilize = true;
+                    return STABILIZE_SUCCESSOR;
+                }
+            }
+        }
+
         //Lookup into cwFingers
         uint initialI = min((uint) m_cwFingers.size(), m_confParams.fillFingersMinQty);
         string currTime = sc_time_stamp().to_string();
         for (uint i = 0; i < initialI; ++i) {
-            if (m_cwFingers[i].isUpdated == false)  {  // (sc_time_stamp() >= m_cwFingers[i].updateTime))
+            if (m_cwFingers[i].isUpdated == false) {  // (sc_time_stamp() >= m_cwFingers[i].updateTime))
                 m_cwFingerIndex = i;
                 m_isClockWise = true;
                 return FIX_FINGER;
@@ -2488,45 +2730,55 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
         }
         
         //Lookup into ccwFingers
-        for (uint i = 0; i < m_ccwFingers.size(); ++i) {
-            if (m_ccwFingers[i].isUpdated == false) {
-                m_ccwFingerIndex = i;
-                m_isClockWise = false;
-                return FIX_FINGER;
-            }
-        }
-
-        //Lookup 
-        if (m_state != STATE_JOIN) {
-            if (m_predecessor.isUpdated == false) {
-                m_ccwFingerIndex = 0;
-                m_isClockWise = false;
-                return CHECK_PREDECESSOR;
-            }
-            else if (isTimerUpdateExpired) {
-                if (m_isNowStabilize == false) {
-                    m_isNowStabilize = true;
-                    return STABILIZE_SUCCESSOR;
+        if (CCW_FINGERS_TURN_ON) {
+            for (uint i = 0; i < m_ccwFingers.size(); ++i) {
+                if (m_ccwFingers[i].isUpdated == false) {
+                    m_ccwFingerIndex = i;
+                    m_isClockWise = false;
+                    return FIX_FINGER;
                 }
             }
         }
 
+        //Lookup 
+        //if (m_state != STATE_JOIN) {
+            //if (m_predecessor.isUpdated == false) {
+            //    m_ccwFingerIndex = 0;
+            //    m_isClockWise = false;
+            //    return CHECK_PREDECESSOR;
+            //}
+        //   
+        //    if (isTimerUpdateExpired) {
+        //        if (m_isNowStabilize == false) {
+        //            m_isNowStabilize = true;
+        //            return STABILIZE_SUCCESSOR;
+        //        }
+        //    }
+        //}
 
-        //Not found finger to update. Set default values for call after STABILIZE_SUCCESSOR 
+
+        //Not found finger to update. Set default values for call after STABILIZE_SUCCESSOR         
         for (uint i = initialI; i < m_cwFingers.size(); ++i) {
             m_cwFingers[i].isUpdated = false;
         }
 
-        for (uint i = 0; i < m_ccwFingers.size(); ++i) {
-            m_ccwFingers[i].isUpdated = false;
+        if (CCW_FINGERS_TURN_ON) {
+            for (uint i = 0; i < m_ccwFingers.size(); ++i) {
+                m_ccwFingers[i].isUpdated = false;
+            }
         }
         m_isClockWise = true;
         m_cwFingerIndex = 0;
         m_ccwFingerIndex = 0;
-
+        m_predecessor.isUpdated = false;
+        m_successor.isUpdated = false;
+        m_isNowStabilize = true;
         
-
-        return FIX_FINGER;
+        //LOG        
+        m_ssLog << state2str(m_state) << LOG_TAB << "setNextFingerToUpdate" << " fingers are out of date, restart update";
+        msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
+        //return FIX_FINGER;
+        return STABILIZE_SUCCESSOR;
     }
 
 
@@ -2745,7 +2997,7 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
         }
 
         if (eventType == RX_MESS_RECEIVED) {
-            if (isAddrValid(rxMess) == false)
+            if ((isAddrValid(rxMess) == false))
                 return nullptr;   //Drop message
 
             finite_state state = findStateOnRxReplyMess(rxMess);
@@ -2912,7 +3164,7 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
 
 
     node_snapshot low_latency_chord::snapshot_pointers() {
-        node_snapshot snapshot(&m_cwFingers, &m_ccwFingers, &m_state, m_nodeAddr.toNodeAddress());
+        node_snapshot snapshot(&m_cwFingers, &m_ccwFingers, &m_state, &m_successor, &m_predecessor, m_nodeAddr.toNodeAddress());
         return snapshot;
     }
 
@@ -2925,90 +3177,3 @@ if ((name() == string("trp7.llchord")) && (sc_time_stamp() >= sc_time(298.08, SC
         m_eventMakeSnapshot.notify(period);
     }
 }
-
-
-
-
-/*
-        if (i < 0) {
-            cwExpectedIDprevI = m_nodeAddr.id + m_fingerMask.at(prevI);
-            
-            //New code:
-            if ((transitID < m_cwFingers.at(prevI).id) &&
-                (transitID > m_nodeAddr.id) &&
-                (cwExpectedIDprevI != m_cwFingers.at(prevI).id))
-            //Old code
-            //if (
-            //    ((cwExpectedIDprevI == transitID) || (isInRange(transitID, m_nodeAddr.id, false, cwExpectedIDprevI, false))  ) &&    // nodeAddr.id < transitID < cwExpectedIDprevI or successor.id
-            //    (cwExpectedIDprevI != m_cwFingers.at(prevI).id) 
-            //   )
-            {
-                m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << prevI << LOG_SPACE << m_cwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
-                msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-
-                m_cwFingers[prevI] = rxMess.initiatorNodeIDwithSocket;
-                m_cwFingers[prevI].isUpdated = true;
-                m_cwFingers[prevI].updateTime = sc_time_stamp();
-                m_cwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
-                success = true;
-
-                if (prevI == 0) {
-                    m_successor = m_cwFingers[prevI];
-                }
-            }
-        }
-        else {
-
-            while (i >= 0) {
-                cwExpectedIDprevI = m_nodeAddr.id + m_fingerMask.at(prevI);
-                cwExpectedIDi = m_nodeAddr.id + m_fingerMask.at(i);
-
-                //New code
-                if (
-                    ((m_cwFingers.at(prevI).id == m_nodeAddr.id) && (transitID >= cwExpectedIDprevI)) ||
-                    ((isInRange(transitID, cwExpectedIDprevI, true, m_cwFingers[prevI].id, false)) &&
-                     (cwExpectedIDprevI != m_cwFingers.at(prevI).id))
-                   )
-                //Old code
-                //if ((cwExpectedIDprevI == transitID) &&
-                //    (cwExpectedIDprevI != m_cwFingers.at(prevI).id))
-                {
-                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << prevI << LOG_SPACE << m_cwFingers.at(prevI).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
-                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-
-                    m_cwFingers[prevI] = rxMess.initiatorNodeIDwithSocket;
-                    m_cwFingers[prevI].isUpdated = true;
-                    m_cwFingers[prevI].updateTime = sc_time_stamp();
-                    m_cwFingers[prevI].motive = MOTIVE_FORCE_UPDATE;
-                    success = true;
-                }
-
-                //New code
-                if (
-                    ((m_cwFingers.at(i).id == m_nodeAddr.id) && (transitID >= cwExpectedIDi)) ||
-                    ((isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false)) &&
-                    (cwExpectedIDi != m_cwFingers.at(i).id))
-                )
-                //Old code
-                //else if ((isInRange(transitID, cwExpectedIDi, true, cwExpectedIDprevI, false)) &&
-                //         (cwExpectedIDi != m_cwFingers.at(i).id))
-                {
-                    m_ssLog << state2str(m_state) + LOG_TAB + string("forceUpdateFingerTable cwfinger") << i << LOG_SPACE << m_cwFingers.at(i).toStrIDonly() << " => " << rxMess.initiatorNodeIDwithSocket.toStrIDonly();
-                    msgLog(name(), LOG_TXRX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);
-
-                    m_cwFingers[i] = rxMess.initiatorNodeIDwithSocket;
-                    m_cwFingers[i].isUpdated = true;
-                    m_cwFingers[i].updateTime = sc_time_stamp();
-                    m_cwFingers[i].motive = MOTIVE_FORCE_UPDATE;
-                    success = true;
-
-                    if (i == 0) {
-                        m_successor = m_cwFingers[i];
-                    }
-                }
-                prevI = i;
-                --i;            
-            }
-        }
-
-*/

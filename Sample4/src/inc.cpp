@@ -3,7 +3,7 @@
 namespace P2P_MODEL
 {
     map<string, uint160> node_address::ip2id;
-    uint160 node_address::uniqueID = 0;
+    uint160 node_address::lastMaxID = 0;
 
     ostream& operator<< (ostream& out, const network_address& r) {
         out << r.toStr();
