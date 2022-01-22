@@ -31,7 +31,7 @@
             <Keywords name="Keywords5">&lt; &lt; &lt;&#x000D;&#x000A;pushNewMessage</Keywords>
             <Keywords name="Keywords6">repeat&#x000D;&#x000A;reqC</Keywords>
             <Keywords name="Keywords7">issue&#x000D;&#x000A;retryC&#x000D;&#x000A;succ&lt;node</Keywords>
-            <Keywords name="Keywords8">setFinger&#x000D;&#x000A;setSuccessor&#x000D;&#x000A;setPredecessor&#x000D;&#x000A;Stabilize&#x000D;&#x000A;stablize&#x000D;&#x000A;Notify&#x000D;&#x000A;updateFingerTable&#x000D;&#x000A;findSuccessor</Keywords>
+            <Keywords name="Keywords8">setFinger&#x000D;&#x000A;setSuccessor&#x000D;&#x000A;setPredecessor&#x000D;&#x000A;Stabilize&#x000D;&#x000A;stablize&#x000D;&#x000A;Notify&#x000D;&#x000A;notify&#x000D;&#x000A;updateFingerTable&#x000D;&#x000A;findSuccessor</Keywords>
             <Keywords name="Delimiters">00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23</Keywords>
         </KeywordLists>
         <Styles>
