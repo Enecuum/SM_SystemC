@@ -515,7 +515,7 @@ namespace P2P_MODEL
         
     bool low_latency_chord::isAddrValid(const chord_message& mess) {                
         //NEW NEW NEW
-        if (mess.retransmitCounter > 2 * m_cwFingers.size()) {
+        if (mess.retransmitCounter > 1.5 * m_cwFingers.size()) {
             //cout << LOG_ERROR_TOO_BIG_RETRANSMIT << getchar();
             m_errCode = LOG_ERROR_TOO_BIG_RETRANSMIT;
             msgLog(name(), LOG_RX, LOG_INFO, state2str(m_state) + LOG_TAB + m_errCode, DEBUG_LOG | INTERNAL_LOG);
@@ -618,6 +618,10 @@ namespace P2P_MODEL
                                 chord_message m = mess;
                                 m.searchedNodeIDwithSocket = mess.serviceAddr;
                                 setPredecessor(m, chord_timer_message(), true);
+
+                                //NEW
+                                //issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);
+                                //NEW
 
                                 setSuccessorRemoveTimers(mess, timer); 
                                 m_updateType = setNextFingerToUpdate();
@@ -1013,18 +1017,24 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(102.17, SC
                         isRepeatSuccess = repeatMessage(CHORD_TX_FIND_SUCCESSOR, mess.retryMess, timer);
                         if (isRepeatSuccess == false) {
                             m_isNowUpdate = false;
-                            if (setCopyPreviousAliveFinger() == false) {
-                                msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
-                                chord_conf_message reset;
-                                reset.type = CHORD_HARD_RESET;
-                                pushNewMessage(reset);
-                            } 
+                            
+                            //NEW NEW NEW
+                            m_isNowStabilize = false;
+                            //NEW NEW NEW
+
+                            //if (setCopyPreviousAliveFinger() == false) {
+                            //    msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
+                            //    chord_conf_message reset;
+                            //    reset.type = CHORD_HARD_RESET;
+                            //    pushNewMessage(reset);
+                            //} 
                         }
                     }
                     else if (mess.type == CHORD_TIMER_RX_PREDECESSOR) {
                         isRepeatSuccess = repeatMessage(CHORD_TX_FIND_PREDECESSOR, mess.retryMess, timer);
                         if (isRepeatSuccess == false) {
                             m_isNowUpdate = false;
+                            
                             if (setCopyPreviousAliveFinger() == false) {
                                 msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("NO alive fingers. Do reset"), ALL_LOG);
                                 chord_conf_message reset;
@@ -1541,55 +1551,6 @@ if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC
         return DO_REPLY;
     }
 
-
-    bool low_latency_chord::isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to) {
-        
-        if (from <= to) {
-            //Generic order, no over zero
-            //[from; to]
-            if ((id >= from) && (id <= to))
-                return true;
-            return false;
-        }
-        else {
-            //Over zero
-            //[from -> max; 0 -> to]
-            uint168 maxValue = MAX_UINT160+to;
-            if ((id >= from) && (id <= maxValue)) // [from; max]
-                return true;
-
-            if ((id >= from) && (id <= MAX_UINT160)) // [from; MAX_UINT160]
-                return true;
-            if ((id >= 0) && (id <= to)) // [0; to]
-                return true;
-            return false;
-        }
-    }
-
-
-    bool low_latency_chord::isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to) {
-
-        if (from < to) {
-            //Generic order, no over zero
-            //[from; to]
-            if ((id > from) && (id < to))
-                return true;
-            return false;
-        }
-        else {
-            //Over zero
-            //[from -> max; 0 -> to]
-            uint168 maxValue = MAX_UINT160 + to;
-            if ((id > from) && (id < maxValue)) // [from; max]
-                return true;
-
-            if ((id > from) && (id <= MAX_UINT160)) // [from; MAX_UINT160]
-                return true;
-            if ((id >= 0) && (id < to)) // [0; to]
-                return true;
-            return false;
-        }
-    }
 
     string low_latency_chord::state2str(const finite_state& state) const {
         string res;

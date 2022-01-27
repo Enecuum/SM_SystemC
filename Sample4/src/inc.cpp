@@ -96,4 +96,56 @@ namespace P2P_MODEL
         _itoa_s(dec, buff, 100, 16);
         return string(buff);
     }
+
+
+
+    bool isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to) {
+
+        if (from <= to) {
+            //Generic order, no over zero
+            //[from; to]
+            if ((id >= from) && (id <= to))
+                return true;
+            return false;
+        }
+        else {
+            //Over zero
+            //[from -> max; 0 -> to]
+            uint168 maxValue = MAX_UINT160 + to;
+            if ((id >= from) && (id <= maxValue)) // [from; max]
+                return true;
+
+            if ((id >= from) && (id <= MAX_UINT160)) // [from; MAX_UINT160]
+                return true;
+            if ((id >= 0) && (id <= to)) // [0; to]
+                return true;
+            return false;
+        }
+    }
+
+
+
+    bool isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to) {
+
+        if (from < to) {
+            //Generic order, no over zero
+            //[from; to]
+            if ((id > from) && (id < to))
+                return true;
+            return false;
+        }
+        else {
+            //Over zero
+            //[from -> max; 0 -> to]
+            uint168 maxValue = MAX_UINT160 + to;
+            if ((id > from) && (id < maxValue)) // [from; max]
+                return true;
+
+            if ((id > from) && (id <= MAX_UINT160)) // [from; MAX_UINT160]
+                return true;
+            if ((id >= 0) && (id < to)) // [0; to]
+                return true;
+            return false;
+        }
+    }
 }

@@ -132,12 +132,12 @@ if (sc_time_stamp() >= sc_time(13010, SC_MS))
         }
 
 
-        static vector<uint160> mask;
+        static vector<uint> mask;
         if (mask.size() == 0) {
             uint160 value = 1;
             mask.reserve(m_fingersSize);
             for (size_t i = 0; i < m_fingersSize; ++i) {
-                mask.push_back(value);
+                mask.push_back(value.to_uint());
                 value *= 2;    
             }
         }                               
@@ -153,28 +153,39 @@ if (sc_time_stamp() >= sc_time(13010, SC_MS))
         size_t i = newRef.size()-1;
         auto refIt = newRef.rbegin();        
         for (auto maskIt = mask.crbegin(); (maskIt != mask.crend()) && (refIt != newRef.rend()); ++maskIt) {
-            expected = currNodeAddr.id + (*maskIt)*coeff;
+            expected = currNodeAddr.id + coeff* (*maskIt);
             
             bool isFound = false;
             for (addrIt = addrs.rbegin(); addrIt != addrs.rend(); ++addrIt) {
-                if (addrIt->id == currNodeAddr.id)
-                    continue;
+                //DEBUG
+                if ((currNodeAddr.id == 5) && (expected == 7))
+                    int herebreakpoint = 0;
+                //DEBUG
 
-                
-                if (addrIt->id >= expected) {
-                    *refIt = *addrIt; 
+                if (addrIt->id == expected) {
+                    *refIt = *addrIt;
                     isFound = true;
-                }  
-                else
                     break;
+                }
+                else {
+                    if (addrIt == addrs.rbegin()) {
+                        node_address &first = addrs.front();                    
+                        if (isInRangeOverZero(expected, addrIt->id, first.id)) {
+                            *refIt = first; 
+                            isFound = true;
+                            break;
+                        }
+                    }
+                    else {
+                        node_address& prev = *(addrIt-1);
+                        if (isInRangeOverZero(expected, addrIt->id, prev.id)) {
+                            *refIt = prev;
+                            isFound = true;
+                            break;
+                        }
+                    }
+                }
             }   
-
-            if (!isFound) {
-                if (expected > currNodeAddr.id)
-                    *refIt = maxAddr;
-                else
-                    *refIt = minAddr;
-            }
 
             //cout << "ref[" << i << "] = id " << currNodeAddr.id.to_uint64() << (coeff == 1 ? "+" : "-") << maskIt->to_uint64() << " = " << expected.to_uint64() << " <- " << refIt->id.to_uint64() << endl;
 
@@ -188,7 +199,7 @@ if (sc_time_stamp() >= sc_time(13010, SC_MS))
     bool monitor::verifyByRefFingers(const uint160 id, const vector<node_address_latency>& nodeFingers, const vector<node_address>& refFingers, vector<node_address_latency>& invalidFingers) {        
         invalidFingers.clear();
         bool success = true;
-        for (uint i = 0; i < nodeFingers.size(); ++i) {
+        for (uint i = 0; (i < nodeFingers.size()) && (i < refFingers.size()); ++i) {
             if (nodeFingers.at(i).id != refFingers.at(i).id) {
                 node_address_latency bad;
                 bad.setCopy(nodeFingers.at(i));
@@ -241,7 +252,7 @@ if (sc_time_stamp() >= sc_time(39000, SC_MS) )
 
             if (cwRefIt == m_id2refCwFingers.end()) {
                 //ERROR
-                m_ssLog << "NOT FOUND REF CW FINGERS FOR VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
+                m_ssLog << "NOT GENERATED REF CW FINGERS FOR VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
                 msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
                 return false;
             }
@@ -255,12 +266,12 @@ if (sc_time_stamp() >= sc_time(39000, SC_MS) )
 
             if (ccwRefIt == m_id2refCcwFingers.end()) {
                 //ERROR
-                m_ssLog << "NOT FOUND REF CCW FINGERS FOR VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
+                m_ssLog << "NOT GENERATED REF CCW FINGERS FOR VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
                 msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
                 return false;
             }
 
-            if (ccwRefIt->second.size() != snapshot.pCcwFingers->size()) {
+            if ((ccwRefIt->second.size() != snapshot.pCcwFingers->size()) && (CCW_FINGERS_TURN_ON)) {
                 //ERROR
                 m_ssLog << "MISMATCHED SIZES OF REF CCW FINGERS AND FINGERS UNDER VERIFICATION, nodeID " << (snapshot.nodeAddr).toStrIDonly();
                 msgLog(name(), LOG_TXRX, LOG_ERROR, m_ssLog.str(), ALL_LOG);
@@ -271,7 +282,8 @@ if (sc_time_stamp() >= sc_time(39000, SC_MS) )
             bool cwSuccess = true;
             bool ccwSuccess = true;
             cwSuccess  = verifyByRefFingers(snapshot.nodeAddr.id, *(snapshot.pCwFingers), cwRefIt->second, cwInvalid);
-            ccwSuccess = verifyByRefFingers(snapshot.nodeAddr.id, *(snapshot.pCwFingers), ccwRefIt->second, ccwInvalid);
+            if (CCW_FINGERS_TURN_ON)
+                ccwSuccess = verifyByRefFingers(snapshot.nodeAddr.id, *(snapshot.pCwFingers), ccwRefIt->second, ccwInvalid);
             success = cwSuccess & ccwSuccess;
 
             if (success == false) {                
@@ -470,6 +482,6 @@ string nameStr = name();
 
     void monitor::setSimTime(const sc_time simTime) {
         m_simTime = simTime;
-        m_eventMakeSnapshotFinal.notify(simTime-sc_time(1, SC_MS));
+        m_eventMakeSnapshotFinal.notify(simTime-sc_time(1, SC_SEC));
     }
 }

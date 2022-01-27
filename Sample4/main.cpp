@@ -33,13 +33,9 @@ const sc_time      DEFAULT_SNAPSHOT_PERIOD_SEC             = sc_time(1, SC_SEC);
 
 //Pre-defined parameters
 const bool         SHOW_MOTIVE       = false;
-const monitor_mode MONITOR_MODE      = NO_VERIFY;
+const monitor_mode MONITOR_MODE      = AUTO_VERIFY;
 const bool         SHOW_CCW_FINGERS  = false;
-
-const sc_time      ADD_SIM_TIME     = sc_time(100, SC_SEC);
-
-
-const int    JSON_FAILED      = -1;
+const int          JSON_FAILED       = -1;
 
 
 //Definition for extern variables from inc.h
@@ -61,6 +57,7 @@ sc_time      SNAPSHOT_PERIOD_SEC;
 uint         FINGERS_SIZE;
 sc_time      DELAY_TURN_ON;
 sc_time      SIM_TIME;
+sc_time      ADD_SIM_TIME = sc_time(300, SC_SEC);
 
 bool jsonParser(const string& path) {
     cout << "Read config file: " << path << endl;
@@ -100,7 +97,7 @@ bool jsonParser(const string& path) {
 
 int main(int argc, char* argv[])
 {
-
+    //, 516, 787, 583, 113, 289, 581
     //631 536 127 141 329 173 44
 
     /*631,
@@ -149,27 +146,39 @@ int main(int argc, char* argv[])
     auto rng = std::default_random_engine{(unsigned int)time(0)};
     if (GEN_RANDOM) {
         vector<uint64_t> possibleNodes;
+        
+        uint168 maxNodesNumbers = MAX_UINT160;
+        maxNodesNumbers++;
+
+        if (NODES > maxNodesNumbers)
+            NODES = maxNodesNumbers.to_uint();
+
         possibleNodes.reserve(NODES);
-        for (uint i = 0; i <= MAX_UINT160; ++i) {
+        for (uint64_t i = 0; i <= MAX_UINT160; ++i) {
             possibleNodes.push_back(i);
         }
         
         //if (SHUFFLE)
         {
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < 3; ++i)
                 shuffle(std::begin(possibleNodes), std::end(possibleNodes), rng);
+
+            //auto it = max_element(possibleNodes.begin(), possibleNodes.end());
+            //size_t i1 = rand() % 4;
+            //swap(possibleNodes.begin()+i1, it);
+            //cout << "i1 = " <<  i1 << endl;
         }
         
         arrayID.assign(possibleNodes.begin(), possibleNodes.begin()+NODES);
     }
     else if (SHUFFLE) {
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < 3; ++i)
             shuffle(std::begin(arrayID), std::end(arrayID), rng);
     }
 
     //Calc finger size and sim time
     FINGERS_SIZE         = (uint)ceil(log10(MAX_UINT160.to_uint64()+1) / log10(2));
-    DELAY_TURN_ON        = sc_time(FINGERS_SIZE * 1 + 40, SC_SEC);
+    DELAY_TURN_ON        = sc_time(FINGERS_SIZE*8, SC_SEC);
     SIM_TIME             = NODES * DELAY_TURN_ON + ADD_SIM_TIME;
     TRP_PERIOD_SNAPSHOTS = SNAPSHOT_PERIOD_SEC;
 
@@ -231,7 +240,7 @@ int main(int argc, char* argv[])
         applications[i]->msgLog(applications[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
 
 
-        transports[i]->setLogMode(LOG_DISABLED);
+        transports[i]->setLogMode(DISABLED_LOG);
         transports[i]->setEnabledLog();        
         str = "./log/trp" + params.netwAddr.id.to_string(SC_DEC) + string(".txt");
         transports[i]->setPathLog(str);
@@ -261,9 +270,11 @@ int main(int argc, char* argv[])
         
         
         if (i >= 1) {            
-            uint loadNode = i/10*10;
-            if (i == loadNode)
-                loadNode = (i-1)/10*10;
+            //uint loadNode = i/10*10;
+            //if (i == loadNode)
+            //    loadNode = (i-1)/10*10;
+            //params.seed.push_back(addrs.at(loadNode));
+            uint loadNode = 0;
             params.seed.push_back(addrs.at(loadNode));
         }
         transports[i]->setConfParameters(params);
@@ -287,7 +298,7 @@ int main(int argc, char* argv[])
     //applications[1]->pushSimulatingMess(mess);
 
     network1->setEnabledLog();
-    network1->setLogMode(LOG_DISABLED);
+    network1->setLogMode(DISABLED_LOG);
     network1->setPathLog("./log/net.txt");
 
     monitor1->setEnabledLog();
@@ -308,15 +319,13 @@ int main(int argc, char* argv[])
 
     // current date/time based on current system
     time_t now = time(0);
-
-    // convert now to string form
 #pragma warning(suppress : 4996)
-    char* dt = ctime(&now);
+    char* dt = ctime(&now);           // convert now to string form
 
 
     
     //Run simulation    
-    cout << endl << "Run simulation " << SIM_TIME.to_string() << endl;
+    cout << endl << "Run simulation " << SIM_TIME.to_string() << "ec" << endl;
     cout << "" << dt << endl;
 
     
@@ -353,11 +362,10 @@ int main(int argc, char* argv[])
 
     cout << "Test " << "finished ___________________________________" << endl;
 
-    // current date/time based on current system
-    // convert now to string form
-    now = time(0);  
+        
+    now = time(0);                          // current date/time based on current system
 #pragma warning(suppress : 4996)
-    dt = ctime(&now);
+    dt = ctime(&now);                       // convert now to string form
     cout << "" << dt << endl;
 
     getchar();    

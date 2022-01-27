@@ -1127,6 +1127,7 @@ namespace P2P_MODEL {
         bool isJoin;
         node_address serviceAddr;
         uint  retransmitCounter;
+        bool  thisNewSuccessor;
 
         
 
@@ -1163,6 +1164,7 @@ namespace P2P_MODEL {
             isJoin = src.isJoin;
             serviceAddr = src.serviceAddr;
             retransmitCounter = src.retransmitCounter;
+            thisNewSuccessor = src.thisNewSuccessor;
             return *this;
         }
 
@@ -1180,6 +1182,7 @@ namespace P2P_MODEL {
             isJoin = false;
             serviceAddr.clear();
             retransmitCounter = 0;
+            thisNewSuccessor = false;
         }
 
         string type2str(const int& type = NONE) const {
@@ -1573,6 +1576,7 @@ namespace P2P_MODEL {
     };
 
 
-
+    bool isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to);
+    bool isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to);
 }
 #endif

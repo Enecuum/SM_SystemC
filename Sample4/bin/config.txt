@@ -1,0 +1,7 @@
+{
+    "arrayID": [12, 4, 2, 10, 1, 14, 5, 3, 11, 7],
+	"gen_random": true,
+	"nodes": 10, 		
+    "shuffle": false,       
+	"snapshot_period_sec": 999999999.0	
+}

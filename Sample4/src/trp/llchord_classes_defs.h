@@ -16,9 +16,9 @@ namespace P2P_MODEL {
 
     //Default constants to init buffers of low_latency_chord
     const int MAX_SIZE_BUFF_CONFIG = 100;
-    const int MAX_SIZE_BUFF_TIMER = 1000;
-    const int MAX_SIZE_BUFF_APPTXDATA = 100;
-    const int MAX_SIZE_BUFF_RX_MESS = 100;
+    const int MAX_SIZE_BUFF_TIMER = 10000;
+    const int MAX_SIZE_BUFF_APPTXDATA = 10000;
+    const int MAX_SIZE_BUFF_RX_MESS = 10000;
     const int MAX_SIZE_BUFF_TX_MESS = MAX_SIZE_BUFF_APPTXDATA + MAX_SIZE_BUFF_RX_MESS + 1;
 
     const int MAX_DEEP_BUFF_CONFIG = MAX_SIZE_BUFF_CONFIG;
@@ -28,7 +28,7 @@ namespace P2P_MODEL {
     const int MAX_DEEP_BUFF_TX_MESS = MAX_DEEP_BUFF_APPTXDATA + MAX_DEEP_BUFF_RX_MESS + 1;
     
     //Default constants to init timers of low_latency_chord
-    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(400.0, SC_SEC);
+    const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN = sc_time(15, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_RX_SUCCESSOR   = sc_time(5.0, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_RX_PREDECESSOR = sc_time(5.0, SC_SEC);
     const sc_time DEFAULT_TIMEOUT_UPDATE = sc_time(1, SC_SEC);

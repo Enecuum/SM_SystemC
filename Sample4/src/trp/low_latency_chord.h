@@ -178,8 +178,8 @@ namespace P2P_MODEL
         chord_action findSuccessor(const uint160& searchedID, const uint160& senderID, const uint160& initiatorID, node_address& found, const bool isJoin);
         chord_action findPredecessor(const uint160& searchedID, node_address& found);
         bool isClockWiseDirection(const uint160& id);
-        bool isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to);
-        bool isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to);
+        //bool isInRangeOverZero(const uint160& id, const uint160& from, const uint160& to);
+        //bool isInRangeOverZeroNotInc(const uint160& id, const uint160& from, const uint160& to);
 
         chord_message createMessage(const chord_message& params);
 

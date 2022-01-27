@@ -36,7 +36,7 @@ namespace P2P_MODEL
     const int MAX_LEN_TIME = 20/2;
 
     enum log_mode {
-        LOG_DISABLED = 0,
+        DISABLED_LOG = 0,
         ERROR_LOG = 1,
         INTERNAL_LOG = 2,
         EXTERNAL_LOG = 4,
