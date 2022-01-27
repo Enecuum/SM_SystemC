@@ -15,110 +15,182 @@
 
 #include <algorithm>
 #include <random>
-#include <typeinfo>
-#include <type_traits>
-#include <cstdint>
+
 
 using namespace P2P_MODEL;
 using namespace std;
 
 using json = nlohmann::json;
 
-
-//Replaced by values from config.txt
-const uint         DEFAULT_NODES                           = 10;
-const bool         DEFAULT_GEN_RANDOM                      = false;
-const bool         DEFAULT_SHUFFLE                         = false;
-const sc_time      DEFAULT_SNAPSHOT_PERIOD_SEC             = sc_time(1, SC_SEC);
-
 //Pre-defined parameters
-const bool         SHOW_MOTIVE       = false;
-const monitor_mode MONITOR_MODE      = AUTO_VERIFY;
-const bool         SHOW_CCW_FINGERS  = false;
-const int          JSON_FAILED       = -1;
+      bool         SHOW_MOTIVE   = false;
+const monitor_mode MONITOR_MODE  = AUTO_VERIFY;
+const bool         SHOW_CCW_FINGERS = false;
+const int          JSON_FAILED = -1;
+const bool         DEFAULT_GEN_RANDOM                     = false;
+const bool         DEFAULT_LOG_CHORD_DEBUG                = false;
+const uint         DEFAULT_NODES                          = 5;
+const sc_time      DEFAULT_PERIOD_FINGERS_UPDATE_SEC = sc_time(1, SC_SEC);
+const sc_time      DEFAULT_PERIOD_NODE_RUN_SEC    = sc_time(60, SC_SEC);
+const sc_time      DEFAULT_TIME_ADD_SIM_SEC               = sc_time(180, SC_SEC);
+const bool         DEFAULT_SHUFFLE                        = false;
+const sc_time      DEFAULT_PERIOD_SNAPSHOT_SEC            = sc_time(1, SC_SEC);
 
 
-//Definition for extern variables from inc.h
-uint160 P2P_MODEL::MAX_UINT160          = uint160(-1);
-uint    P2P_MODEL::MAX_SMALL_UINT       = P2P_MODEL::MAX_UINT160.to_uint();
-bool    P2P_MODEL::RANDOM_IDS           = false;
-bool    P2P_MODEL::CCW_FINGERS_TURN_ON  = false; 
-bool    P2P_MODEL::MAKE_SNAPSHOT_ALWAYS = false;
-sc_time P2P_MODEL::TRP_PERIOD_SNAPSHOTS = sc_time(1, SC_SEC);
+
+
+//Definition for extern variables declared into  inc.h
+uint160  P2P_MODEL::MAX_UINT160          = uint160(-1);
+uint     P2P_MODEL::MAX_SMALL_UINT       = P2P_MODEL::MAX_UINT160.to_uint();
+bool     P2P_MODEL::RANDOM_IDS           = false;
+bool     P2P_MODEL::CCW_FINGERS_TURN_ON  = false; 
+bool     P2P_MODEL::MAKE_SNAPSHOT_ALWAYS = false;
+sc_time  P2P_MODEL::TRP_PERIOD_SNAPSHOTS = sc_time(1, SC_SEC);
 
 
 
-//GLOBAL VARIABLES
-vector<uint64_t> arrayID = {12, 4, 2, 10, 1, 14, 5, 3, 11, 7}; 
-uint         NODES;
-bool         GEN_RANDOM;
-bool         SHUFFLE;
-sc_time      SNAPSHOT_PERIOD_SEC;
-uint         FINGERS_SIZE;
-sc_time      DELAY_TURN_ON;
-sc_time      SIM_TIME;
-sc_time      ADD_SIM_TIME = sc_time(300, SC_SEC);
 
-bool jsonParser(const string& path) {
-    cout << "Read config file: " << path << endl;
+
+
+
+
+//Structure for JSON parser
+namespace ns {
+    struct parser_parameters {
+        vector<uint> arrayID;
+        bool         gen_random;
+        bool         log_chord_debug;
+        uint         nodes;
+        double       period_fingers_update_sec;
+        double       period_node_run_sec;
+        double       period_snapshot_sec;
+        double       time_add_sim_sec;
+        double       wait_rx_ack_sec;
+        double       wait_rx_successor_on_join_sec;
+        double       wait_rx_successor_sec;
+        double       wait_rx_predecessor_sec;
+        bool         shuffle;
+       
+
+        void default() {
+            arrayID                        = {12, 4, 2, 10, 1, 14, 5, 3, 11, 7};
+            gen_random                     = DEFAULT_GEN_RANDOM;
+            log_chord_debug                = DEFAULT_LOG_CHORD_DEBUG;
+            nodes                          = static_cast<uint>( arrayID.size() );                               //DEFAULT_NODES;
+            period_fingers_update_sec      = DEFAULT_PERIOD_FINGERS_UPDATE_SEC.to_double();
+            period_node_run_sec            = DEFAULT_PERIOD_NODE_RUN_SEC.to_double();
+            period_snapshot_sec            = DEFAULT_PERIOD_SNAPSHOT_SEC.to_double();
+            time_add_sim_sec               = DEFAULT_TIME_ADD_SIM_SEC.to_double();
+            wait_rx_ack_sec                = DEFAULT_TIMEOUT_RX_ACK.to_double();
+            wait_rx_successor_on_join_sec  = DEFAULT_TIMEOUT_RX_SUCCESSOR_ON_JOIN.to_double();
+            wait_rx_successor_sec          = DEFAULT_TIMEOUT_RX_SUCCESSOR.to_double();
+            wait_rx_predecessor_sec        = DEFAULT_TIMEOUT_RX_PREDECESSOR.to_double();
+            shuffle                        = DEFAULT_SHUFFLE;            
+        }
+    };
+
+    void to_json(json& j, const parser_parameters& p) {
+        j = json{{"arrayID",                        p.arrayID},
+                 {"gen_random",                     p.gen_random},
+                 {"log_chord_debug",                p.log_chord_debug},
+                 {"nodes",                          p.nodes},
+                 {"period_fingers_update_sec",      p.period_fingers_update_sec},
+                 {"period_node_run_sec",            p.period_node_run_sec},
+                 {"snapshot_period_sec",            p.period_snapshot_sec},
+                 {"time_add_sim_sec",               p.time_add_sim_sec},
+                 {"wait_rx_ack_sec",                p.wait_rx_ack_sec},
+                 {"wait_rx_predecessor_sec",        p.wait_rx_predecessor_sec},
+                 {"wait_rx_successor_on_join_sec",  p.wait_rx_successor_on_join_sec},
+                 {"wait_rx_successor_sec",          p.wait_rx_successor_sec},                 
+                 {"shuffle",                        p.shuffle}                 
+                };
+    }
+
+    void from_json(const json& j, parser_parameters& p) {
+        j.at("arrayID")                       .get_to(p.arrayID);
+        j.at("gen_random")                    .get_to(p.gen_random);        
+        j.at("log_chord_debug")               .get_to(p.log_chord_debug);
+        j.at("nodes")                         .get_to(p.nodes);                    
+        j.at("period_fingers_update_sec")     .get_to(p.period_fingers_update_sec);
+        j.at("period_node_run_sec")           .get_to(p.period_node_run_sec);
+        j.at("period_snapshot_sec")           .get_to(p.period_snapshot_sec);
+        j.at("time_add_sim_sec")              .get_to(p.time_add_sim_sec);
+        j.at("wait_rx_ack_sec")               .get_to(p.wait_rx_ack_sec);
+        j.at("wait_rx_successor_on_join_sec") .get_to(p.wait_rx_successor_on_join_sec);
+        j.at("wait_rx_successor_sec")         .get_to(p.wait_rx_successor_sec);
+        j.at("wait_rx_predecessor_sec")       .get_to(p.wait_rx_predecessor_sec);        
+        j.at("shuffle")                       .get_to(p.shuffle);        
+
+        if (false == p.gen_random)
+            p.nodes = (uint)(p.arrayID.size());
+    }
+}
+
+
+bool jsonParser(const string path, ns::parser_parameters& p) {    
     ifstream file(path.c_str());
     json j;
     try {
         file >> j; 
-        //cout << setw(4) << j;
-
-        if (j["gen_random"].get<bool>()) {
-            GEN_RANDOM = true;
-            NODES = j["nodes"].get<uint>();
-            arrayID.clear();
-        }
-        else {  
-            GEN_RANDOM = false;
-            vector<uint64_t> arr = j["arrayID"].get<vector<uint64_t>>();
-            arrayID = arr;
-            NODES = (uint) arrayID.size();
-        }
-        double value = j["snapshot_period_sec"].get<double>();
-        SNAPSHOT_PERIOD_SEC = sc_time(value, SC_SEC);
-        bool flag = j["shuffle"].get<bool>();
-        SHUFFLE = flag;
+        
+        p = j.get<ns::parser_parameters>();
+        cout << endl << endl;
+        return true;
+    }
+    catch (json::parse_error& e) {
+        cout << setw(4) << j << endl << endl;
+        cout << "message: " << e.what() << '\n'
+             << "exception id: " << e.id << '\n'
+             << "byte position of error: " << e.byte << endl;
+    }
+    catch (json::invalid_iterator& e)
+    {
+        cout << setw(4) << j << endl << endl;
+        cout << "message: " << e.what() << '\n'
+             << "exception id: " << e.id << endl;
+    }
+    catch (json::type_error& e)
+    {
+        cout << setw(4) << j << endl << endl;
+        cout << "message: " << e.what() << '\n'
+             << "exception id: " << e.id << std::endl;
+    }
+    catch (json::out_of_range& e)
+    {
+        cout << setw(4) << j << endl << endl;
+        cout << "message: " << e.what() << '\n'
+             << "exception id: " << e.id << endl;
+    }
+    catch (json::exception& e)
+    {
+        cout << setw(4) << j << endl << endl;
+        cout << e.what() << '\n';
     }
     catch (...) {
-        cout << endl << "File is invalid. Check all lines in JSON file !!!" << endl;
-        return false;
+        cout << setw(4) << j << endl << endl;
     }
-    cout << endl << endl;
-    return true;    
+
+    p.default();
+    cout << endl << "File is invalid. Check lines in JSON file !!!" << endl;
+    return false;
 }
 
-
+string pathGoodBrackets(string src) {
+    string newStr = src;
+    replace(newStr.begin(), newStr.end(), '/', '\\');
+    return newStr;
+}
 
 
 
 int main(int argc, char* argv[])
 {
-    //, 516, 787, 583, 113, 289, 581
-    //631 536 127 141 329 173 44
-
-    /*631,
-        536,
-        127,
-        141,
-        329,
-        173,
-        44,
-        985,
-        796,
-        531,
-        525,
-        356,
-        166*/
-
-    std::cout << std::boolalpha;
-
     setlocale(LC_ALL, "Russian");
-
     _setmaxstdio(2048);
+
+    cout << boolalpha;
+    cout << "   CHORD " << P2P_MODEL::W << " bit model " << "v1.1.2022" << endl;
+    cout << "_______________________________________" << endl << endl;
 
     vector<string> argvStr;
     for (int i = 0; i < argc; ++i) {
@@ -128,14 +200,18 @@ int main(int argc, char* argv[])
         auto itRemoveSymbol = remove(itBegin, itEnd, ',');
         argvStr[i].erase(itRemoveSymbol, itEnd);
     }
+
+        
+    string configPath = "/config.txt";
+    string snapshotPath = "/log/snapshot.txt";
+    string currPath = argvStr[0].substr(0, argvStr[0].find_last_of("\\"));    
     
-    string path = ("./config.txt");
-    
-    if (jsonParser(path) == false) {
-        NODES                = DEFAULT_NODES;
-        GEN_RANDOM           = DEFAULT_GEN_RANDOM;
-        SHUFFLE              = DEFAULT_SHUFFLE;
-        SNAPSHOT_PERIOD_SEC  = DEFAULT_SNAPSHOT_PERIOD_SEC;        
+
+    cout << "Read config file: " << (currPath + pathGoodBrackets(configPath)) << endl;
+
+
+    ns::parser_parameters p;
+    if (jsonParser(string(".")+configPath, p) == false) {
         cout << "Please, input 'y' to exit " << endl; getchar();
         return JSON_FAILED;
         //cout << "Pre-difined parameters will be used" << endl;
@@ -144,56 +220,65 @@ int main(int argc, char* argv[])
     
     //Gen random IDs for nodes or do shuffling
     auto rng = std::default_random_engine{(unsigned int)time(0)};
-    if (GEN_RANDOM) {
-        vector<uint64_t> possibleNodes;
+    if (p.gen_random) {
+        vector<uint> possibleNodes;
         
         uint168 maxNodesNumbers = MAX_UINT160;
         maxNodesNumbers++;
 
-        if (NODES > maxNodesNumbers)
-            NODES = maxNodesNumbers.to_uint();
+        if (p.nodes > maxNodesNumbers)
+            p.nodes = maxNodesNumbers.to_uint();
 
-        possibleNodes.reserve(NODES);
-        for (uint64_t i = 0; i <= MAX_UINT160; ++i) {
+        possibleNodes.reserve(p.nodes);
+        for (uint i = 0; i <= MAX_UINT160; ++i) {
             possibleNodes.push_back(i);
         }
         
-        //if (SHUFFLE)
-        {
-            for (int i = 0; i < 3; ++i)
-                shuffle(std::begin(possibleNodes), std::end(possibleNodes), rng);
-
-            //auto it = max_element(possibleNodes.begin(), possibleNodes.end());
-            //size_t i1 = rand() % 4;
-            //swap(possibleNodes.begin()+i1, it);
-            //cout << "i1 = " <<  i1 << endl;
+        for (int i = 0; i < 5; ++i) {
+            shuffle(std::begin(possibleNodes), std::end(possibleNodes), rng);
         }
+
+        //auto it = max_element(possibleNodes.begin(), possibleNodes.end());
+        //size_t i1 = rand() % 4;
+        //swap(possibleNodes.begin()+i1, it);
+        //cout << "i1 = " <<  i1 << endl;
         
-        arrayID.assign(possibleNodes.begin(), possibleNodes.begin()+NODES);
+        p.arrayID.assign(possibleNodes.begin(), possibleNodes.begin()+p.nodes);
     }
-    else if (SHUFFLE) {
-        for (int i = 0; i < 3; ++i)
-            shuffle(std::begin(arrayID), std::end(arrayID), rng);
+    else if (p.shuffle) {
+        for (int i = 0; i < 5; ++i) {
+            shuffle(std::begin(p.arrayID), std::end(p.arrayID), rng);
+        }
     }
 
+    
+    
+
+
+    
     //Calc finger size and sim time
-    FINGERS_SIZE         = (uint)ceil(log10(MAX_UINT160.to_uint64()+1) / log10(2));
-    DELAY_TURN_ON        = sc_time(FINGERS_SIZE*8, SC_SEC);
-    SIM_TIME             = NODES * DELAY_TURN_ON + ADD_SIM_TIME;
-    TRP_PERIOD_SNAPSHOTS = SNAPSHOT_PERIOD_SEC;
+    uint    FINGER_SIZE  = (uint) ceil(log10(MAX_UINT160.to_uint64()+1) / log10(2));
+    sc_time SIM_TIME     = sc_time((p.nodes+1)*p.period_node_run_sec + p.time_add_sim_sec, SC_SEC);
+    TRP_PERIOD_SNAPSHOTS = sc_time(p.period_snapshot_sec, SC_SEC);
+    SHOW_MOTIVE = (p.log_chord_debug ? true : false);
 
-    //LOG    
-    cout << arrayID.size() << " nodes = { ";
-    for (auto it = arrayID.begin(); (it != arrayID.end()) && (distance(arrayID.begin(), it) < NODES); ++it) {
-        cout << *it << " ";
+
+
+
+
+    //LOG  
+    stringstream arrayIDss;
+    arrayIDss << p.arrayID.size() << " nodes = { ";
+    for (auto it = p.arrayID.begin(); (it != p.arrayID.end()) && (distance(p.arrayID.begin(), it) < p.nodes); ++it) {
+        arrayIDss << *it << " ";
     }
-    cout << "}" << endl;    
+    arrayIDss << "}" << endl;
+    cout << arrayIDss.str();
     //LOG
 
-            
-    uint fingersSize  = FINGERS_SIZE;
-    vector<application*>    applications; applications.resize(NODES, nullptr);
-    vector<transport_plus*> transports;   transports.resize(NODES, nullptr);
+
+    vector<application*>    applications; applications.resize(p.nodes, nullptr);
+    vector<transport_plus*> transports;   transports.resize(p.nodes, nullptr);
     network*        network1 = nullptr;    
     monitor*        monitor1 = nullptr;
     string str;
@@ -211,16 +296,22 @@ int main(int argc, char* argv[])
 
     bool testNonContinuosNumbers = false;
 
-    network1 = new network("netw", NODES);
-    monitor1 = new monitor("monitor", NODES, fingersSize, SHOW_MOTIVE, SHOW_CCW_FINGERS, MONITOR_MODE);
+    network1 = new network("netw", p.nodes);
+    monitor1 = new monitor("monitor", p.nodes, FINGER_SIZE, SHOW_MOTIVE, SHOW_CCW_FINGERS, MONITOR_MODE);
 
 
-    for (uint i = 0; i < NODES; ++i) {
+    for (uint i = 0; i < p.nodes; ++i) {
         //ID for node
         chord_conf_parameters params;
-        params.netwAddr.set(arrayID.at(i), string("192.168.0.") + to_string(i), 1111, 2222);
+        params.netwAddr.set(p.arrayID.at(i), string("192.168.0.") + to_string(i), 1111, 2222);
         params.setDefaultTimersCountersFingersSize();
-        params.fingersSize = fingersSize;
+        params.setTimers(sc_time(p.wait_rx_ack_sec, SC_SEC),
+                         sc_time(p.wait_rx_successor_on_join_sec, SC_SEC),
+                         sc_time(p.wait_rx_successor_sec, SC_SEC),
+                         sc_time(p.wait_rx_predecessor_sec, SC_SEC),
+                         sc_time(p.period_fingers_update_sec, SC_SEC));
+
+        params.fingersSize = FINGER_SIZE;
 
         str = string("app") + params.netwAddr.id.to_string(SC_DEC);
         applications[i] = new application(str.c_str());
@@ -239,12 +330,14 @@ int main(int argc, char* argv[])
         applications[i]->setPathLog(str.c_str());
         applications[i]->msgLog(applications[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
 
-
         transports[i]->setLogMode(DISABLED_LOG);
+        if (p.log_chord_debug)
+            transports[i]->setLogMode(ALL_LOG);
+
         transports[i]->setEnabledLog();        
         str = "./log/trp" + params.netwAddr.id.to_string(SC_DEC) + string(".txt");
         transports[i]->setPathLog(str);
-        str = "./log/snapshot.txt";
+        str = string(".") + snapshotPath;
         transports[i]->setSnapshotPathLog(str);
         transports[i]->msgLog(transports[i]->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
         
@@ -256,14 +349,14 @@ int main(int argc, char* argv[])
                 break;
 
             default:
-                mess.firstDelay = (SIM_TIME-ADD_SIM_TIME)-i*DELAY_TURN_ON;
+                mess.firstDelay = (SIM_TIME-sc_time(p.time_add_sim_sec, SC_SEC))-i*sc_time(p.period_node_run_sec, SC_SEC);
                 break;
             }
             applications[i]->pushSimulatingMess(mess);
         }
         else {
             applications[i]->pushSimulatingMess(mess);
-            mess.firstDelay += DELAY_TURN_ON;                   //sc_time(10, SC_SEC);
+            mess.firstDelay += sc_time(p.period_node_run_sec, SC_SEC);                   //sc_time(10, SC_SEC);
         }
                 
         addrs.push_back(params.netwAddr);
@@ -283,19 +376,7 @@ int main(int argc, char* argv[])
     }
 
 
-    
-    //mess.clear();
-    //mess.type = SIM_PAUSE;
-    //mess.amount = 1;
-    //mess.firstDelay = sc_time(0.0, SC_SEC);
-    //applications[1]->pushSimulatingMess(mess);
-    //
-    //
-    //mess.clear();
-    //mess.type = SIM_CONTINUE;
-    //mess.amount = 1;
-    //mess.firstDelay = sc_time(30, SC_SEC);
-    //applications[1]->pushSimulatingMess(mess);
+
 
     network1->setEnabledLog();
     network1->setLogMode(DISABLED_LOG);
@@ -313,6 +394,7 @@ int main(int argc, char* argv[])
 
     //Set configuration parameters of Monitor    
     monitor1->msgLog(monitor1->name(), LOG_TXRX, LOG_INFO, "create", ALL_LOG);
+    monitor1->msgLog(monitor1->name(), LOG_TXRX, LOG_INFO, arrayIDss.str(), ALL_LOG);
     monitor1->setSimTime(SIM_TIME);
 
 
@@ -329,11 +411,13 @@ int main(int argc, char* argv[])
     cout << "" << dt << endl;
 
     
-
-
+    //Model will start
     time_progress timeProgress(SIM_TIME, SIM_TIME/10);
     sc_start(SIM_TIME);
-    cout << endl << "Write results" << endl;
+
+
+    
+    cout << endl << "Write results: " << (currPath + pathGoodBrackets(snapshotPath)) << endl;
 
 
     //Free memory layer-by-layer
@@ -375,7 +459,20 @@ int main(int argc, char* argv[])
 
 
 
-
+//EXAMPLES OTHER MESSAGES FOR APPLICATION
+// 
+//mess.clear();
+//mess.type = SIM_PAUSE;
+//mess.amount = 1;
+//mess.firstDelay = sc_time(0.0, SC_SEC);
+//applications[1]->pushSimulatingMess(mess);
+//
+//
+//mess.clear();
+//mess.type = SIM_CONTINUE;
+//mess.amount = 1;
+//mess.firstDelay = sc_time(30, SC_SEC);
+//applications[1]->pushSimulatingMess(mess);
 
 
 //mess.clear();
@@ -409,50 +506,3 @@ int main(int argc, char* argv[])
 //mess.dataSize = 1000;
 //application2.pushSimulatingMess(mess);
 
-
-    ////Set valid reference clockwise fingers for every node
-    //vector<node_address> fingers;
-    //uint index;
-    //fingers.resize(DEFAULT_FINGERS_SIZE, node_address());
-
-    //index = 0;
-    //fingers[index].id = 1; ++index;
-    //fingers[index].id = 2; ++index;
-    //monitor1->setReferenceCwFingers(0, fingers);
-
-    //index = 0;
-    //fingers[index].id = 2; ++index;
-    //fingers[index].id = 3; ++index;
-    //monitor1->setReferenceCwFingers(1, fingers);
-
-    //index = 0;
-    //fingers[index].id = 3; ++index;
-    //fingers[index].id = 3; ++index;
-    //monitor1->setReferenceCwFingers(2, fingers);
-
-    //index = 0;
-    //fingers[index].id = 0; ++index;
-    //fingers[index].id = 2; ++index;
-    //monitor1->setReferenceCwFingers(3, fingers);
-
-
-    ////Set valid reference counter clockwise fingers for every node
-    //index = 0;
-    //fingers[index].id = 3; ++index;
-    //fingers[index].id = 3; ++index;
-    //monitor1->setReferenceCcwFingers(0, fingers);
-
-    //index = 0;
-    //fingers[index].id = 0; ++index;
-    //fingers[index].id = 3; ++index;
-    //monitor1->setReferenceCcwFingers(1, fingers);
-
-    //index = 0;
-    //fingers[index].id = 1; ++index;
-    //fingers[index].id = 0; ++index;
-    //monitor1->setReferenceCcwFingers(2, fingers);
-
-    //index = 0;
-    //fingers[index].id = 2; ++index;
-    //fingers[index].id = 1; ++index;
-    //monitor1->setReferenceCcwFingers(3, fingers);

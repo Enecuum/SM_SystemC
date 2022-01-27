@@ -21,9 +21,10 @@
 using namespace std;
 using json = nlohmann::json;
 
-namespace P2P_MODEL {         
-    typedef sc_biguint<10>      uint160;
-    typedef sc_biguint<10+8>    uint168;
+namespace P2P_MODEL { 
+    const   unsigned W = 10;
+    typedef sc_biguint<W>      uint160;
+    typedef sc_biguint<W+8>    uint168;
     typedef unsigned int       uint;
     typedef unsigned long long ulong;
     typedef uint               data_size_type;

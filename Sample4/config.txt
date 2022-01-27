@@ -1,21 +1,15 @@
 {
-    "arrayID": [
-  631,
-  536,
-  127,
-  141,
-  329,
-  173,
-   44,
-  985,
-  796,
-  531,
-  525,
-  356,
-  166
-	],
-	"gen_random": true,
-	"nodes": 50, 		
-    "shuffle": false,       
-	"snapshot_period_sec": 999999999.0	
+	"arrayID": [ 56, 607, 896, 563, 62, 134, 45, 163, 438, 374, 500, 678, 1, 1000, 516, 787, 583, 113, 289, 581],	
+	"gen_random": false,
+	"log_chord_debug": false,
+	"nodes": 10,
+	"shuffle": false,
+	"period_fingers_update_sec": 1,
+	"period_node_run_sec": 70,	
+	"period_snapshot_sec": 900000000.0,
+	"time_add_sim_sec": 0,
+	"wait_rx_ack_sec": 5,
+	"wait_rx_predecessor_sec": 5,
+	"wait_rx_successor_on_join_sec": 15,
+	"wait_rx_successor_sec": 5
 }

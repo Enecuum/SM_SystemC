@@ -387,14 +387,14 @@ string nameStr = name();
                                 string str2;
                                 if (m_showMotive == true) {
                                     if (m_verifyMode != NO_VERIFY)
-                                        str2 = cwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(") ") + cwIt->motive + LOG_SPACE + cwIt->updateTime.to_string();
+                                        str2 = cwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(")") + LOG_SPACE + cwIt->motive + string(", ") + cwIt->updateTime.to_string();
                                     else
                                         str2 = cwIt->id.to_string(SC_DEC) + LOG_SPACE + cwIt->motive + LOG_SPACE + cwIt->updateTime.to_string();
                                     j[str] = str2;                                   
                                 }
                                 else {
                                     if (m_verifyMode != NO_VERIFY)
-                                        str2 = cwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(") ");
+                                        str2 = cwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(")");
                                     else 
                                         str2 = cwIt->id.to_string(SC_DEC);
                                     j[str] = str2;                                    
@@ -436,14 +436,14 @@ string nameStr = name();
                                     string str2;
                                     if (m_showMotive == true) {
                                         if (m_verifyMode != NO_VERIFY)
-                                            str2 = ccwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(") ") + ccwIt->motive + LOG_SPACE + ccwIt->updateTime.to_string();
+                                            str2 = ccwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(")") + LOG_SPACE + ccwIt->motive + string(", ") + ccwIt->updateTime.to_string();
                                         else
                                             str2 = ccwIt->id.to_string(SC_DEC) + LOG_SPACE + ccwIt->motive + LOG_SPACE + ccwIt->updateTime.to_string();
                                         j[str] = str2;                                                   
                                     }
                                     else {
                                         if (m_verifyMode != NO_VERIFY)
-                                            str2 = ccwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(") ");
+                                            str2 = ccwIt->id.to_string(SC_DEC) + string(" (") + refIt->id.to_string(SC_DEC) + string(")");
                                         else 
                                             str2 = ccwIt->id.to_string(SC_DEC);
                                         j[str] = str2;

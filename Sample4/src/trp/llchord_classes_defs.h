@@ -141,6 +141,20 @@ namespace P2P_MODEL {
             fillFingersMinQty = DEFAULT_FILL_FINGERS_MIN_QTY;
         }
 
+        void setTimers(const sc_time timeoutRxAck,
+                       const sc_time timeoutRxSuccOnJoin,
+                       const sc_time timeoutRxSucc,
+                       const sc_time timeoutRxPred,
+                       const sc_time timeoutUpdate)
+        {
+            TrxSuccOnJoin = timeoutRxSuccOnJoin;
+            TrxSucc       = timeoutRxSucc;
+            TrxPred       = timeoutRxPred;
+            Tupdate       = timeoutUpdate;
+            TrxAck        = timeoutRxAck;
+        }
+
+
         chord_conf_parameters& operator= (const chord_conf_parameters& src) {
             if (this == &src)
                 return *this;

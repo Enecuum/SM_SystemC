@@ -11,7 +11,7 @@ namespace P2P_MODEL
     enum monitor_mode {
         NO_VERIFY = 0,
         AUTO_VERIFY,
-        REF_VERIFY
+        REF_VERIFY    //TODO
     };
 
 

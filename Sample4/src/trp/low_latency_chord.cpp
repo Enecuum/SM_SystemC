@@ -400,7 +400,7 @@ namespace P2P_MODEL
             msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + LOG_ERROR_INVALID_RANGE, ALL_LOG);
         }
         
-        cout << "Run ... node " << m_nodeAddr.toStrIDonly() << LOG_SPACE << setprecision(0) << fixed << sc_time_stamp().to_seconds() << " sec" << endl;
+        cout << "Run ... node " << setprecision(0) << fixed << sc_time_stamp().to_seconds() << " sec" << LOG_SPACE << m_nodeAddr.toStrIDonly() << endl;
 
         msgLog(name(), LOG_TXRX, LOG_INFO, m_confParams.netwAddr.toStr(), ALL_LOG);
         msgLog(name(), LOG_TXRX, LOG_INFO, m_nodeAddr.toStr(), ALL_LOG);
