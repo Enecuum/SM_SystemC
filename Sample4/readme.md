@@ -113,16 +113,17 @@
   26    typedef sc_biguint<4+8>    uint168;
   ```
 
-  для адресов 10 bit, диапазон от 0 до 1023:
 
-- ```c++
+- для адресов 10 bit, диапазон от 0 до 1023:
+
+  ```c++
   25    typedef sc_biguint<10>      uint160;
   26    typedef sc_biguint<10+8>    uint168;
   ```
 
-  для адресов 20 bit, диапазон от 0 до 1048575:
+- для адресов 20 bit, диапазон от 0 до 1048575:
 
-- ```C++
+  ```
   25    typedef sc_biguint<20>      uint160;
   26    typedef sc_biguint<20+8>    uint168;
   ```
@@ -182,7 +183,7 @@
 
   Фрагмент snapshot.txt:
 
-  ```json
+  ```c++
   {
       "active": 10,
       "curr time": "769 s",
@@ -219,7 +220,7 @@
 
   Фрагмент app.txt:
 
-  ```json
+  ```c++
   0         	app289         	TxRx	     	create
   0         	app581         	TxRx	     	create
   1260      	app289         	Tx  	> > >	generateMess	1(1) HARD_RESET
@@ -238,7 +239,7 @@
 
 - network.txt - описывает сообщения, которые передаются от узла через сеть к удаленному узлу. Лог отключен. Лог включается в main.cpp в строке:
 
-  ```json
+  ```c++
   network1->setLogMode(DISABLED_LOG);
   ```
 
@@ -260,4 +261,4 @@
   Warning: (W505) object already exists: ... Latter declaration will be renamed to ...
   ```
 
-  **Исключите из arrayID повторяющиеся числа. Повторно запустите модель.**
+  Исключите из arrayID повторяющиеся числа. Повторно запустите модель.
