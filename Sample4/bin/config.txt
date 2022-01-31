@@ -1,6 +1,6 @@
 {
-	"arrayID": [ 56, 607, 896, 563, 62, 134, 45, 163, 438, 374, 500, 678, 1, 1000, 516, 787, 583, 113, 289, 581],	
-	"gen_random": true,
+	"arrayID": [1, 7, 3, 10, 9, 4, 12, 0, 2, 15],	
+	"gen_random": false,
 	"log_chord_debug": false,
 	"nodes": 10,
 	"shuffle": false,

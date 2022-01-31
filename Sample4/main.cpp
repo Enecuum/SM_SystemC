@@ -1,5 +1,8 @@
 ﻿
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING  // It is necessary to include experimental filesystem functin check directory
+#include <experimental/filesystem>                            //
 
+#include <set>
 #include <stdio.h>
 #include <iostream>
 #include <vector>
@@ -23,18 +26,18 @@ using namespace std;
 using json = nlohmann::json;
 
 //Pre-defined parameters
-      bool         SHOW_MOTIVE   = false;
-const monitor_mode MONITOR_MODE  = AUTO_VERIFY;
-const bool         SHOW_CCW_FINGERS = false;
-const int          JSON_FAILED = -1;
-const bool         DEFAULT_GEN_RANDOM                     = false;
-const bool         DEFAULT_LOG_CHORD_DEBUG                = false;
-const uint         DEFAULT_NODES                          = 5;
+      bool         SHOW_MOTIVE                       = false;
+const monitor_mode MONITOR_MODE                      = AUTO_VERIFY;
+const bool         SHOW_CCW_FINGERS                  = false;
+const int          JSON_FAILED                       = -1;
+const bool         DEFAULT_GEN_RANDOM                = false;
+const bool         DEFAULT_LOG_CHORD_DEBUG           = false;
+const uint         DEFAULT_NODES                     = 5;
 const sc_time      DEFAULT_PERIOD_FINGERS_UPDATE_SEC = sc_time(1, SC_SEC);
-const sc_time      DEFAULT_PERIOD_NODE_RUN_SEC    = sc_time(60, SC_SEC);
-const sc_time      DEFAULT_TIME_ADD_SIM_SEC               = sc_time(180, SC_SEC);
-const bool         DEFAULT_SHUFFLE                        = false;
-const sc_time      DEFAULT_PERIOD_SNAPSHOT_SEC            = sc_time(1, SC_SEC);
+const sc_time      DEFAULT_PERIOD_NODE_RUN_SEC       = sc_time(60, SC_SEC);
+const sc_time      DEFAULT_TIME_ADD_SIM_SEC          = sc_time(180, SC_SEC);
+const bool         DEFAULT_SHUFFLE                   = false;
+const sc_time      DEFAULT_PERIOD_SNAPSHOT_SEC       = sc_time(1, SC_SEC);
 
 
 
@@ -121,6 +124,9 @@ namespace ns {
         j.at("wait_rx_predecessor_sec")       .get_to(p.wait_rx_predecessor_sec);        
         j.at("shuffle")                       .get_to(p.shuffle);        
 
+        set<uint> s(p.arrayID.begin(), p.arrayID.end()); //here we remove duplicates
+        p.arrayID.assign(s.begin(), s.end());            //I will be back )
+
         if (false == p.gen_random)
             p.nodes = (uint)(p.arrayID.size());
     }
@@ -133,8 +139,17 @@ bool jsonParser(const string path, ns::parser_parameters& p) {
     try {
         file >> j; 
         
-        p = j.get<ns::parser_parameters>();
+        p = j.get<ns::parser_parameters>();        
         cout << endl << endl;
+
+        
+        stringstream bufH;
+        bufH << "./log";
+        if (!std::experimental::filesystem::exists(bufH.str()))
+        {
+            std::experimental::filesystem::create_directories(bufH.str());
+        }
+
         return true;
     }
     catch (json::parse_error& e) {
@@ -189,7 +204,7 @@ int main(int argc, char* argv[])
     _setmaxstdio(2048);
 
     cout << boolalpha;
-    cout << "   CHORD " << P2P_MODEL::W << " bit model " << "v1.1.2022" << endl;
+    cout << "   CHORD " << P2P_MODEL::W << " bit model " << "v20220131" << endl;
     cout << "_______________________________________" << endl << endl;
 
     vector<string> argvStr;
@@ -214,8 +229,7 @@ int main(int argc, char* argv[])
     if (jsonParser(string(".")+configPath, p) == false) {
         cout << "Please, input 'y' to exit " << endl; getchar();
         return JSON_FAILED;
-        //cout << "Pre-difined parameters will be used" << endl;
-        //print here pre-defined parameters
+        //cout << "Pre-difined parameters will be used" << endl;      
     }
     
     //Gen random IDs for nodes or do shuffling

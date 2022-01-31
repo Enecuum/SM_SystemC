@@ -405,7 +405,7 @@ namespace P2P_MODEL
         msgLog(name(), LOG_TXRX, LOG_INFO, m_confParams.netwAddr.toStr(), ALL_LOG);
         msgLog(name(), LOG_TXRX, LOG_INFO, m_nodeAddr.toStr(), ALL_LOG);
         
-        //m_latency.clear();
+        
         if (m_confParams.seed.size() == 0) {
             m_logText = state2str(m_state) + LOG_TAB + string("NO SEED");
             msgLog(name(), LOG_TXRX, LOG_INFO, m_logText, ALL_LOG);
@@ -417,7 +417,6 @@ namespace P2P_MODEL
                 else
                     m_ccwFingers[i].from = m_ccwFingers[i - 1].to - 1;
                 m_ccwFingers[i].to = m_nodeAddr.id - m_fingerMask[i];
-                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : ccw [" << m_ccwFingers[i].from.to_uint() << ", " << m_ccwFingers[i].to.to_uint() << "]" << endl;
                 
 
                 m_ccwFingers[i].fingerIndex = i;
@@ -432,7 +431,6 @@ namespace P2P_MODEL
                 else
                     m_cwFingers[i].from = m_cwFingers[i-1].to+1;
                 m_cwFingers[i].to = m_nodeAddr.id+m_fingerMask[i];
-                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : cw [" << m_cwFingers[i].from.to_uint() << ", " << m_cwFingers[i].to.to_uint() << "]" << endl;
 
                 m_cwFingers[i].fingerIndex = i;
                 m_cwFingers[i].isClockWise = true;
@@ -460,28 +458,26 @@ namespace P2P_MODEL
             
         }
         else {
-            m_ccwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr /*m_confParams.seed.front()*/));
+            m_ccwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr));
             for (uint i = 0; i < m_ccwFingers.size(); ++i) {
                 if (i == 0)
                     m_ccwFingers[i].from = m_nodeAddr.id - 1;
                 else
                     m_ccwFingers[i].from = m_ccwFingers[i - 1].to - 1;
                 m_ccwFingers[i].to = m_nodeAddr.id - m_fingerMask[i];                
-                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : ccw [" << m_ccwFingers[i].from.to_uint() << ", " << m_ccwFingers[i].to.to_uint() << "]" << endl;
 
                 m_ccwFingers[i].fingerIndex = i;
                 m_ccwFingers[i].isClockWise = false;
                 m_ccwFingers[i].isUpdated = false;               
             }
 
-            m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr /*m_confParams.seed.front()*/));
+            m_cwFingers.resize(m_confParams.fingersSize, node_address_latency(m_nodeAddr));
             for (uint i = 0; i < m_cwFingers.size(); ++i) {
                 if (i == 0)
                     m_cwFingers[i].from = m_nodeAddr.id + 1;
                 else
                     m_cwFingers[i].from = m_cwFingers[i - 1].to + 1;
                 m_cwFingers[i].to = m_nodeAddr.id + m_fingerMask[i];
-                //cout << m_nodeAddr.id.to_uint64() << " > " << i << " : cw [" << m_cwFingers[i].from.to_uint() << ", " << m_cwFingers[i].to.to_uint() << "]" << endl;
 
                 m_cwFingers[i].fingerIndex = i;
                 m_cwFingers[i].isClockWise = true;
@@ -619,10 +615,6 @@ namespace P2P_MODEL
                                 m.searchedNodeIDwithSocket = mess.serviceAddr;
                                 setPredecessor(m, chord_timer_message(), true);
 
-                                //NEW
-                                //issueMessagePushTimers(CHORD_TX_FIND_SUCCESSOR, false, 0);
-                                //NEW
-
                                 setSuccessorRemoveTimers(mess, timer); 
                                 m_updateType = setNextFingerToUpdate();
                             }
@@ -758,10 +750,6 @@ namespace P2P_MODEL
                 break;
 
                 case TIMER_EXPIRED:{                     //Timer was expired, analysing                
-//DEBUG             
-if (sc_time_stamp() >= sc_time(10.95, SC_SEC))
-    int tmp = 0;
-//DEBUG
 
                     funcPointer = mess2state(evType, mess);
                     if (funcPointer != nullptr)
@@ -812,12 +800,6 @@ if (sc_time_stamp() >= sc_time(10.95, SC_SEC))
                                 setNextState(STATE_SERVICE);                                                                                                                              
                             }
 
-                           
-//DEBUG
-if ((name() == string("trp14.llchord")) && (sc_time_stamp() >= sc_time(144.02, SC_SEC))) {
-    int tmp = 0;
-}
-//DEBUG
 
                             issueMessagePushTimers(CHORD_TX_ACK, false, 0, mess);            
 
@@ -897,12 +879,6 @@ if ((name() == string("trp14.llchord")) && (sc_time_stamp() >= sc_time(144.02, S
         if (doResetFlushPauseIfMess(mess, existMess) == true)
             return;
         
-//DEBUG
-string strTime = sc_time_stamp().to_string();
-if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(102.17, SC_SEC)))
-    int herebreakpoint = 0;
-//DEBUG
-
         if (m_isPaused == false) {
 
             msgLog(name(), LOG_TXRX, LOG_INFO, state2str(m_state) + LOG_TAB + string("isNowUpdate = ") + LOG_BOOL(m_isNowUpdate), DEBUG_LOG | INTERNAL_LOG);
@@ -1049,13 +1025,6 @@ if ((name() == string("trp2.llchord")) && (sc_time_stamp() >= sc_time(102.17, SC
                         if (m_isNowUpdate == false) {
                             m_isNowUpdate = true;
 
-//DEBUG
-string strTime = sc_time_stamp().to_string();
-if ((name() == string("trp11.llchord")) && (sc_time_stamp() >= sc_time(100.03, SC_SEC)))
-    int herebreakpoint = 0;
-//DEBUG
-
-
                             m_updateType = setNextFingerToUpdate(true);
                             if (m_updateType == STABILIZE_SUCCESSOR) {
 
@@ -1154,7 +1123,6 @@ if ((name() == string("trp11.llchord")) && (sc_time_stamp() >= sc_time(100.03, S
         case CHORD_TX_BROADCAST:      buffType = BUFF_TX_BROADCAST;      break;
         case CHORD_TX_MULTICAST:      buffType = BUFF_TX_MULTICAST;      break;
         case CHORD_TX_SINGLE:         buffType = BUFF_TX_SINGLE;         break;
-        //buffType = BUFF_TX_MESS;              
 
         default:
             //ERROR
@@ -1356,12 +1324,6 @@ if ((name() == string("trp11.llchord")) && (sc_time_stamp() >= sc_time(100.03, S
         chord_action action = DO_REPLY;
         node_address_latency foundFinger, foundFinger2;
 
-//DEBUG
-if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC_SEC))) {
-    int herebreakpoint = foundFinger.id.to_int();
-}
-//DEBUG
-        
         //Check curr node
         if (searchedID == m_nodeAddr.id) {
             action = DO_REPLY;
@@ -1435,35 +1397,11 @@ if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC
             }
             
             found = foundFinger.toNodeAddress();
-            
-            //NEW NEW NEW
-            //if (found.isNone()) {
-            //    //closest preceding  2
-            //    for (auto fingerIt = m_cwFingers.rbegin(); fingerIt != m_cwFingers.rend(); ++fingerIt) {
-            //        bool notInitiator = fingerIt->id != initiatorID;
-            //        bool notSender = fingerIt->id != senderID;
-            //        bool closestToTarget = isInRangeOverZero(fingerIt->id, m_nodeAddr.id, searchedID);
-            //        if ((closestToTarget) && (notInitiator) && (notSender))
-            //        {
-            //            foundFinger.setCopy(*fingerIt);
-            //            if (fingerIt + 1 != m_cwFingers.rend()) {
-            //                if (foundFinger.latency > (fingerIt + 1)->latency) {
-            //                    foundFinger.setCopy(*(fingerIt + 1));
-            //                }
-            //            }
-            //            break;
-            //        }
-            //    }
-            //}
-            //found = foundFinger.toNodeAddress();
-            //NEW NEW NEW
+           
             
             //We tried to find good finger, now the next steps will be
             if (found.isNone()) {
                 
-                //foundFinger.setCopy(findBigFinger(m_cwFingers, {initiatorID, senderID, m_nodeAddr.id}));        //Try to send to the end of ring
-
-
                 find1stFingerNotForbidden(m_cwFingers, {initiatorID, senderID, m_nodeAddr.id}, foundFinger);      //Try to send to successor via ring
                 if (foundFinger.isNone()) {   
                 
@@ -1532,7 +1470,7 @@ if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC
         if ((isJoin) && (action == DO_REPLY) && (foundFinger.id != m_nodeAddr.id)) {
 
             action = DO_FORWARD;
-            //LOG                     D
+            //LOG                     
             m_ssLog << state2str(m_state) << LOG_TAB << "findSuccessor " << action2str(action) << " sID " << searchedID.to_string(SC_DEC) << " => " << foundFinger.toStrIDonly();
             msgLog(name(), LOG_RX, LOG_INFO, m_ssLog.str(), DEBUG_LOG | INTERNAL_LOG);            
         }      
@@ -1544,7 +1482,7 @@ if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC
     chord_action low_latency_chord::findPredecessor(const uint160& searchedID, node_address& found) {
         found.clear();
         found = m_predecessor;
-        if ((m_predecessor.isNone()) /* && (m_predecessor.isUpdated != true)*/) {
+        if ((m_predecessor.isNone())) {
             found = m_nodeAddr;
         }
         
@@ -1587,11 +1525,6 @@ if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC
         case CHORD_TIMER_RX_SUCCESSOR_ON_JOIN:
         case CHORD_TIMER_RX_SUCCESSOR:
         case CHORD_TIMER_RX_PREDECESSOR:
-            //if (retryMess == nullptr) {
-            //    //ERROR
-            //    msgLog(name(), LOG_TX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("pushNewTimer") + LOG_SPACE + LOG_ERROR_NULLPTR, ALL_LOG);
-            //    return;
-            //}            
             timer.retryMess = retryMess;
                             
         case CHORD_TIMER_UPDATE:
@@ -1897,12 +1830,6 @@ if ((name() == string("trp10.llchord")) && (sc_time_stamp() >= sc_time(97.03, SC
                     if (m_isClockWise) {
                         currFinger = m_cwFingerIndex;
 
-//DEBUG
-if ((sc_time_stamp() >= sc_time(1134.02, SC_SEC)) && (name() == string("trp329.llchord"))) {
-    int tmp = 0;
-}
-//DEBUG 
-                        
                         if (currFinger >= m_cwFingers.size()) {
                             //ERROR
                             msgLog(name(), LOG_TXRX, LOG_ERROR, state2str(m_state) + LOG_TAB + string("issueMessagePushTimers currFinger >= cwFingers.size() ") + LOG_ERROR_INVALID_RANGE, DEBUG_LOG | INTERNAL_LOG);
@@ -2259,11 +2186,6 @@ if ((sc_time_stamp() >= sc_time(1134.02, SC_SEC)) && (name() == string("trp329.l
     }
 
     bool low_latency_chord::setPredecessor(const chord_byte_message_fields& rxMess, const chord_timer_message& timer, const bool onJoin) {
-//DEBUG
-if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llchord"))) {
-    int tmp = 0;
-}
-//DEBUG        
         bool isSuccess = false;
         m_predecessor.isUpdated = true;
         m_predecessor.updateTime = sc_time_stamp();        
@@ -2361,11 +2283,6 @@ if ((sc_time_stamp() >= sc_time(58.06, SC_SEC)) && (name() == string("trp1.llcho
     bool low_latency_chord::forceUpdateFingerTable(const chord_message& rxMess) {
     return true;
 
-//DEBUG
-if ((name() == string("trp2.llchord")) && (rxMess.searchedNodeIDwithSocket.id == 5) && (sc_time_stamp() >= sc_time(14.0, SC_SEC)))
-    int herebreakpoint = 0;
-//DEBUG
-        
         int i = ((int)m_cwFingers.size())-1;
         int prevI = i;
         
@@ -2378,7 +2295,6 @@ if ((name() == string("trp2.llchord")) && (rxMess.searchedNodeIDwithSocket.id ==
             cwExpectedIDi = m_nodeAddr.id + m_fingerMask.at(i);            
             bool isFingerDefaultANDtransitBiggerExpected = (m_cwFingers.at(i).id == m_nodeAddr.id) && (transitID >= cwExpectedIDi) && (transitID < m_nodeAddr.id);
             bool isFingerNotEqualedExpected = cwExpectedIDi != m_cwFingers.at(i).id;
-            //bool isTransitBiggerExpectedAndLessOldFingerANDexpectedNofFound = (isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false)) && (isFingerNotEqualedExpected);                       //(isInRange(transitID, cwExpectedIDi, true, m_cwFingers[i].id, false);
             bool isTransitBiggerExpectedAndFingerLessExpectedANDexpectedNotFound = (transitID >= cwExpectedIDi) && (m_cwFingers[i].id < cwExpectedIDi) && (isFingerNotEqualedExpected);
 
             //New code
@@ -2417,11 +2333,6 @@ if ((name() == string("trp2.llchord")) && (rxMess.searchedNodeIDwithSocket.id ==
 
 
     void low_latency_chord::setFingerRemoveTimers(const chord_byte_message_fields& rxMess, const chord_timer_message& timer) {  
-//DEBUG
-if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(.08, SC_SEC)))
-    int tmp = 0;
-//DEBUG 
-
 
         node_address_latency updatedFinger;
         if (m_isClockWise) {
@@ -2609,23 +2520,6 @@ if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(.08, SC_SE
 
         return false;
     }
-       
-
-    //pair<node_address, uint160> low_latency_chord::whatFingerUpdate() {
-    //    uint currFinger;
-    //    if (m_isClockWise) {
-    //        if (m_cwFingerIndex == 0)
-    //            m_cwFingerIndex++;
-    //        currFinger = m_cwFingerIndex;
-    //    }
-    //    else {
-    //        if (m_ccwFingerIndex == 0)
-    //            m_ccwFingerIndex++;
-    //        currFinger = m_ccwFingerIndex;
-    //    }
-    //    pair<node_address, uint160> res;
-    //    return res;
-    //}
 
 
     string low_latency_chord::logHeadStateString(const chord_message& mess, const bool existMess) {
@@ -2649,18 +2543,6 @@ if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(.08, SC_SE
                 }
             }
         }
-
-//DEBUG
-if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(339.08, SC_SEC)))
-    int tmp = 0;
-//DEBUG
-
-        //Lookup predecessor
-        //if (m_predecessor.isUpdated == false) {
-        //    m_ccwFingerIndex = 0;
-        //    m_isClockWise = false;
-        //    return FIX_FINGER;
-        //}
 
         if (m_state != STATE_JOIN) {
             if (isTimerUpdateExpired) {
@@ -2701,21 +2583,6 @@ if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(339.08, SC
             }
         }
 
-        //Lookup 
-        //if (m_state != STATE_JOIN) {
-            //if (m_predecessor.isUpdated == false) {
-            //    m_ccwFingerIndex = 0;
-            //    m_isClockWise = false;
-            //    return CHECK_PREDECESSOR;
-            //}
-        //   
-        //    if (isTimerUpdateExpired) {
-        //        if (m_isNowStabilize == false) {
-        //            m_isNowStabilize = true;
-        //            return STABILIZE_SUCCESSOR;
-        //        }
-        //    }
-        //}
 
 
         //Not found finger to update. Set default values for call after STABILIZE_SUCCESSOR         
@@ -2779,12 +2646,6 @@ if ((name() == string("trp4.llchord")) && (sc_time_stamp() >= sc_time(339.08, SC
 
 
     bool low_latency_chord::pushTxMessageMemoryList(const chord_message& mess) {
-        //bool exist = false;
-        //buffer_container::iterator it = findTxMessageMemoryList(exist, mess.messageID, mess.type);
-        //if (exist == true) {
-        //    m_txMemoryList.eraseMess(it);        
-        //}
-
         bool res = false;
         if (mess.flags.needsACK == NEEDS_ACK) {           
             chord_message* firstMess = m_txMemoryList.messPointer(0);
