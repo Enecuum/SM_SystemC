@@ -1,0 +1,1 @@
+C:\KOROBKOV\project\repo\SM_SystemC\Sample4\systemc-2.3.3\examples\sysc\simple_fifo\x64\Debug\simple_fifo.exe

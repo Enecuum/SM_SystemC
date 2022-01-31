@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\app\application.cpp">
+      <Filter>src\app</Filter>
+    </ClCompile>
+    <ClCompile Include="src\net\network.cpp">
+      <Filter>src\net</Filter>
+    </ClCompile>
+    <ClCompile Include="src\inc.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\log.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\broadcast.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\low_latency_chord.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\sha1.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\trp\transport_plus.cpp">
+      <Filter>src\trp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mntr\monitor.cpp">
+      <Filter>src\mntr</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{e8fbb06d-1b0f-4f18-b7b1-34b109621abd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\app">
+      <UniqueIdentifier>{f9fa71ec-9e28-4bbd-a086-cedffcd89aa5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\net">
+      <UniqueIdentifier>{74670cd2-4845-4ed9-8b00-47d1fdf14b8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\trp">
+      <UniqueIdentifier>{7e23d726-5040-4812-b6da-6cf32ab1c3a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\mntr">
+      <UniqueIdentifier>{15c3db90-c944-4429-8ee9-c7a1017da887}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\app\application.h">
+      <Filter>src\app</Filter>
+    </ClInclude>
+    <ClInclude Include="src\net\network.h">
+      <Filter>src\net</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\log.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\broadcast.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\low_latency_chord.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\sha1.hpp">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_application_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\transport_plus.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\message_buffer.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\llchord_classes_defs.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\net\network_trp_if.h">
+      <Filter>src\net</Filter>
+    </ClInclude>
+    <ClInclude Include="src\app\application_if.h">
+      <Filter>src\app</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_network_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_llchord_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mntr\monitor.h">
+      <Filter>src\mntr</Filter>
+    </ClInclude>
+    <ClInclude Include="src\trp\trp_monitor_if.h">
+      <Filter>src\trp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mntr\monitor_trp_if.h">
+      <Filter>src\mntr</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

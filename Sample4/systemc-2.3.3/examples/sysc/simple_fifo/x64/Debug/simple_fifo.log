@@ -1,0 +1,3 @@
+﻿cl : command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  simple_fifo.cpp
+  simple_fifo.vcxproj -> C:\korobkov\project\repo\SM_SystemC\Sample4\systemc-2.3.3\examples\sysc\simple_fifo\x64\Debug\simple_fifo.exe
